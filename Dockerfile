@@ -17,6 +17,7 @@ RUN apt-get update \
 
 # copy project
 COPY . .
+COPY default-docker.cfg default.cfg
 
 # run app
 CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0" ]

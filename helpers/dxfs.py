@@ -1,4 +1,4 @@
-import os
+import os, shutil
 from pathlib import Path
 
 from . import dxtmpfile
@@ -12,7 +12,8 @@ def SafeFileName(origName):
 def MoveFile(tmpFolder: Path, fromFile: Path, toFile: Path):
     if dxtmpfile.IsPythonNative():
         if not toFile.exists():
-            fromFile.rename(toFile)
+            # fromFile.rename(toFile) # - don't work on different FS. Example: mounted docker folder
+            shutil.move(fromFile.absolute(), toFile.absolute())
     else:
         with dxtmpfile.TmpNameFile(tmpFolder, fromFile) as fromNameFile:
             with dxtmpfile.TmpNameFile(tmpFolder, toFile) as toNameFile:
