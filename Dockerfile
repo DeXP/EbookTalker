@@ -8,6 +8,13 @@ WORKDIR /usr/src/app/
 COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 
+# install runtime depenencies
+ENV RUNTIME_DEPENDENCIES="ffmpeg"
+
+RUN apt-get update \
+    && apt-get install -y $RUNTIME_DEPENDENCIES \
+&& rm -rf /var/lib/apt/lists/*
+
 # copy project
 COPY . .
 
