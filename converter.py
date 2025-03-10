@@ -229,8 +229,7 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
         proc['sectionTitle'] = sectionTitle
         if sectionTitle:
             sentenceCount += 1
-            curLang = dxnormalizer.detect_language(sectionTitle, lang)
-            if ProcessSentence(curLang, sentenceCount, sectionTitle, var):
+            if ProcessSentence(lang, sentenceCount, sectionTitle, var):
                 sectionWavs.append(f"{sentenceCount}.wav")
                 sectionWavs.append("pause-long.wav")
 
@@ -267,8 +266,7 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
                 proc['lineSentenceNumber'] = lineSentence
                 proc['sentenceNumber'] = sentenceCount
                 proc['sentenceText'] = s
-                curLang = dxnormalizer.detect_language(s, lang)
-                if ProcessSentence(curLang, sentenceCount, s, var):
+                if ProcessSentence(lang, sentenceCount, s, var):
                     sectionWavs.append(f"{sentenceCount}.wav")
                     # last senctence in paragraph - long pause
                     pauseName = "pause-long.wav" if lineSentence == (len(sentences) - 1) else 'pause.wav'
