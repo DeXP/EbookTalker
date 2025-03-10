@@ -18,27 +18,27 @@ app = flask.Flask(__name__)
 app.config.from_pyfile('default.cfg')
 app.config.from_prefixed_env()
 
+if ("LOGGING_FOLDER" in app.config) or ("LOGGING_ADDRESS" in app.config):
+    if ("LOGGING_FOLDER" in app.config) and app.config["LOGGING_FOLDER"]:
+        path = Path(app.config["LOGGING_FOLDER"])
+        path.mkdir(parents=True, exist_ok=True)
+        ct = datetime.datetime.now()
+        logging.basicConfig(
+            filename=os.path.join(
+                app.config["LOGGING_FOLDER"],
+                f"{ct}.log".replace(":","-")
+            ), level=logging.DEBUG
+        )
 
-if ("LOGGING_FOLDER" in app.config) and app.config["LOGGING_FOLDER"]:
-    path = Path(app.config["LOGGING_FOLDER"])
-    path.mkdir(parents=True, exist_ok=True)
-    ct = datetime.datetime.now()
-    logging.basicConfig(
-        filename=os.path.join(
-            app.config["LOGGING_FOLDER"],
-            f"{ct}.log".replace(":","-")
-        ), level=logging.DEBUG
-    )
+    logger = logging.getLogger()
 
-logger = logging.getLogger()
+    if ("LOGGING_ADDRESS" in app.config) and ("LOGGING_PORT" in app.config) and app.config["LOGGING_ADDRESS"]:
+        h = logging.handlers.SysLogHandler(address=(app.config["LOGGING_ADDRESS"], int(app.config["LOGGING_PORT"])), facility='user')
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(h)
 
-if ("LOGGING_ADDRESS" in app.config) and ("LOGGING_PORT" in app.config) and app.config["LOGGING_ADDRESS"]:
-    h = logging.handlers.SysLogHandler(address=(app.config["LOGGING_ADDRESS"], int(app.config["LOGGING_PORT"])), facility='user')
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(h)
-
-sys.stderr.write = logger.error
-sys.stdout.write = logger.info
+    sys.stderr.write = logger.error
+    sys.stdout.write = logger.info
 
 
 manager = multiprocessing.Manager()
