@@ -163,3 +163,7 @@ def addToQueue():
         
         return info
     return '{}'
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
