@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+from PIL import Image, ImageTk
 import customtkinter
 from pathlib import Path
 import sys, json, time, uuid, shutil, locale, datetime, multiprocessing, threading
@@ -150,27 +151,17 @@ class App(customtkinter.CTk):
         if not cover:
             cover = 'static/default-cover.png'
 
-        subsample = 3
-        pngPath = None
+        w, h = 150, 180
         with open(cover, "rb") as img_file:
             image_data = img_file.read()
-            width, height, _, _, type = dxaudio.get_image_info(image_data)
+            width, height, _, _, _ = dxaudio.get_image_info(image_data)            
+            w = int((width * h) / height)
 
-            subsample = int(height / 180)
-            if subsample < 1:
-                subsample = 1
-
-            if 'jpg' == type:
-                pngPath = self.var['tmp'] / f"{uuid.uuid4()}.png"
-                dxaudio.convert_jpg_to_png(self.cfg, Path(cover), pngPath)
-                cover = str(pngPath.absolute())
-
-        img = tk.PhotoImage(file=cover)
-        self.cover_img = img.subsample(subsample)
+        # Load and display an image 
+        image_open = Image.open(cover)
+        img = image_open.resize((w,h))
+        self.cover_img = ImageTk.PhotoImage(img)
         self.cover_label.configure(image=self.cover_img)
-
-        if pngPath and pngPath.exists():
-            pngPath.unlink()
 
 
     def sizeof_fmt(self, num):
