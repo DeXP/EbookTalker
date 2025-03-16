@@ -10,7 +10,7 @@ from helpers import fb2, dxfs, dxaudio, dxsplitter, dxnormalizer
 def Init(cfg: dict):
     device = torch.device(cfg['TORCH_DEVICE'])
     num_threads = os.cpu_count()
-    if ('TORCH_NUM_THREADS' in cfg) and cfg['TORCH_NUM_THREADS'] > 0:
+    if ('TORCH_NUM_THREADS' in cfg) and int(cfg['TORCH_NUM_THREADS']) > 0:
         num_threads = cfg['TORCH_NUM_THREADS']
     torch.set_num_threads(num_threads)
 
@@ -19,6 +19,7 @@ def Init(cfg: dict):
     dataDir = Path(cfg["DATA_FOLDER"])
 
     var = {
+        'askForExit': False,
         'languages': ['ru', 'uk', 'en'],
         'ru': {
             'name': 'Русский язык',
@@ -189,7 +190,7 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
                 coverName = 'cover.png' if info['cover'].endswith('png') else 'cover.jpg'
                 cover = var['genout'] / coverName
                 imageData = base64.b64decode(binary.text)
-                width, height, _, _ = dxaudio.get_image_info(imageData)
+                width, height, _, _, _ = dxaudio.get_image_info(imageData)
                 proc['coverWidth'] = width
                 proc['coverHeight'] = height
                 if not cover.exists():                   
@@ -214,6 +215,10 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
                 curText += t
             sentences = dxsplitter.SplitSentence(curText)
             totalSencenceCount += len(sentences)
+            if var['askForExit']:
+                break
+        if var['askForExit']:
+            break
     
     proc['totalLines'] = totalTagsCount
     proc['totalSentences'] = totalSencenceCount
@@ -271,6 +276,12 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
                     # last senctence in paragraph - long pause
                     pauseName = "pause-long.wav" if lineSentence == (len(sentences) - 1) else 'pause.wav'
                     sectionWavs.append(pauseName)
+                if var['askForExit']:
+                    break
+            if var['askForExit']:
+                break
+        if var['askForExit']:
+            break
 
         # All sentences processed - concatenate the section into one file
         sectionWavFile = var['genout'] / f"{sectionCount}.wav"
@@ -291,6 +302,9 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
             if sectionOggFile.exists() and (sectionOggFile.stat().st_size > 0):
                 sectionWavFile.unlink()
 
+    if var['askForExit']:
+        return
+    
     # Done. Move output
     outputDir = Path(outputDirPath)
     if "full" == dirFormat.lower():
@@ -321,7 +335,7 @@ def ConverterLoop(que, proc, cfg, var):
 
     fillQueue(que, var)
 
-    while True:
+    while not var['askForExit']:
         if not var['genfb2'].is_file():
             # Pick up the first book
             books = getBooks(var)

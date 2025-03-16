@@ -1,0 +1,1 @@
+pyinstaller --name EbookTalker --noconfirm --noupx --onefile --windowed --hide-console hide-early --distpath "..\EbookTalker-Win64" --icon ".\static\favicon.ico" --splash ".\static\default-cover.png" --add-data "C:\Python313\Lib\site-packages\customtkinter;customtkinter" .\desktop.py

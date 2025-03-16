@@ -1,4 +1,4 @@
-import base64, struct, wave, subprocess, mimetypes
+import sys, base64, struct, wave, subprocess, mimetypes
 from pathlib import Path
 
 
@@ -9,7 +9,7 @@ def get_ffmpeg_exe(cfg: dict):
 def get_png_info(data):
     # Validate PNG signature (first 8 bytes)
     if data[:8] != b'\x89PNG\r\n\x1a\n':
-        return 0,0,0,False
+        return 0,0,0,False,''
 
     # Extract width (bytes 16-19) and height (bytes 20-23) from IHDR chunk
     width = int.from_bytes(data[16:20], 'big')
@@ -31,30 +31,44 @@ def get_png_info(data):
     indexed = (color_type == 3)
     num_channels = color_channels_map.get(color_type, 0)
     total_bit_depth = bit_depth * num_channels
-    return width, height, total_bit_depth, indexed
+    return width, height, total_bit_depth, indexed, 'png'
 
 
 def get_jpg_info(data):
     if data[:2] != b'\xff\xd8':  # Check if it's a JPEG file
-        return 0,0,0,False
+        return 0,0,0,False,''
 
-    index = 2
+    index = 2  # Start after the magic number
     while index < len(data):
-        marker, size = data[index], data[index+1]
-        if marker != 0xFF:  # Ensure it's a valid marker
+        # Look for the next marker (starts with 0xFF)
+        if data[index] != 0xff:
+            index += 1
+            continue
+
+        marker = data[index + 1]  # Get the marker type
+
+        # Check if it's a Start of Frame (SOF) marker
+        if marker in [0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]:
+            # Get the length of the SOF segment (2 bytes, big-endian)
+            length = int.from_bytes(data[index + 2:index + 4], 'big')
+            # Extract precision (color depth), height, and width
+            precision = data[index + 4]  # Color depth in bits per component
+            height = int.from_bytes(data[index + 5:index + 7], 'big')
+            width = int.from_bytes(data[index + 7:index + 9], 'big')
+            # JPEG does not use indexed colors
+            return width, height, precision, False, 'jpg'
+
+        # Skip other markers by moving to the next marker
+        elif marker == 0xd9:  # End of Image (EOI) marker
             break
-        index += 2
-        if 0xC0 <= data[index] <= 0xCF and data[index] not in {0xC4, 0xC8, 0xCC}:
-            color_depth = data[index+2]  # Precision in bits per channel
-            height = (data[index+3] << 8) + data[index+4]
-            width = (data[index+5] << 8) + data[index+6]
-            num_channels = data[index+7]  # Number of color channels
-            total_bit_depth = color_depth * num_channels  # Total bits per pixel
-            return width, height, total_bit_depth,False
+        elif marker == 0xda:  # Start of Scan (SOS) marker
+            break
+        else:
+            # Move to the next marker
+            length = int.from_bytes(data[index + 2:index + 4], 'big')
+            index += length + 2
 
-        index += (size << 8) + data[index+1] - 2
-
-    return 0,0,0,False
+    return 0,0,0,False,'jpg'
 
 
 def get_image_info(data):
@@ -70,7 +84,7 @@ def generate_ogg_metadata_block_picture(image_path):
         image_data = img_file.read()
 
     mime_type = mimetypes.guess_type(image_path)[0] or "image/jpeg"
-    width, height, color_depth, indexed_colors = get_image_info(image_data)   
+    width, height, color_depth, indexed_colors, _ = get_image_info(image_data)   
 
     # METADATA_BLOCK_PICTURE structure
     flac_block = (
@@ -87,14 +101,27 @@ def generate_ogg_metadata_block_picture(image_path):
     return base64.b64encode(flac_block).decode("utf-8")
 
 
+def get_startupinfo():
+    startupinfo = subprocess.STARTUPINFO()
+    if sys.platform == "win32":
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+    return startupinfo
+
+
+def convert_jpg_to_png(cfg: dict, input_jpg: Path, output_png: Path, compression_level = 7):
+    if input_jpg.exists():
+        command = [
+            get_ffmpeg_exe(cfg),
+            '-i', str(input_jpg.absolute()),
+            '-compression_level', str(compression_level),
+            str(output_png.absolute())
+        ]
+        subprocess.run(command, startupinfo=get_startupinfo(), check=True)
+
+
 def convert_wav_to_ogg(cfg: dict, input_wav: Path, output_ogg: Path, title = '', author = '', cover = None, info = None, comment = ''):
     if input_wav.exists():
-        #if (len(torchaudio.list_audio_backends()) > 0):
-        #     # Use TorchAudio
-        #     waveform, sample_rate = torchaudio.load(str(input_wav.absolute()))
-        #     torchaudio.save(str(output_ogg.absolute()), waveform, sample_rate, format="ogg", encoding="opus") # encoding="vorbis"
-        # else:
-        # Use FFMPEG
         metaFile = input_wav.with_suffix('.meta')
         meta = ''
         if author:
@@ -118,9 +145,8 @@ def convert_wav_to_ogg(cfg: dict, input_wav: Path, output_ogg: Path, title = '',
                 command.extend(["-i", metaFile, "-map_metadata", "1"])
         command.extend(["-c:a", "opus", "-strict", "experimental", str(output_ogg.absolute())])
 
-        print(command)
         try:
-            subprocess.run(command, check=True)
+            subprocess.run(command, startupinfo=get_startupinfo(), check=True)
         finally:
             if metaFile.exists():
                 metaFile.unlink()
@@ -145,13 +171,14 @@ def concatenate_wav_files(input_folder: Path, input_files, output_file: Path):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Coverts WAV to OGG and adds metadata to the outcome file')
+    parser = argparse.ArgumentParser(description='Coverts WAV to OGG and adds metadata to the outcome file. Or provides image info')
     parser.add_argument('-i', '--input', help='Input WAV file')
     parser.add_argument('-o', '--output', help='Output OGG file')
     parser.add_argument('-c', '--cover', default='', help='Cover art image: JPG or PNG')
     parser.add_argument('-t', '--title', default='', help='Title string metadata')
     parser.add_argument('-a', '--author', default='', help='Author string')
     parser.add_argument('-f', '--ffmpeg', default='', help='FFMPEG path')
+    parser.add_argument('-m', '--mode', default='', help='Empty by default - tries to convert WAV to OGG. `imageinfo` will print width, height, bit depth, and indexed colors of the input image. `jpgtopng` will convert JPG to PNG')
 
     args = parser.parse_args()
 
@@ -159,7 +186,13 @@ if __name__ == "__main__":
     if (args.ffmpeg):
         cfg = {'FFMPEG_PATH': args.ffmpeg}
 
-    if args.input and args.output:
+    if ('imageinfo' == args.mode) and args.input:
+        with open(args.input, "rb") as img_file:
+            image_data = img_file.read()
+            print(get_image_info(image_data))
+    elif ('jpgtopng' == args.mode) and args.input and args.output:
+        convert_jpg_to_png(cfg, Path(args.input), Path(args.output))
+    elif args.input and args.output:
         convert_wav_to_ogg(cfg, Path(args.input), Path(args.output), args.title, args.author, Path(args.cover))
     else:
         print("Please provide input and output arguments. Run the script with '-h' switch for more details.")

@@ -1,6 +1,8 @@
 data
 logs
 ready
+build
 __pycache__/
+EbookTalker.spec
 *.py[cod]
 *$py.class
