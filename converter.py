@@ -228,8 +228,9 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
 
     for section in body.findall('section'):
         sectionCount += 1
-        sectionWavs = []
-        sectionTitle = fb2.getSectionTitle(section)
+        sectionWavs = []    
+        rawSectionTitle = fb2.getSectionTitle(section)
+        sectionTitle = dxnormalizer.normalize(rawSectionTitle, lang)
         # print(f"Section {sectionCount} ({len(section)}): {sectionTitle}")
         proc['sectionTitle'] = sectionTitle
         if sectionTitle:
