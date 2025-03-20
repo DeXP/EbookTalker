@@ -109,6 +109,23 @@ def get_startupinfo():
     return startupinfo
 
 
+def get_supported_encoders(cfg: dict):
+    result = subprocess.run([get_ffmpeg_exe(cfg), '-encoders'], startupinfo=get_startupinfo(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    
+    if result.returncode != 0:
+        return []
+    
+    encoders = []
+    for line in result.stdout.splitlines():
+        if line.strip().startswith(('V', 'A', 'S')):
+            # Split the line and extract the encoder name (second column)
+            encoder_name = line.split()[1]
+            if encoder_name != '=':
+                encoders.append(encoder_name)
+    
+    return encoders
+
+
 def convert_jpg_to_png(cfg: dict, input_jpg: Path, output_png: Path, compression_level = 7):
     if input_jpg.exists():
         command = [
@@ -178,7 +195,7 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--title', default='', help='Title string metadata')
     parser.add_argument('-a', '--author', default='', help='Author string')
     parser.add_argument('-f', '--ffmpeg', default='', help='FFMPEG path')
-    parser.add_argument('-m', '--mode', default='', help='Empty by default - tries to convert WAV to OGG. `imageinfo` will print width, height, bit depth, and indexed colors of the input image. `jpgtopng` will convert JPG to PNG')
+    parser.add_argument('-m', '--mode', default='', help='Empty by default - tries to convert WAV to OGG. `imageinfo` will print width, height, bit depth, and indexed colors of the input image. `jpgtopng` will convert JPG to PNG. `encoders` to show supported encoders')
 
     args = parser.parse_args()
 
@@ -192,6 +209,8 @@ if __name__ == "__main__":
             print(get_image_info(image_data))
     elif ('jpgtopng' == args.mode) and args.input and args.output:
         convert_jpg_to_png(cfg, Path(args.input), Path(args.output))
+    elif ('encoders' == args.mode):
+        print(get_supported_encoders(cfg))
     elif args.input and args.output:
         convert_wav_to_ogg(cfg, Path(args.input), Path(args.output), args.title, args.author, Path(args.cover))
     else:

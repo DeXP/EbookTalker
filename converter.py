@@ -53,7 +53,13 @@ def Init(cfg: dict):
         'tmp': dataDir / 'tmp',
         'queue': dataDir / 'queue',
         'gen': dataDir / 'generate',
-        'jingle': Path(cfg["JINGLE_FOLDER"])
+        'jingle': Path(cfg["JINGLE_FOLDER"]),
+        'formats': {
+            'mp3': {'encoder': 'libmp3lame', 'args': ['-q:a', str(2)]},
+            'ogg': {'encoder': 'libvorbis', 'args': ['-q:a', str(8)]},
+            'm4b': {'encoder': 'aac', 'args': ['-q:a', '0.8']},
+            'opus':{'encoder': 'libopus', 'args': ['-q:a', str(8)]}
+        }
     }
 
     var.update(
