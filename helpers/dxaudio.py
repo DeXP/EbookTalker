@@ -137,8 +137,14 @@ def convert_jpg_to_png(cfg: dict, input_jpg: Path, output_png: Path, compression
         subprocess.run(command, startupinfo=get_startupinfo(), check=True)
 
 
-def convert_wav_to_ogg(cfg: dict, input_wav: Path, output_ogg: Path, title = '', author = '', cover = None, info = None, comment = ''):
+def is_ogg_extension(input: Path):
+    format = input.suffix.lower()
+    return ".opus" == format or ".ogg" == format
+
+
+def convert_wav_to_compressed(encoder: str, cfg: dict, input_wav: Path, output_file: Path, title = '', author = '', cover = None, info = None, comment = ''):
     if input_wav.exists():
+        is_ogg = is_ogg_extension(output_file)
         metaFile = input_wav.with_suffix('.meta')
         meta = ''
         if author:
@@ -152,15 +158,23 @@ def convert_wav_to_ogg(cfg: dict, input_wav: Path, output_ogg: Path, title = '',
                 meta += "album=" + info['sequence'] + "\n"
         if comment:
             meta += f"comment={comment}\n"
-        if cover:
+        if cover and is_ogg:
             meta += "metadata_block_picture=" + generate_ogg_metadata_block_picture(str(cover.absolute())) + "\n"
 
-        command = [get_ffmpeg_exe(cfg), "-i", input_wav]
+        command = [get_ffmpeg_exe(cfg), "-i", str(input_wav.absolute())]
+        inputmap = ["-map", str(0)]
+        input_counter = 1
+        if (not is_ogg) and cover:
+            command.extend(["-i", str(cover.absolute())])
+            inputmap.extend(["-map", str(input_counter)])
+            input_counter += 1
         if meta:
             metaFile.write_bytes((';FFMETADATA1\n' + meta).encode(encoding="utf-8"))
             if metaFile.exists():
-                command.extend(["-i", metaFile, "-map_metadata", "1"])
-        command.extend(["-c:a", "opus", "-strict", "experimental", str(output_ogg.absolute())])
+                command.extend(["-i", str(metaFile.absolute())])
+                inputmap.extend(["-map_metadata", str(input_counter)])
+        command.extend(inputmap)
+        command.extend(["-c:a", encoder, "-strict", "experimental", str(output_file.absolute())])
 
         try:
             subprocess.run(command, startupinfo=get_startupinfo(), check=True)
@@ -188,14 +202,15 @@ def concatenate_wav_files(input_folder: Path, input_files, output_file: Path):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Coverts WAV to OGG and adds metadata to the outcome file. Or provides image info')
-    parser.add_argument('-i', '--input', help='Input WAV file')
-    parser.add_argument('-o', '--output', help='Output OGG file')
-    parser.add_argument('-c', '--cover', default='', help='Cover art image: JPG or PNG')
+    parser = argparse.ArgumentParser(description='Coverts WAV to MP3/OGG/OPUS/M4B/etc and adds metadata to the outcome file. Or something else set by mode')
+    parser.add_argument('-i', '--input', help='Input file with extension')
+    parser.add_argument('-o', '--output', help='Output file. Be accurate with extension - it must be synchronized with encoder, if used')
+    parser.add_argument('-c', '--cover', default='', help='Cover art image file: JPG or PNG')
     parser.add_argument('-t', '--title', default='', help='Title string metadata')
     parser.add_argument('-a', '--author', default='', help='Author string')
     parser.add_argument('-f', '--ffmpeg', default='', help='FFMPEG path')
-    parser.add_argument('-m', '--mode', default='', help='Empty by default - tries to convert WAV to OGG. `imageinfo` will print width, height, bit depth, and indexed colors of the input image. `jpgtopng` will convert JPG to PNG. `encoders` to show supported encoders')
+    parser.add_argument('-e', '--encoder', default='libmp3lame', help='FFMPEG audiocoder encoder. Example: libmp3lame, vorbis, opus, aac etc')
+    parser.add_argument('-m', '--mode', default='', help='Empty by default - tries to convert WAV to MP3. `imageinfo` will print width, height, bit depth, and indexed colors of the input image. `jpgtopng` will convert JPG to PNG. `encoders` to show supported encoders')
 
     args = parser.parse_args()
 
@@ -210,8 +225,8 @@ if __name__ == "__main__":
     elif ('jpgtopng' == args.mode) and args.input and args.output:
         convert_jpg_to_png(cfg, Path(args.input), Path(args.output))
     elif ('encoders' == args.mode):
-        print(get_supported_encoders(cfg))
+        print(sorted(get_supported_encoders(cfg)))
     elif args.input and args.output:
-        convert_wav_to_ogg(cfg, Path(args.input), Path(args.output), args.title, args.author, Path(args.cover))
+        convert_wav_to_compressed(args.encoder, cfg, Path(args.input), Path(args.output), args.title, args.author, Path(args.cover))
     else:
-        print("Please provide input and output arguments. Run the script with '-h' switch for more details.")
+        print("Unknown mode and input. Run the script with '-h' switch for more details.")

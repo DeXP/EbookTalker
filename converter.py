@@ -55,10 +55,10 @@ def Init(cfg: dict):
         'gen': dataDir / 'generate',
         'jingle': Path(cfg["JINGLE_FOLDER"]),
         'formats': {
-            'mp3': {'encoder': 'libmp3lame', 'args': ['-q:a', str(2)]},
-            'ogg': {'encoder': 'libvorbis', 'args': ['-q:a', str(8)]},
-            'm4b': {'encoder': 'aac', 'args': ['-q:a', '0.8']},
-            'opus':{'encoder': 'libopus', 'args': ['-q:a', str(8)]}
+            'mp3': 'libmp3lame',
+            'ogg': 'vorbis',
+            'm4b': 'aac',
+            'opus':'opus'
         }
     }
 
@@ -104,6 +104,15 @@ def GetModel(var: dict, lang = 'ru'):
     if (lang in var) and ('model' in var[lang]) and (var[lang]['model'] is None):
         PreloadModel(var, lang)
     return var[lang]['model']
+
+
+def GetSupportedAudioFormats(cfg: dict, var: dict):
+    all_encoders = dxaudio.get_supported_encoders(cfg)
+    supported = []
+    for format, encoder in var['formats'].items():
+        if encoder in all_encoders:
+            supported.append(format)
+    return supported
 
 
 def IsCorrectPhrase(var: dict, lang = 'ru', text = ''):
@@ -291,11 +300,13 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
             break
 
         # All sentences processed - concatenate the section into one file
+        codec = cfg['AUDIO_CODEC']
+        encoder = var['formats'][codec]
         sectionWavFile = var['genout'] / f"{sectionCount}.wav"
-        sectionOggFile = var['genout'] / f"{sectionCount}.ogg"
+        sectionCompressedFile = var['genout'] / f"{sectionCount}.{codec}"
 
-        oggExists = sectionOggFile.exists() and (sectionOggFile.stat().st_size > 0)
-        if not oggExists:
+        compressedExists = sectionCompressedFile.exists() and (sectionCompressedFile.stat().st_size > 0)
+        if not compressedExists:
             if not sectionWavFile.exists():
                 if (len(sectionWavs) > 10) and (len(jingles) > 0):
                     # Add chapter jingle
@@ -305,9 +316,9 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
                 
                 dxaudio.concatenate_wav_files(var['genwav'], sectionWavs, sectionWavFile)
             curTitle = sectionTitle if sectionTitle else proc['bookName']
-            dxaudio.convert_wav_to_ogg(cfg, sectionWavFile, sectionOggFile, title=curTitle, author=author, cover=cover, info=info)
-            if sectionOggFile.exists() and (sectionOggFile.stat().st_size > 0):
-                sectionWavFile.unlink()
+            dxaudio.convert_wav_to_compressed(encoder, cfg, sectionWavFile, sectionCompressedFile, title=curTitle, author=author, cover=cover, info=info)
+            #if sectionCompressedFile.exists() and (sectionCompressedFile.stat().st_size > 0):
+            #    sectionWavFile.unlink()
 
     if var['askForExit']:
         return

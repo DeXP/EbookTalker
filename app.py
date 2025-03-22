@@ -94,6 +94,11 @@ def create_app(test_config=None):
             return model.speakers
         else:
             return []
+        
+        
+    @app.route("/formats")
+    def supportedFormats():
+        return converter.GetSupportedAudioFormats(app.config, var)
 
 
     @app.route("/test")
