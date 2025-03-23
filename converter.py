@@ -1,19 +1,13 @@
 import os, re, torch, time, base64
 from pathlib import Path
 
-from helpers import fb2, dxfs, dxaudio, dxsplitter, dxnormalizer
+from helpers import settings, fb2, dxfs, dxaudio, dxsplitter, dxnormalizer
 
 #from sentence_splitter import SentenceSplitter
 #from accentru import predictor
 
 
 def Init(cfg: dict):
-    device = torch.device(cfg['TORCH_DEVICE'])
-    num_threads = os.cpu_count()
-    if ('TORCH_NUM_THREADS' in cfg) and int(cfg['TORCH_NUM_THREADS']) > 0:
-        num_threads = cfg['TORCH_NUM_THREADS']
-    torch.set_num_threads(num_threads)
-
     # accentRuPredictor = predictor.Predictor('accentru/model-accentru.onnx', 'accentru/vocab-accentru.json', 'accentru/ru_stress_compressed.txt')
 
     dataDir = Path(cfg["DATA_FOLDER"])
@@ -45,7 +39,6 @@ def Init(cfg: dict):
             'male': 'en_1',
             'default': 'en_0'
         },
-        'device': device,
         #'accent_ru': accentRuPredictor,
         'sample_rate': 24000,
         'put_accent': True,
@@ -70,6 +63,14 @@ def Init(cfg: dict):
 
     var['tmp'].mkdir(parents=True, exist_ok=True)
     dxfs.CreateDirectory(var['tmp'], var['queue'])
+
+    var['settings'] = settings.LoadOrDefault(cfg, var)
+
+    device = torch.device(var['settings']['app']['processor'])
+    num_threads = int(var['settings']['app']['threads'])
+    if num_threads > 0:
+        torch.set_num_threads(num_threads)
+    var['device'] = device
 
     PreloadModel(var, 'ru')
     # PreloadModel(var, 'en')
@@ -168,7 +169,7 @@ def ProcessSentence(lang, number, sentence, var):
         try:
             if ('ru' != lang) or dxnormalizer.is_russian(sentence):
                 GetModel(var, lang).save_wav(text=sentence,
-                    speaker=var[lang]['default'],
+                    speaker = var['settings']['silero'][lang]['voice'], # var[lang]['default'],
                     sample_rate=var['sample_rate'],
                     put_accent=var['put_accent'],
                     put_yo=var['put_yo'],
@@ -187,6 +188,9 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
     dxfs.CreateDirectory(var['tmp'], var['genout'])
     proc['file'] = file.name
     proc['status'] = 'process'
+
+    codec = var['settings']['app']['codec']
+    encoder = var['formats'][codec]
 
     info, root = fb2.ParseFB2(file)
     proc['bookName'] = fb2.BookName(info, includeAuthor=True)
@@ -317,8 +321,8 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
                 dxaudio.concatenate_wav_files(var['genwav'], sectionWavs, sectionWavFile)
             curTitle = sectionTitle if sectionTitle else proc['bookName']
             dxaudio.convert_wav_to_compressed(encoder, cfg, sectionWavFile, sectionCompressedFile, title=curTitle, author=author, cover=cover, info=info)
-            #if sectionCompressedFile.exists() and (sectionCompressedFile.stat().st_size > 0):
-            #    sectionWavFile.unlink()
+            if sectionCompressedFile.exists() and (sectionCompressedFile.stat().st_size > 0):
+               sectionWavFile.unlink()
 
     if var['askForExit']:
         return
@@ -367,6 +371,6 @@ def ConverterLoop(que, proc, cfg, var):
                 time.sleep(3)
 
         if var['genfb2'].is_file():
-            outputFolder = cfg['OUTPUT_FOLDER'] if ('OUTPUT_FOLDER' in cfg) else 'ready'
-            directoriesFormat = cfg['DIRECTORIES_FORMAT'] if ('DIRECTORIES_FORMAT' in cfg) else 'full'
+            outputFolder = var['settings']['app']['output']
+            directoriesFormat = var['settings']['app']['dirs']
             ConvertBook(var['genfb2'], outputFolder, directoriesFormat, proc, cfg, var)

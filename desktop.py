@@ -7,6 +7,7 @@ import sys, json, time, uuid, shutil, locale, datetime, multiprocessing, threadi
 
 import converter
 from helpers import dxaudio, dxfs, fb2
+from helpers.UI import Icons, PreferencesForm, AboutForm
 
 
 # customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
@@ -25,18 +26,15 @@ class App(customtkinter.CTk):
         self.var = var
 
         self.sizeFmt = (tr["byte"], tr["KB"], tr["MB"], tr["GB"], tr["TB"], tr["PB"], "EiB", "ZiB")
+        self.icon_font = customtkinter.CTkFont(size=18)
 
-        width = 920
-        height = 600
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        x = int((screen_width / 2) - (width / 2))
-        y = int((screen_height / 2) - (height / 2))
+        self.version = Path('static/version.txt').read_text()
 
-        self.title(tr['appTitle'])
-        self.geometry(f"{width}x{height}+{x}+{y}")
-        self.grid_columnconfigure(1, weight=0)
-        self.grid_columnconfigure((2, 3), weight=1)
+        self.orig_title = f"{tr['appTitle']} ({self.version})"
+        self.title(self.orig_title)
+        self.geometry(self.get_geometry(width=920, height=600))
+        self.grid_columnconfigure((0,1), weight=0)
+        self.grid_columnconfigure(2, weight=1)
         self.grid_rowconfigure(4, weight=1)
         self.iconbitmap('static/favicon.ico')
 
@@ -74,6 +72,20 @@ class App(customtkinter.CTk):
 
         self.inProcessLabel = customtkinter.CTkLabel(self, text=tr["emptyBookName"])
         self.inProcessLabel.grid(row=0, column=2, padx=10, pady=2, sticky="w")
+
+        self.preferences_button = customtkinter.CTkButton(
+            self, fg_color="transparent", border_color=self.imageBG,
+            command=self.show_preferences, border_width=2, width=24, height=24,
+            font=self.icon_font, text=Icons.options
+        )
+        # self.preferences_button.grid(row=0, column=2, padx=(10,40), pady=0, sticky="e", columnspan=1)
+
+        self.about_button = customtkinter.CTkButton(
+            self, fg_color="transparent", border_color=self.imageBG,
+            command=self.show_about, border_width=2, width=24, height=24,
+            font=self.icon_font, text=Icons.info
+        )
+        self.about_button.grid(row=0, column=2, padx=10, pady=0, sticky="e", columnspan=1)
 
 
         self.chapterTextLabel = customtkinter.CTkLabel(self, text=tr["chapter:"])
@@ -125,6 +137,13 @@ class App(customtkinter.CTk):
         self.update_thread = threading.Thread(target=self.update_UI).start()
 
 
+    def get_geometry(self, width: int, height: int):
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width / 2) - (width / 2))
+        y = int((screen_height / 2) - (height / 2))
+        return f"{width}x{height}+{x}+{y}"
+
     def on_closing(self):
         #if messagebox.askokcancel("Quit", "Do you want to quit?"):
         self.var['askForExit'] = True
@@ -144,6 +163,22 @@ class App(customtkinter.CTk):
             self.refresh_queue()
 
 
+    def show_preferences(self):
+        preferences_form = PreferencesForm.PreferencesForm(self, tr, cfg, var)
+        preferences_form.grab_set()  # Make the preferences form modal
+
+
+    def show_about(self):
+        about_form = AboutForm.AboutForm(self, tr, cfg, var)
+        about_form.grab_set()
+
+
+    def update_theme(self, theme):
+        # Update the theme of the main form
+        customtkinter.set_appearance_mode(theme)
+        print(f"Theme updated to: {theme}")
+
+
     def load_cover(self):
         cover = ''
         for c in self.var['genout'].glob("cover.*"):
@@ -151,14 +186,12 @@ class App(customtkinter.CTk):
         if not cover:
             cover = 'static/default-cover.png'
 
-        w, h = 150, 180
-        with open(cover, "rb") as img_file:
-            image_data = img_file.read()
-            width, height, _, _, _ = dxaudio.get_image_info(image_data)            
-            w = int((width * h) / height)
-
         # Load and display an image 
         image_open = Image.open(cover)
+        width, height = image_open.size
+        w, h = 150, 180
+        w = int((width * h) / height)
+
         img = image_open.resize((w,h))
         self.cover_img = ImageTk.PhotoImage(img)
         self.cover_label.configure(image=self.cover_img)
@@ -202,6 +235,7 @@ class App(customtkinter.CTk):
                     self.inProcessLabel.configure(text=bookName)
                     converter.fillQueue(self.que, self.var)
                     self.refresh_queue()
+                    self.title(f"{self.orig_title} - [ {bookName} ]")
 
             if "sectionTitle" in self.proc:
                 self.chapterLabel.configure(text=self.proc["sectionTitle"])
@@ -212,6 +246,7 @@ class App(customtkinter.CTk):
             if ("totalSentences" in self.proc) and ("sentenceNumber" in self.proc):
                 percent = float(self.proc['sentenceNumber']) / (float(self.proc['totalSentences']) + 1)
                 self.progressbar.set(percent)
+                self.title(f"{self.orig_title} - [ {self.proc['bookName']} ] - {int(100*percent)}%")
 
             if ("status" in self.proc) and ('idle' == self.proc['status']) and ("..." != self.readingLabel.cget("text")):
                 self.chapterLabel.configure(text="...")
@@ -226,11 +261,6 @@ class App(customtkinter.CTk):
 if __name__ == '__main__':
     multiprocessing.freeze_support()
 
-    localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
-    tr = None
-    with open("static/i18n/" + localeFile, encoding='utf-8') as json_file:
-        tr = json.load(json_file)
-
     with open("default.cfg", "rt") as f:
         cfg = dict((lambda l: (l[0].strip(" '\""), l[2][:-1].strip(" '\"")))(line.partition("="))
                     for line in f)
@@ -240,6 +270,12 @@ if __name__ == '__main__':
     que = manager.list()
     proc = manager.dict()
     var = converter.Init(cfg)
+
+    localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
+    localeFile = localeFile if not var['settings']['app']['lang'] else var['settings']['app']['lang']
+    tr = None
+    with open("static/i18n/" + localeFile, encoding='utf-8') as json_file:
+        tr = json.load(json_file)
 
     if sys.platform == "win32":
         p = threading.Thread(target=converter.ConverterLoop, args=(que, proc, cfg, var))

@@ -1,5 +1,11 @@
 {
     "appTitle": "FB2 reader in voice",
+    "LegalCopyright": "2025 DeXPeriX. Licensed under GPL3",
+    "appLink": "https://dexp.in",
+    "appVersion": "Version",
+    "appDescription": "Application for converting normal books to audio books",
+    "appAuthor-line": "Author: Dmitry Hrabrov a.k.a. DeXPeriX",
+    "appBetaTesters-line": "Beta-testers: e-vred",
     "bookInProcess": "Book in progress",
     "inProcess:": "In progress:",
     "chapter:": "Chapter:",
@@ -25,5 +31,20 @@
     "MB": "MB",
     "GB": "GB", 
     "TB": "TB",
-    "PB": "PB"
+    "PB": "PB",
+    "Preferences": "Preferences",
+    "ApplicationSettings:": "Application settings:",
+    "Language:": "Language:",
+    "OutputFolder:": "Output folder:",
+    "Default": "Default",
+    "Codec:": "Codec:",
+    "Voice:": "Voice:",
+    "NamingFormat:": "Naming format:",
+    "nf-single": "Single file",
+    "nf-short": "Short",
+    "nf-full": "Full",
+    "Threads:": "Calculation threads:",
+    "VoiceoverSettings:": "Voiceover settings:",
+    "AboutApplication": "About",
+    "OK": "OK"
 }

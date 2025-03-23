@@ -129,7 +129,7 @@ def get_supported_encoders(cfg: dict):
 def convert_jpg_to_png(cfg: dict, input_jpg: Path, output_png: Path, compression_level = 7):
     if input_jpg.exists():
         command = [
-            get_ffmpeg_exe(cfg),
+            get_ffmpeg_exe(cfg), "-y",
             '-i', str(input_jpg.absolute()),
             '-compression_level', str(compression_level),
             str(output_png.absolute())
@@ -161,7 +161,7 @@ def convert_wav_to_compressed(encoder: str, cfg: dict, input_wav: Path, output_f
         if cover and is_ogg:
             meta += "metadata_block_picture=" + generate_ogg_metadata_block_picture(str(cover.absolute())) + "\n"
 
-        command = [get_ffmpeg_exe(cfg), "-i", str(input_wav.absolute())]
+        command = [get_ffmpeg_exe(cfg), "-y", "-i", str(input_wav.absolute())]
         inputmap = ["-map", str(0)]
         input_counter = 1
         if (not is_ogg) and cover:

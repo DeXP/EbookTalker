@@ -2,7 +2,7 @@ var userLang = navigator.language || navigator.userLanguage;
 var localeJson = 'en.json';
 var tr = {};
 
-if (userLang.toLowerCase().startsWith('tru')) {
+if (userLang.toLowerCase().startsWith('ru')) {
   localeJson = 'ru.json';
   webix.i18n.setLocale("ru-RU");
 }
