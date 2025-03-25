@@ -6,7 +6,7 @@ from pathlib import Path
 import sys, json, time, uuid, shutil, locale, datetime, multiprocessing, threading
 
 import converter
-from helpers import dxaudio, dxfs, fb2
+from helpers import book, dxaudio, dxfs
 from helpers.UI import Icons, PreferencesForm, AboutForm
 
 
@@ -78,7 +78,7 @@ class App(customtkinter.CTk):
             command=self.show_preferences, border_width=2, width=24, height=24,
             font=self.icon_font, text=Icons.options
         )
-        # self.preferences_button.grid(row=0, column=2, padx=(10,40), pady=0, sticky="e", columnspan=1)
+        self.preferences_button.grid(row=0, column=2, padx=(10,40), pady=0, sticky="e", columnspan=1)
 
         self.about_button = customtkinter.CTkButton(
             self, fg_color="transparent", border_color=self.imageBG,
@@ -129,7 +129,7 @@ class App(customtkinter.CTk):
         # )
         self.treeview.grid(row=4, column=0, padx=10, pady=0, sticky="nswe", columnspan=3)
 
-        self.add_button = customtkinter.CTkButton(self, text=tr["addFB2toQueue"], command=self.add_button_callback, border_spacing=10)
+        self.add_button = customtkinter.CTkButton(self, text=tr["addBookToQueue"], command=self.add_button_callback, border_spacing=10)
         self.add_button.grid(row=5, column=0, padx=10, pady=10, sticky="e", columnspan=3)
 
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -151,13 +151,13 @@ class App(customtkinter.CTk):
 
 
     def add_button_callback(self):
-        fb2_file = filedialog.askopenfilename(filetypes=[("FB2", "*.fb2")])
-        if fb2_file:
-            fb2_path = Path(fb2_file)
-            info, _ = fb2.ParseFB2(fb2_path)
-            info['file'] = dxfs.SafeFileName(fb2.BookName(info) + ".fb2")
+        book_file = filedialog.askopenfilename(filetypes=[(self.tr["Books"], "*.txt *.epub *.fb2 *.fb2.zip *.fb2z *.txt.zip")])
+        if book_file:
+            book_path = Path(book_file)
+            info, _ = book.ParseBook(book_path)
+            info['file'] = book.SafeBookName(info) + "." + info['ext']
             new_file = var['queue'] / info['file']
-            shutil.copy(fb2_path, new_file)
+            shutil.copy(book_path, new_file)
 
             converter.fillQueue(self.que, self.var)
             self.refresh_queue()
@@ -235,6 +235,7 @@ class App(customtkinter.CTk):
                     self.inProcessLabel.configure(text=bookName)
                     converter.fillQueue(self.que, self.var)
                     self.refresh_queue()
+                    self.load_cover()
                     self.title(f"{self.orig_title} - [ {bookName} ]")
 
             if "sectionTitle" in self.proc:
@@ -252,6 +253,7 @@ class App(customtkinter.CTk):
                 self.chapterLabel.configure(text="...")
                 self.readingLabel.configure(text="...")
                 self.inProcessLabel.configure(text=tr["emptyBookName"])
+                self.title(self.orig_title)
                 self.progressbar.set(0)
 
             time.sleep(1)

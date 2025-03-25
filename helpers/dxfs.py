@@ -4,11 +4,6 @@ from pathlib import Path
 from . import dxtmpfile
 
 
-def SafeFileName(origName):
-    keepcharacters = (' ','.','!','-','_')
-    return "".join(c for c in origName if c.isalnum() or c in keepcharacters).rstrip()
-
-
 def MoveFile(tmpFolder: Path, fromFile: Path, toFile: Path):
     if dxtmpfile.IsPythonNative():
         if not toFile.exists():

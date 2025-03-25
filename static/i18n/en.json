@@ -1,5 +1,5 @@
 {
-    "appTitle": "FB2 reader in voice",
+    "appTitle": "Ebook reader in voice",
     "LegalCopyright": "2025 DeXPeriX. Licensed under GPL3",
     "appLink": "https://dexp.in",
     "appVersion": "Version",
@@ -18,7 +18,7 @@
     "sequence": "Sequence",
     "size": "Size",
     "datetime": "Added",
-    "addFB2toQueue": "Add FB2 to queue",
+    "addBookToQueue": "Add ebook to queue",
     "url": "URL",
     "password": "Password",
     "add": "Add",
@@ -45,6 +45,9 @@
     "nf-full": "Full",
     "Threads:": "Calculation threads:",
     "VoiceoverSettings:": "Voiceover settings:",
+    "Books": "Books",
+    "Save": "Save",
+    "Cancel": "Cancel",
     "AboutApplication": "About",
     "OK": "OK"
 }

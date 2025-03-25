@@ -11,7 +11,7 @@ from pathlib import Path
 import logging, logging.handlers
 import flask, uuid, multiprocessing, threading, datetime, mimetypes, atexit
 
-from helpers import fb2, dxfs
+from helpers import book, dxfs
 import converter
 
 
@@ -165,7 +165,7 @@ def create_app(test_config=None):
             except:
                 return {'error': 'download'}
             
-            info, _ = fb2.ParseFB2(tmp_file)
+            info, _ = book.ParseBook(tmp_file)
 
             if info['error']:
                 return info
@@ -174,7 +174,7 @@ def create_app(test_config=None):
                 info['error'] = 'empty-title'
                 return info
 
-            info['file'] = dxfs.SafeFileName(fb2.BookName(info) + ".fb2")
+            info['file'] = book.SafeBookName(info) + "." + info['ext']
 
             new_file = var['queue'] / info['file']
             dxfs.MoveFile(var['tmp'], tmp_file, new_file)

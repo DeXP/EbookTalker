@@ -95,7 +95,7 @@ function ConstructUI(tr) {
 
           {
             rows: [
-              { template: tr["addFB2toQueue"], type: "section" },
+              { template: tr["addBookToQueue"], type: "section" },
               { view: "text", label: tr["url"], name: "url", id: "url", value: "" },
               { view: "text", label: tr["password"], name: "password", id: "password", value: "" },
               {

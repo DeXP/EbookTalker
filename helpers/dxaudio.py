@@ -34,6 +34,19 @@ def get_png_info(data):
     return width, height, total_bit_depth, indexed, 'png'
 
 
+def get_gif_info(data):
+    if data[0:6] not in [b'GIF87a', b'GIF89a']:
+        return 0,0,0,False,''
+
+    width = int.from_bytes(data[6:8], 'little')
+    height = int.from_bytes(data[8:10], 'little')
+    packed_fields = data[10]
+    global_color_table_flag = (packed_fields & 0x80) >> 7  # Bit 7
+    color_depth = (packed_fields & 0x07) + 1 if global_color_table_flag else 1
+
+    return width, height, color_depth, True, 'gif'
+
+
 def get_jpg_info(data):
     if data[:2] != b'\xff\xd8':  # Check if it's a JPEG file
         return 0,0,0,False,''
@@ -74,8 +87,10 @@ def get_jpg_info(data):
 def get_image_info(data):
     if (data[:2] == b'\xff\xd8'):
         return get_jpg_info(data)
+    elif (data[:8] == b'\x89PNG\r\n\x1a\n'):
+        return get_png_info(data)
     else:
-        return get_png_info(data) 
+        return get_gif_info(data)
     
 
 def generate_ogg_metadata_block_picture(image_path):

@@ -15,7 +15,7 @@ class PreferencesForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(tr['Preferences'])
-        self.geometry(parent.get_geometry(width=600, height=480))
+        self.geometry(parent.get_geometry(width=600, height=280))
 
         self.grid_columnconfigure((0,1), weight=0)
         self.grid_columnconfigure(2, weight=1)
@@ -101,11 +101,11 @@ class PreferencesForm(ctk.CTkToplevel):
 
 
         # Save and Cancel buttons
-        self.save_button = ctk.CTkButton(self, text="Save", command=self.on_save)
-        self.save_button.grid(row=5, column=0, padx=10, pady=2)
+        self.save_button = ctk.CTkButton(self, text=tr["Save"], command=self.on_save)
+        self.save_button.grid(row=5, column=0, padx=10, pady=7)
 
-        self.cancel_button = ctk.CTkButton(self, text="Cancel", command=self.on_cancel)
-        self.cancel_button.grid(row=5, column=1, padx=10, pady=2, columnspan=2)
+        self.cancel_button = ctk.CTkButton(self, text=tr["Cancel"], command=self.on_cancel)
+        self.cancel_button.grid(row=5, column=1, padx=10, pady=7, columnspan=2, sticky="e")
 
 
     def on_save(self):

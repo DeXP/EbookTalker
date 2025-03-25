@@ -1,34 +1,12 @@
-import re, io, base64, zipfile
+import re, base64
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
 if __name__ == "__main__":
-    import dxnormalizer, dxsplitter
+    import book, dxnormalizer, dxsplitter
 else:
-    from helpers import dxnormalizer, dxsplitter
+    from . import book, dxnormalizer, dxsplitter
 
-
-def AuthorName(info: dict):
-    if not info:
-        return None
-    isRussian = ('lang' in info) and ('ru' == info['lang'])
-    first = (" " + info['firstName']) if ('firstName' in info) and info['firstName'] else ""
-    middle = (" " + info['middleName']) if (not isRussian) and ('middleName' in info) and info['middleName'] else ""
-    last = (" " + info['lastName']) if ('lastName' in info) and info['lastName'] else ""
-    return (first + middle + last).strip()
-
-
-def BookName(info, includeAuthor = True):
-    if not info:
-        return None
-    author = AuthorName(info) if includeAuthor else ""
-    num = (" " + info['seqNumber']) if ('seqNumber' in info) and info['seqNumber'] else ""
-    title = (" " + info['title']) if ('title' in info) and info['title'] else ""
-    if includeAuthor and author:
-        return (author + " -" + num + title).strip()
-    else:
-        return (num + title).strip()
-    
 
 def getElem(el: ET.Element, name):
     return el.find(name) if (el is not None) else None
@@ -70,29 +48,8 @@ def getSectionTitle(section: ET.Element):
     return sectionTitleText
 
 
-def GetFileBytes(input: Path):
-    try:
-        file_path = input.absolute()
-        isZip = False
-        with open(file_path, 'rb') as f:
-            magic = f.read(4)
-            isZip = (magic == b'PK\x03\x04')  # ZIP file magic number
-
-        if not isZip:
-            return input.read_bytes()
-        else:
-            with zipfile.ZipFile(file_path) as zip_file:
-                for file_info in zip_file.infolist():
-                    if not file_info.is_dir():
-                        with zip_file.open(file_info) as file_in_zip:
-                            return file_in_zip.read()
-                return None  # ZIP contained no file
-    except (zipfile.BadZipFile, PermissionError, IOError):
-        return None
-
-
 def ParseFB2(file: Path, full = False):
-    rawdata = GetFileBytes(file)
+    rawdata = book.GetFileBytes(file)
     if not rawdata:
         return {'error': 'file-access', 'failure': f"Cannot read {file}"}, None
     first_line = rawdata[:80].decode('utf-8')
@@ -123,10 +80,10 @@ def ParseFB2(file: Path, full = False):
         coverName = getAttribByEnd(coverImage, 'href')
         if coverName and coverName.startswith('#'):
             coverName = coverName[1:]
-
-            for binary in root.findall('binary'):
-                if coverName == getAttrib(binary, 'id'):
-                    coverBytes = base64.b64decode(binary.text)    
+            if full:
+                for binary in root.findall('binary'):
+                    if coverName == getAttrib(binary, 'id'):
+                        coverBytes = base64.b64decode(binary.text)    
         
         sections = []
         if full:
@@ -165,6 +122,8 @@ def ParseFB2(file: Path, full = False):
 
         return {
             'error': '',
+            'ext': 'fb2',
+            'suggestedFileName': book.SafeBookName(info, includeAuthor=True) + ".fb2",
             'firstName': getText(author, 'first-name'),
             'middleName': getText(author, 'middle-name'),
             'lastName': getText(author, 'last-name'),
@@ -179,76 +138,15 @@ def ParseFB2(file: Path, full = False):
             'datetime': file.lstat().st_mtime,
             # Data, available in a full parse only
             'sections': sections
-        }, root
+        }, coverBytes
     except Exception as error:
         return {'error': 'book-format', 'failure': str(error)}, None
-
-
-def ParseTXT(file: Path, full = False):
-    import chardet
-    encoding = 'utf8'
-    rawText = ''
-    rawData = GetFileBytes(file)
-    if not rawData:
-        return {'error': 'file-access', 'failure': f"Cannot read {file}"}
-    encoding = chardet.detect(rawData)['encoding']
-    try:
-        rawText = rawData.decode(encoding=encoding)
-    except Exception as error:
-        return {'error': 'book-format', 'failure': str(error)}
-
-    title = file.stem
-    name = ''
-    middle = ''
-    surname = ''
-    pattern = r'^(.+?) (.+?) - (.+?)$'
-    match = re.fullmatch(pattern, file.stem)
-    if match:
-        name = match.group(1)
-        surname = match.group(2)
-        title = match.group(3)
-    else:
-        pattern = r'^(.+?) (.+?) (.+?) - (.+?)$'
-        match = re.fullmatch(pattern, file.stem)
-        if match:
-            name = match.group(1)
-            middle = match.group(2)
-            surname = match.group(3)
-            title = match.group(4)
-
-    lang = dxnormalizer.detect_language(rawText)
-    p = []
-    if full:
-        for line in rawText.split('\n'):
-            if line.strip():
-                tts = dxnormalizer.normalize(line, lang)
-                p.append(dxsplitter.SplitSentence(tts))
-    return {
-        'error': '',
-        'firstName': name,
-        'middleName': middle,
-        'lastName': surname,
-        'title': title,
-        'lang': lang,
-        'sequence': '',
-        'seqNumber': '',
-        'cover': '',
-        'encoding': encoding,
-        'file': file.name,
-        'size': file.stat().st_size,
-        'datetime': file.lstat().st_mtime,
-        # Data, available in a full parse only
-        'sections': [{
-            'title': title,
-            'text': p
-        }]  
-    }
 
 
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Coverts FB2/TXT book to JSON')
+    parser = argparse.ArgumentParser(description='Coverts FB2 book to JSON')
     parser.add_argument('-i', '--input', help='Input file')
 
     args = parser.parse_args()
@@ -258,9 +156,5 @@ if __name__ == "__main__":
     else:
         input = Path(args.input)
         isFull = True
-        ext = input.suffix.lower()
-        if ext == '.txt':
-            info = ParseTXT(input, full=isFull)
-        else:
-            info, root = ParseFB2(input, full=isFull)
+        info, _ = ParseFB2(input, full=isFull)
         print(info)

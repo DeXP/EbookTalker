@@ -1,17 +1,17 @@
-import re, io, base64, zipfile
+import re
 from pathlib import Path
 
 if __name__ == "__main__":
-    import dxnormalizer, dxsplitter
+    import book, dxnormalizer, dxsplitter
 else:
-    from .. import dxnormalizer, dxsplitter
+    from . import book, dxnormalizer, dxsplitter
 
 
 def ParseTXT(file: Path, full = False):
     import chardet
     encoding = 'utf8'
     rawText = ''
-    rawData = GetFileBytes(file)
+    rawData = book.GetFileBytes(file)
     if not rawData:
         return {'error': 'file-access', 'failure': f"Cannot read {file}"}
     encoding = chardet.detect(rawData)['encoding']
@@ -48,6 +48,8 @@ def ParseTXT(file: Path, full = False):
                 p.append(dxsplitter.SplitSentence(tts))
     return {
         'error': '',
+        'ext': 'txt',
+        'suggestedFileName': file.name,
         'firstName': name,
         'middleName': middle,
         'lastName': surname,

@@ -4,21 +4,22 @@ import html
 import os
 import re
 from collections import defaultdict
+from pathlib import Path
 
 def normalize_path(path):
     """Normalize path to use forward slashes (as used in ZIP archives)"""
-    return path.replace('\\', '/')
+    return str(path).replace('\\', '/')
 
 def parse_author_name(full_name):
     """Parse author name into components using regex patterns"""
     if not full_name:
-        return {'full': None, 'first': None, 'middle': None, 'last': None}
+        return {'full': "", 'firstName': "", 'middleName': "", 'lastName': ""}
     
     patterns = [
-        r'^(?P<last>[^,]+),\s*(?P<first>\w+)(?:\s+(?P<middle>\w+))?$',
-        r'^(?P<first>\w+)\s+(?P<middle>\w+\s)?(?P<last>\w+)$',
-        r'^(?P<first>\w+)\s+(?P<last>\w+)$',
-        r'^(?P<last>\w+)$'
+        r'^(?P<lastName>[^,]+),\s*(?P<firstName>\w+)(?:\s+(?P<middleName>\w+))?$',
+        r'^(?P<firstName>\w+)\s+(?P<middleName>\w+\s)?(?P<lastName>\w+)$',
+        r'^(?P<firstName>\w+)\s+(?P<lastName>\w+)$',
+        r'^(?P<lastName>\w+)$'
     ]
     
     for pattern in patterns:
@@ -27,16 +28,16 @@ def parse_author_name(full_name):
             groups = match.groupdict()
             return {
                 'full': full_name.strip(),
-                'first': groups.get('first'),
-                'middle': groups.get('middle', '').strip() or None,
-                'last': groups.get('last')
+                'firstName': groups.get('firstName', ""),
+                'middleName': groups.get('middleName', "").strip() or "",
+                'lastName': groups.get('lastName', "")
             }
     
     return {
-        'full': full_name.strip() if full_name else None,
-        'first': None,
-        'middle': None,
-        'last': None
+        'full': full_name.strip() if full_name else "",
+        'firstName': "",
+        'middleName': "",
+        'lastName': ""
     }
 
 def extract_encoding(xml_bytes):
@@ -59,7 +60,7 @@ def get_toc_data(rootfile_xml, ns, epub, rootfile_dir):
             ncx_item = item
             break
     
-    if ncx_item is not None:  # Proper element existence check
+    if ncx_item is not None:
         toc_path = normalize_path(os.path.join(rootfile_dir, ncx_item.attrib['href']))
         try:
             with epub.open(toc_path) as toc_file:
@@ -82,7 +83,7 @@ def get_toc_data(rootfile_xml, ns, epub, rootfile_dir):
                 toc_item = item
                 break
         
-        if toc_item is not None:  # Proper element existence check
+        if toc_item is not None:
             toc_path = normalize_path(os.path.join(rootfile_dir, toc_item.attrib['href']))
             try:
                 with epub.open(toc_path) as toc_file:
@@ -102,7 +103,7 @@ def get_toc_data(rootfile_xml, ns, epub, rootfile_dir):
 def get_xml_text(element, xpath, ns):
     """Helper to safely get text from XML element"""
     elem = element.find(xpath, ns)
-    return elem.text if elem is not None and elem.text else None
+    return elem.text if elem is not None and elem.text else ""
 
 def find_cover_image(epub, rootfile_xml, rootfile_dir, ns):
     """Try to locate and extract the cover image from the EPUB"""
@@ -139,7 +140,7 @@ def process_content(content_bytes, encoding):
         content_xml = ET.fromstring(content_bytes.decode('utf-8'))
     
     text_content = []
-    title = None
+    title = ""
     
     # Get title from <title> tag if it exists
     title_elem = content_xml.find('.//{*}title')
@@ -162,32 +163,35 @@ def process_content(content_bytes, encoding):
     
     return title, text_content
 
-def epub_to_sections(epub_path):
+def ParseEpub(epub_path: Path, full=False):
     """
-    Convert an EPUB file to structured sections.
+    Parse an EPUB file, extracting metadata and optionally full content.
     
     Args:
-        epub_path: Path to the EPUB file
+        epub_path: Path to the EPUB file (Path object)
+        full: If True, processes full content including sections and cover image.
+              If False, only extracts metadata (cover_image will be None).
     
     Returns:
         tuple: (result_dict, cover_image_bytes)
-        - result_dict: Dictionary containing book data and sections
-        - cover_image_bytes: Bytes of cover image if found, else None
+        Where:
+        - result_dict: Dictionary containing book data (and sections if full=True)
+        - cover_image_bytes: Bytes of cover image if found and full=True, else None
     """
     result = {
-        'title': None,
-        'language': None,
+        'title': "",
+        'language': "",
         'encoding': 'utf-8',
-        'author': None,  # Full author name
-        'author_first': None,
-        'author_middle': None,
-        'author_last': None,
-        'sections': []
+        'author': "",
+        'firstName': "",
+        'middleName': "",
+        'lastName': "",
+        'ext': 'epub'
     }
     
     cover_image = None
     
-    with zipfile.ZipFile(epub_path, 'r') as epub:
+    with zipfile.ZipFile(str(epub_path), 'r') as epub:
         # Parse container to find rootfile
         with epub.open('META-INF/container.xml') as container_file:
             container = ET.fromstring(container_file.read())
@@ -221,12 +225,18 @@ def epub_to_sections(epub_path):
         if creators and creators[0].text:
             author_data = parse_author_name(creators[0].text)
             result['author'] = author_data['full']
-            result['author_first'] = author_data['first']
-            result['author_middle'] = author_data['middle']
-            result['author_last'] = author_data['last']
+            result['firstName'] = author_data['firstName']
+            result['middleName'] = author_data['middleName']
+            result['lastName'] = author_data['lastName']
+        
+        if not full:
+            return result, None
         
         # Find cover image
         cover_image = find_cover_image(epub, rootfile_xml, rootfile_dir, ns)
+        
+        # Process content if full=True
+        result['sections'] = []
         
         # Get TOC data
         toc_data = get_toc_data(rootfile_xml, ns, epub, rootfile_dir)
@@ -275,39 +285,43 @@ def epub_to_sections(epub_path):
 if __name__ == '__main__':
     import sys
     import json
+    from pathlib import Path
     
     if len(sys.argv) < 2:
-        print("Usage: python epub_to_txt.py <epub_file> [output_json_file]")
+        print("Usage: python epub_to_txt.py <epub_file> [output_json_file] [--full]")
         sys.exit(1)
     
-    epub_file = sys.argv[1]
-    output_file = sys.argv[2] if len(sys.argv) > 2 else None
+    epub_file = Path(sys.argv[1])
+    output_file = sys.argv[2] if len(sys.argv) > 2 and not sys.argv[2].startswith('--') else None
+    full_mode = '--full' in sys.argv
     
     try:
-        result, cover_image = epub_to_sections(epub_file)
+        result, cover_image = ParseEpub(epub_file, full=full_mode)
         
         print("Book Information:")
         print(f"Title: {result.get('title')}")
         print(f"Author: {result.get('author')}")
-        if result.get('author_first') or result.get('author_last'):
-            print(f"Author Details: {result.get('author_first')} {result.get('author_middle') or ''} {result.get('author_last')}".strip())
+        if result.get('firstName') or result.get('lastName'):
+            print(f"Author Details: {result.get('firstName')} {result.get('middleName') or ''} {result.get('lastName')}".strip())
         print(f"Language: {result.get('language')}")
         print(f"Encoding: {result.get('encoding')}")
+        print(f"Extension: {result.get('ext')}")
         
-        print(f"\nCover image found: {'Yes' if cover_image else 'No'}")
-        print(f"\nFound {len(result['sections'])} sections/chapters")
-        
-        if cover_image:
-            cover_ext = 'jpg'
-            cover_path = os.path.splitext(epub_file)[0] + f'_cover.{cover_ext}'
-            with open(cover_path, 'wb') as f:
-                f.write(cover_image)
-            print(f"Cover image saved to {cover_path}")
+        if full_mode:
+            print(f"\nCover image found: {'Yes' if cover_image else 'No'}")
+            print(f"\nFound {len(result['sections'])} sections/chapters")
+            
+            if cover_image:
+                cover_ext = 'jpg'
+                cover_path = epub_file.with_suffix(f'.cover.{cover_ext}')
+                with open(cover_path, 'wb') as f:
+                    f.write(cover_image)
+                print(f"Cover image saved to {cover_path}")
         
         if output_file:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)
-            print(f"\nStructured data saved to {output_file}")
+            print(f"\n{'Full' if full_mode else 'Metadata'} data saved to {output_file}")
     except Exception as e:
         print(f"Error converting file: {str(e)}")
         sys.exit(1)

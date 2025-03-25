@@ -1,7 +1,7 @@
 import os, re, torch, time, base64
 from pathlib import Path
 
-from helpers import settings, fb2, dxfs, dxaudio, dxsplitter, dxnormalizer
+from helpers import settings, book, dxfs, dxaudio, dxsplitter, dxnormalizer
 
 #from sentence_splitter import SentenceSplitter
 #from accentru import predictor
@@ -144,7 +144,7 @@ def fillQueue(que, var: dict):
     files = getBooks(var)
     for f in files:
         if f.is_file():
-            info, _ = fb2.ParseFB2(f)
+            info, _ = book.ParseBook(f)
             que.append(info)
 
 
@@ -196,8 +196,8 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
     codec = var['settings']['app']['codec']
     encoder = var['formats'][codec]
 
-    info, root = fb2.ParseFB2(file)
-    proc['bookName'] = fb2.BookName(info, includeAuthor=True)
+    info, coverBytes = book.ParseBook(file, full = True)
+    proc['bookName'] = book.BookName(info, includeAuthor=True)
     lang = info['lang'] if ('lang' in info) else 'ru'
 
     if ('error' in info) and info['error']:
@@ -205,54 +205,42 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
         failure = info['failure'] if 'failure' in info else ''
         proc['status'] = 'error'
         raise Exception(f"{error}: {failure}")
-
+    
     cover = None
-    if ('cover' in info) and info['cover']:
-        for binary in root.findall('binary'):
-            if info['cover'] == fb2.getAttrib(binary, 'id'):
-                coverName = 'cover.png' if info['cover'].endswith('png') else 'cover.jpg'
-                cover = var['genout'] / coverName
-                imageData = base64.b64decode(binary.text)
-                width, height, _, _, _ = dxaudio.get_image_info(imageData)
-                proc['coverWidth'] = width
-                proc['coverHeight'] = height
-                if not cover.exists():                   
-                    with open(str(cover.absolute()), 'wb') as f:
-                        f.write(imageData)
-    author = dxfs.SafeFileName(fb2.AuthorName(info))
+    if coverBytes:
+        width, height, _, _, coverType = dxaudio.get_image_info(coverBytes)
+        cover = var['genout'] / f"cover.{coverType}"
+        proc['coverWidth'] = width
+        proc['coverHeight'] = height
+        if not cover.exists():                   
+            with open(str(cover.absolute()), 'wb') as f:
+                f.write(coverBytes)
+
+    author = book.SafeAuthorName(info)
 
     jingles = getJingles(var)
 
-    body = root.find('body')
     sectionCount = 0
     tagCount = 0
     sentenceCount = 0
 
     totalTagsCount = 0
     totalSencenceCount = 0
-    for section in body.findall('section'):
-        totalTagsCount += len(section)
-        for subTag in section:
-            curText = ''
-            for t in subTag.itertext():
-                curText += t
-            sentences = dxsplitter.SplitSentence(curText)
-            totalSencenceCount += len(sentences)
-            if var['askForExit']:
-                break
-        if var['askForExit']:
-            break
-    
+    for section in info['sections']:
+        totalTagsCount += len(section['text'])
+        for p in section['text']:
+            totalSencenceCount += len(p)
+
     proc['totalLines'] = totalTagsCount
     proc['totalSentences'] = totalSencenceCount
 
     GeneratePause(var, 300, "pause.wav")
     GeneratePause(var, 500, "pause-long.wav")
 
-    for section in body.findall('section'):
+    for section in info['sections']:
         sectionCount += 1
         sectionWavs = []    
-        rawSectionTitle = fb2.getSectionTitle(section)
+        rawSectionTitle = section['title']
         sectionTitle = dxnormalizer.normalize(rawSectionTitle, lang)
         # print(f"Section {sectionCount} ({len(section)}): {sectionTitle}")
         proc['sectionTitle'] = sectionTitle
@@ -263,33 +251,14 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
                 sectionWavs.append("pause-long.wav")
 
         # Process each paragraph
-        for subTag in section:
+        for p in section['text']:
             tagCount += 1
             proc['lineNumber'] = tagCount
+            proc['lineSentenceCount'] = len(p)
 
-            if 'title' == subTag.tag:
-                continue
-
-            curText = ''
-            for t in subTag.itertext():
-                curText += t
-
-            # tts = curText
-            tts = dxnormalizer.normalize(curText, lang)
-            
-            # if 'ru' == info['lang']:
-            #     out_text = predictor.stress_text(var['accent_ru'], tts)
-            #     tts = ''.join(out_text)
-
-            #splitter = SentenceSplitter(language=info['lang'])
-            #sentences = splitter.split(tts)
-            sentences = dxsplitter.SplitSentence(tts)
-
-            proc['lineSentenceCount'] = len(sentences)
-            
             #print(sentences)
             lineSentence = 0
-            for s in sentences:
+            for s in p:
                 lineSentence += 1
                 sentenceCount += 1
                 proc['lineSentenceNumber'] = lineSentence
@@ -298,7 +267,7 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
                 if ProcessSentence(lang, sentenceCount, s, var):
                     sectionWavs.append(f"{sentenceCount}.wav")
                     # last senctence in paragraph - long pause
-                    pauseName = "pause-long.wav" if lineSentence == (len(sentences) - 1) else 'pause.wav'
+                    pauseName = "pause-long.wav" if lineSentence == (len(p) - 1) else 'pause.wav'
                     sectionWavs.append(pauseName)
                 if var['askForExit']:
                     break
@@ -335,14 +304,14 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
     outputDir = Path(outputDirPath)
     if "full" == dirFormat.lower():
         # Full format - create sub folders
-        bookName = dxfs.SafeFileName(fb2.BookName(info, includeAuthor=False))
+        bookName = book.SafeBookName(info, includeAuthor=False)
         if ('sequence' in info) and info['sequence']:
-            outputDir = Path(outputDirPath) / author / dxfs.SafeFileName(info['sequence']) / bookName
+            outputDir = Path(outputDirPath) / author / book.SafeFileName(info['sequence']) / bookName
         else:
             outputDir = Path(outputDirPath) / author / bookName
     else:
         # Short - all books into same folder
-        outputDir = Path(outputDirPath) / dxfs.SafeFileName(fb2.BookName(info, includeAuthor=True))
+        outputDir = Path(outputDirPath) / book.SafeBookName(info, includeAuthor=True)
     
     dxfs.CreateDirectory(var['tmp'], outputDir)
     dxfs.MoveAllFiles(var['tmp'], var['genout'], outputDir)

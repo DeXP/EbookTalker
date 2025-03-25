@@ -1,5 +1,5 @@
 {
-    "appTitle": "Читалка FB2 в голос",
+    "appTitle": "Читалка книг в голос",
     "LegalCopyright": "2025 DeXPeriX. Лицензировано под GPL3",
     "appLink": "https://dexp.in",
     "appVersion": "Версия",
@@ -18,7 +18,7 @@
     "sequence": "Цикл",
     "size": "Размер",
     "datetime": "Добавлено",
-    "addFB2toQueue": "Добавить FB2 в очередь",
+    "addBookToQueue": "Добавить книгу в очередь",
     "url": "Ссылка",
     "password": "Пароль",
     "add": "Добавить",
@@ -44,6 +44,9 @@
     "nf-short": "Короткий",
     "nf-full": "Полный",
     "Threads:": "Вычислительных потоков:",
+    "Books": "Книги",
+    "Save": "Сохранить",
+    "Cancel": "Отменить",
     "VoiceoverSettings:": "Опции озвучивания:",
     "AboutApplication": "О программе",
     "OK": "OK"
