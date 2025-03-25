@@ -16,14 +16,17 @@ def Init(cfg: dict):
         'askForExit': False,
         'languages': ['ru', 'uk', 'en'],
         'ru': {
+            'type': 'silero',
             'name': 'Русский язык',
             'model': None,
             'url': 'https://models.silero.ai/models/tts/ru/v3_1_ru.pt',
             'female': 'xenia',
             'male': 'aidar',
-            'default': 'xenia'
+            'default': 'xenia',
+            'phrase': 'В недрах тундры выдры в г+етрах т+ырят в вёдра ядра к+едров.' 
         },
         'uk': {
+            'type': 'silero',
             'name': 'Українська мова',
             'model': None,
             'url': 'https://models.silero.ai/models/tts/ua/v3_ua.pt',
@@ -32,6 +35,7 @@ def Init(cfg: dict):
             'default': 'mykyta'
         },
         'en': {
+            'type': 'silero',
             'name': 'English language',
             'model': None,
             'url': 'https://models.silero.ai/models/tts/en/v3_en.pt',
