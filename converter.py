@@ -132,7 +132,7 @@ def DownloadFile(fromUrl: str, toFile: Path):
 
 
 def getBooks(var: dict):
-    return sorted(var['queue'].glob("*.fb2"), key=os.path.getmtime)
+    return sorted(var['queue'].glob("*.*"), key=os.path.getmtime)
 
 
 def getJingles(var: dict):

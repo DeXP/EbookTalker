@@ -133,6 +133,8 @@ def translit_text(text: str, lang = 'ru') -> str:
 def normalize(text: str, lang = 'ru') -> str:
     # text = " ".join(text.split())
     text = normalize_number(text, lang)
-    text = translit_text(text, lang)
+
+    if lang != 'en':
+        text = translit_text(text, lang)
 
     return text

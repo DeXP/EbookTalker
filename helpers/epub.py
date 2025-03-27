@@ -197,7 +197,7 @@ def ParseEpub(epub_path: Path, full=False):
     """
     result = {
         'title': "",
-        'language': "",
+        'lang': "",
         'encoding': 'utf-8',
         'author': "",
         'firstName': "",
@@ -236,7 +236,7 @@ def ParseEpub(epub_path: Path, full=False):
         
         # Extract metadata
         result['title'] = get_xml_text(rootfile_xml, './/dc:title', ns)
-        result['language'] = get_xml_text(rootfile_xml, './/dc:language', ns)
+        result['lang'] = get_xml_text(rootfile_xml, './/dc:language', ns)
         result['encoding'] = encoding
         
         # Extract author information
@@ -292,7 +292,7 @@ def ParseEpub(epub_path: Path, full=False):
                     content_encoding = extract_encoding(content_bytes)
                     
                     # Process content to get title and text
-                    content_title, text_content = process_content(content_bytes, content_encoding, result['language'])
+                    content_title, text_content = process_content(content_bytes, content_encoding, result['lang'])
                     
                     # Determine the best title
                     title = (toc_data.get(item['href']) or 
@@ -331,7 +331,7 @@ if __name__ == '__main__':
         print(f"Author: {result.get('author')}")
         if result.get('firstName') or result.get('lastName'):
             print(f"Author Details: {result.get('firstName')} {result.get('middleName') or ''} {result.get('lastName')}".strip())
-        print(f"Language: {result.get('language')}")
+        print(f"Language: {result.get('lang')}")
         print(f"Encoding: {result.get('encoding')}")
         print(f"Extension: {result.get('ext')}")
         print(f"Series: {result.get('sequence') or 'N/A'}")

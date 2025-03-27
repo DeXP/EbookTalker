@@ -130,7 +130,7 @@ def is_fb2(file_path):
 
 def ParseBook(file: Path, full = False):
     from helpers import fb2, epub, txt
-    fileType = DetermineBookFileType(str(file.absolute))
+    fileType = DetermineBookFileType(str(file.absolute()))
     if 'epub' == fileType:
         return epub.ParseEpub(file, full)
     elif fileType.startswith('fb2'): # FB2 and FB2.zip

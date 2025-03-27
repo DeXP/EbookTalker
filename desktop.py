@@ -213,13 +213,13 @@ class App(customtkinter.CTk):
             self.treeview.insert(
                 "",
                 tk.END,
-                text=book['firstName'] if book['firstName'] else "",
-                values=(book['lastName'] if book['lastName'] else "",
-                        book['title'] if book['title'] else "", 
-                        book['seqNumber'] if book['seqNumber'] else "", 
-                        book['sequence'] if book['sequence'] else "", 
-                        self.sizeof_fmt(book['size']), 
-                        datetime.datetime.fromtimestamp(book['datetime']).strftime(self.tr["datetimeFormat"])
+                text=book['firstName'] or "",
+                values=(book['lastName'] or "",
+                        book['title'] or "", 
+                        book['seqNumber'] or "", 
+                        book['sequence'] or "", 
+                        self.sizeof_fmt(book['size'] or 0), 
+                        datetime.datetime.fromtimestamp(book['datetime'] or 0).strftime(self.tr["datetimeFormat"])
                 )
             )
 
