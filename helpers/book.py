@@ -61,16 +61,82 @@ def GetFileBytes(input: Path):
         return None
 
 
+def DetermineBookFileType(file_path):
+    # First check if it's a ZIP archive (FB2.ZIP or TXT.ZIP)
+    if is_zip_file(file_path):
+        # Check for EPUB first as it's the most specific ZIP-based format
+        if is_epub(file_path):
+            return "epub"
+        # Then check if it contains an FB2 file
+        if contains_fb2(file_path):
+            return "fb2.zip"
+        # Otherwise assume it's a text file in ZIP
+        return "txt.zip"
+    
+    # Check for raw FB2 (not in ZIP)
+    if is_fb2(file_path):
+        return "fb2"
+    
+    # If none of the above, assume it's plain text
+    return "txt"
+
+
+def is_zip_file(file_path):
+    try:
+        with open(file_path, 'rb') as f:
+            return f.read(4) == b'PK\x03\x04'
+    except:
+        return False
+
+
+def contains_fb2(zip_path):
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as z:
+            for name in z.namelist():
+                if name.lower().endswith('.fb2'):
+                    return True
+                # Check if any file starts with FB2 signature
+                with z.open(name) as f:
+                    if f.read(50).decode('utf-8', errors='ignore').lstrip().startswith('<'):
+                        return True
+            return False
+    except:
+        return False
+
+def is_epub(file_path):
+    try:
+        # EPUB is a ZIP file that contains mimetype file with exact content
+        if not is_zip_file(file_path):
+            return False
+            
+        with zipfile.ZipFile(file_path, 'r') as z:
+            if 'mimetype' not in z.namelist():
+                return False
+            with z.open('mimetype') as f:
+                mimetype = f.read(30).decode('ascii', errors='ignore')
+                return mimetype.startswith('application/epub+zip')
+    except:
+        return False
+
+def is_fb2(file_path):
+    try:
+        with open(file_path, 'rb') as f:
+            # FB2 files start with XML declaration or directly with <FictionBook
+            start = f.read(200).decode('utf-8', errors='ignore').lstrip()
+            return start.startswith(('<?xml', '<FictionBook'))
+    except:
+        return False
+    
+
 def ParseBook(file: Path, full = False):
     from helpers import fb2, epub, txt
-    
-    ext = file.suffix.lower()
-    if '.epub' == ext:
+    fileType = DetermineBookFileType(str(file.absolute))
+    if 'epub' == fileType:
         return epub.ParseEpub(file, full)
-    elif '.txt' == ext:
-        return txt.ParseTXT(file, full)
-    else:
+    elif fileType.startswith('fb2'): # FB2 and FB2.zip
         return fb2.ParseFB2(file, full)
+    else:
+        return txt.ParseTXT(file, full)
     
 
 
@@ -86,6 +152,8 @@ if __name__ == "__main__":
         print("Please provide input file")
     else:
         input = Path(args.input)
+        fileType = DetermineBookFileType(args.input)
+        print(fileType)
         isFull = True
         info, _ = ParseBook(input, full=isFull)
         print(info)

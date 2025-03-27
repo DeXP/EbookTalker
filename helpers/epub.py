@@ -6,9 +6,16 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
+if __name__ == "__main__":
+    import book, dxnormalizer, dxsplitter
+else:
+    from . import book, dxnormalizer, dxsplitter
+
+
 def normalize_path(path):
     """Normalize path to use forward slashes (as used in ZIP archives)"""
     return str(path).replace('\\', '/')
+
 
 def parse_author_name(full_name):
     """Parse author name into components using regex patterns"""
@@ -29,7 +36,7 @@ def parse_author_name(full_name):
             return {
                 'full': full_name.strip(),
                 'firstName': groups.get('firstName', ""),
-                'middleName': groups.get('middleName', "").strip() or "",
+                'middleName': groups.get('middleName', ""),
                 'lastName': groups.get('lastName', "")
             }
     
@@ -40,6 +47,7 @@ def parse_author_name(full_name):
         'lastName': ""
     }
 
+
 def extract_encoding(xml_bytes):
     """Extract encoding from XML declaration"""
     declaration_match = re.search(
@@ -47,6 +55,7 @@ def extract_encoding(xml_bytes):
         xml_bytes.split(b'\n')[0]
     )
     return declaration_match.group(1).decode('ascii').lower() if declaration_match else 'utf-8'
+
 
 def get_toc_data(rootfile_xml, ns, epub, rootfile_dir):
     """Extract table of contents data with human-readable titles"""
@@ -100,10 +109,12 @@ def get_toc_data(rootfile_xml, ns, epub, rootfile_dir):
     
     return toc_items
 
+
 def get_xml_text(element, xpath, ns):
     """Helper to safely get text from XML element"""
     elem = element.find(xpath, ns)
     return elem.text if elem is not None and elem.text else ""
+
 
 def find_cover_image(epub, rootfile_xml, rootfile_dir, ns):
     """Try to locate and extract the cover image from the EPUB"""
@@ -132,7 +143,8 @@ def find_cover_image(epub, rootfile_xml, rootfile_dir, ns):
     
     return None
 
-def process_content(content_bytes, encoding):
+
+def process_content(content_bytes, encoding, language):
     """Process content file and return all text content excluding title tags"""
     try:
         content_xml = ET.fromstring(content_bytes.decode(encoding))
@@ -145,7 +157,7 @@ def process_content(content_bytes, encoding):
     # Get title from <title> tag if it exists
     title_elem = content_xml.find('.//{*}title')
     if title_elem is not None and title_elem.text:
-        title = html.unescape(title_elem.text.strip())
+        title = dxnormalizer.normalize(html.unescape(title_elem.text.strip()), language)
     
     # Collect all other text content
     for elem in content_xml.iter():
@@ -155,13 +167,18 @@ def process_content(content_bytes, encoding):
         if elem.text and elem.text.strip():
             text = html.unescape(elem.text.strip())
             text = re.sub(r'\s+', ' ', text)
-            text_content.append(text)
+            text = dxnormalizer.normalize(text, language)
+            sentences = dxsplitter.SplitSentence(text)
+            text_content.append(sentences)
         if elem.tail and elem.tail.strip():
             tail = html.unescape(elem.tail.strip())
             tail = re.sub(r'\s+', ' ', tail)
-            text_content.append(tail)
+            tail = dxnormalizer.normalize(tail, language)
+            sentences = dxsplitter.SplitSentence(tail)
+            text_content.append(sentences)
     
     return title, text_content
+
 
 def ParseEpub(epub_path: Path, full=False):
     """
@@ -186,7 +203,9 @@ def ParseEpub(epub_path: Path, full=False):
         'firstName': "",
         'middleName': "",
         'lastName': "",
-        'ext': 'epub'
+        'ext': 'epub',
+        'sequence': "",
+        'seqNumber': ""
     }
     
     cover_image = None
@@ -229,6 +248,14 @@ def ParseEpub(epub_path: Path, full=False):
             result['middleName'] = author_data['middleName']
             result['lastName'] = author_data['lastName']
         
+        # Extract calibre series metadata
+        for meta in rootfile_xml.findall('.//opf:meta', ns):
+            name = meta.attrib.get('name', '').lower()
+            if name == 'calibre:series':
+                result['sequence'] = meta.attrib.get('content', "")
+            elif name == 'calibre:series_index':
+                result['seqNumber'] = meta.attrib.get('content', "")
+        
         if not full:
             return result, None
         
@@ -265,7 +292,7 @@ def ParseEpub(epub_path: Path, full=False):
                     content_encoding = extract_encoding(content_bytes)
                     
                     # Process content to get title and text
-                    content_title, text_content = process_content(content_bytes, content_encoding)
+                    content_title, text_content = process_content(content_bytes, content_encoding, result['language'])
                     
                     # Determine the best title
                     title = (toc_data.get(item['href']) or 
@@ -274,13 +301,14 @@ def ParseEpub(epub_path: Path, full=False):
                     
                     if text_content:
                         result['sections'].append({
-                            'title': title.strip() if title else "Untitled Section",
+                            'title': title.strip() if title else "",
                             'text': text_content
                         })
             except Exception as e:
                 print(f"Warning: Could not process {content_path}: {str(e)}")
     
     return result, cover_image
+
 
 if __name__ == '__main__':
     import sys
@@ -306,6 +334,8 @@ if __name__ == '__main__':
         print(f"Language: {result.get('language')}")
         print(f"Encoding: {result.get('encoding')}")
         print(f"Extension: {result.get('ext')}")
+        print(f"Series: {result.get('sequence') or 'N/A'}")
+        print(f"Series Number: {result.get('seqNumber') or 'N/A'}")
         
         if full_mode:
             print(f"\nCover image found: {'Yes' if cover_image else 'No'}")
