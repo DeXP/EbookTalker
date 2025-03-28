@@ -1,4 +1,4 @@
-import json
+import sys, json
 import customtkinter as ctk
 from tkinter import filedialog
 
@@ -17,7 +17,7 @@ class PreferencesForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(tr['Preferences'])
-        self.geometry(parent.get_geometry(width=600, height=280))
+        self.geometry(parent.get_child_geometry(width=500, height=280))
 
         self.grid_columnconfigure((0,2), weight=0)
         self.grid_columnconfigure(1, weight=1)
@@ -81,11 +81,11 @@ class PreferencesForm(ctk.CTkToplevel):
         self.tts_tabview.configure(command=self.on_tab_change)
         self.tts_voice_labels = {}
         self.tts_voice_combos = {}
+        self.tts_voice_play_buttons = {}
         for lang in var['languages']:
             lang_name = var[lang]['name']
             self.tts_tabview.add(lang_name)
-            self.tts_tabview.tab(lang_name).grid_columnconfigure(0, weight=0)
-            self.tts_tabview.tab(lang_name).grid_columnconfigure(1, weight=1)
+            self.tts_tabview.tab(lang_name).grid_columnconfigure((0,1,2), weight=0)
             voice_parent = self.tts_tabview.tab(lang_name)
 
             self.tts_voice_labels[lang] = ctk.CTkLabel(voice_parent, text=tr["Voice:"])
@@ -94,6 +94,15 @@ class PreferencesForm(ctk.CTkToplevel):
             self.tts_voice_combos[lang] = ctk.CTkComboBox(voice_parent, state="readonly")
             self.tts_voice_combos[lang].set(var['settings']['silero'][lang]['voice'])
             self.tts_voice_combos[lang].grid(row=0, column=1, padx=10, pady=2, sticky="w")
+
+            self.tts_voice_play_buttons[lang] = ctk.CTkButton(
+                voice_parent, width=30, border_width=2,
+                fg_color="transparent", border_color=parent.imageBG,
+                command=lambda lang=lang: self.on_play('silero', lang),
+                font=parent.icon_font, text=Icons.play
+            )
+            if sys.platform == "win32":
+                self.tts_voice_play_buttons[lang].grid(row=0, column=2, padx=10, pady=2, sticky="w")
 
 
         first_lang = var['languages'][0]
@@ -132,6 +141,17 @@ class PreferencesForm(ctk.CTkToplevel):
     def on_cancel(self):
         # Cancel logic
         self.destroy()
+
+
+    def on_play(self, tts, lang):
+        voice = self.tts_voice_combos[lang].get()
+        wavName = f"{tts}-{lang}-{voice}.wav"
+        wavFile = self.var['tmp'] / wavName
+
+        if converter.SayText(wavFile, lang, voice, self.var[lang]['phrase'], self.var):
+            if sys.platform == "win32":
+                import winsound
+                winsound.PlaySound(str(wavFile.absolute()), winsound.SND_ALIAS)
 
 
     def get_output_folder(self):

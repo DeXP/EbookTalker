@@ -16,7 +16,7 @@ class AboutForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(f"{tr['AboutApplication']}: {tr["appTitle"]}")
-        self.geometry(parent.get_geometry(width=750, height=320))
+        self.geometry(parent.get_child_geometry(width=750, height=320))
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
 

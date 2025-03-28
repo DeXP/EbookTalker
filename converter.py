@@ -23,7 +23,7 @@ def Init(cfg: dict):
             'female': 'xenia',
             'male': 'aidar',
             'default': 'xenia',
-            'phrase': 'В недрах тундры выдры в г+етрах т+ырят в вёдра ядра к+едров.' 
+            'phrase': 'В недрах тундры выдры в г+етрах т+ырят в вёдра +ядра к+едров.' 
         },
         'uk': {
             'type': 'silero',
@@ -32,7 +32,8 @@ def Init(cfg: dict):
             'url': 'https://models.silero.ai/models/tts/ua/v3_ua.pt',
             'female': None,
             'male': 'mykyta',
-            'default': 'mykyta'
+            'default': 'mykyta',
+            'phrase': 'О котрій годині ми зустрічаємося? Звучить непогано.' 
         },
         'en': {
             'type': 'silero',
@@ -40,8 +41,9 @@ def Init(cfg: dict):
             'model': None,
             'url': 'https://models.silero.ai/models/tts/en/v3_en.pt',
             'female': 'en_0',
-            'male': 'en_1',
-            'default': 'en_0'
+            'male': 'en_2',
+            'default': 'en_0',
+            'phrase': 'London is the capital of Great Britain.' 
         },
         #'accent_ru': accentRuPredictor,
         'sample_rate': 24000,
@@ -169,19 +171,23 @@ def GeneratePause(var, timeMs = 300, name = "pause.wav"):
 
 def ProcessSentence(lang, number, sentence, var):
     wavFile = var['genwav'] / f"{number}.wav"
-    if IsCorrectPhrase(var, lang, sentence) and (not wavFile.exists()):
+    speaker = var['settings']['silero'][lang]['voice']
+    return SayText(wavFile, lang, speaker, sentence, var)
+
+
+def SayText(wavFile, lang, speaker, text, var):
+    if IsCorrectPhrase(var, lang, text) and (not wavFile.exists()):
         # Generate
-        # print(sentence)
+        # print(text)
         try:
-            if ('ru' != lang) or dxnormalizer.is_russian(sentence):
-                GetModel(var, lang).save_wav(text=sentence,
-                    speaker = var['settings']['silero'][lang]['voice'], # var[lang]['default'],
-                    sample_rate=var['sample_rate'],
-                    put_accent=var['put_accent'],
-                    put_yo=var['put_yo'],
-                    audio_path=str(wavFile))
+            GetModel(var, lang).save_wav(text=text,
+                speaker = speaker,
+                sample_rate=var['sample_rate'],
+                put_accent=var['put_accent'],
+                put_yo=var['put_yo'],
+                audio_path=str(wavFile))
         except Exception as error:
-            print(f"Cannot save WAV for sentence {number}: '{sentence}'. Error: {error}")
+            print(f"Cannot save WAV for sentence {wavFile}: '{text}'. Error: {error}")
             return False
         return True    
     return wavFile.exists()

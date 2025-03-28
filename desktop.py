@@ -143,6 +143,16 @@ class App(customtkinter.CTk):
         x = int((screen_width / 2) - (width / 2))
         y = int((screen_height / 2) - (height / 2))
         return f"{width}x{height}+{x}+{y}"
+    
+
+    def get_child_geometry(self, width: int, height: int):
+        self.update_idletasks()  # Ensure parent dimensions are current       
+        parent_x, parent_y = self.winfo_x(), self.winfo_y()
+        parent_width, parent_height = self.winfo_width(), self.winfo_height()
+        x = parent_x + (parent_width - width) // 2
+        y = parent_y + (parent_height - height) // 2
+        return f"{width}x{height}+{x}+{y}"
+
 
     def on_closing(self):
         #if messagebox.askokcancel("Quit", "Do you want to quit?"):
