@@ -1,4 +1,4 @@
-import re
+import re, chardet
 from pathlib import Path
 
 if __name__ == "__main__":
@@ -8,7 +8,6 @@ else:
 
 
 def ParseTXT(file: Path, full = False):
-    import chardet
     encoding = 'utf8'
     rawText = ''
     rawData = book.GetFileBytes(file)
@@ -22,22 +21,11 @@ def ParseTXT(file: Path, full = False):
 
     title = file.stem
     name = ''
-    middle = ''
-    surname = ''
-    pattern = r'^(.+?) (.+?) - (.+?)$'
+    pattern = r'^(.+?) - (.+?)$'
     match = re.fullmatch(pattern, file.stem)
     if match:
         name = match.group(1)
-        surname = match.group(2)
-        title = match.group(3)
-    else:
-        pattern = r'^(.+?) (.+?) (.+?) - (.+?)$'
-        match = re.fullmatch(pattern, file.stem)
-        if match:
-            name = match.group(1)
-            middle = match.group(2)
-            surname = match.group(3)
-            title = match.group(4)
+        title = match.group(2)
 
     lang = dxnormalizer.detect_language(rawText)
     p = []
@@ -50,9 +38,10 @@ def ParseTXT(file: Path, full = False):
         'error': '',
         'ext': 'txt',
         'suggestedFileName': file.name,
-        'firstName': name,
-        'middleName': middle,
-        'lastName': surname,
+        'author': name,
+        'firstName': '',
+        'middleName': '',
+        'lastName': '',
         'title': title,
         'lang': lang,
         'sequence': '',

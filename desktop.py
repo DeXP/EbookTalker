@@ -274,7 +274,7 @@ if __name__ == '__main__':
     var = converter.Init(cfg)
 
     localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
-    localeFile = localeFile if not var['settings']['app']['lang'] else var['settings']['app']['lang']
+    localeFile = localeFile if not var['settings']['app']['lang'] else var['settings']['app']['lang'] + ".json"
     tr = None
     with open("static/i18n/" + localeFile, encoding='utf-8') as json_file:
         tr = json.load(json_file)

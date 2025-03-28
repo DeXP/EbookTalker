@@ -1,7 +1,9 @@
+import json
 import customtkinter as ctk
 from tkinter import filedialog
 
 import converter
+from helpers import settings
 from helpers.UI import Icons
 
 
@@ -17,8 +19,8 @@ class PreferencesForm(ctk.CTkToplevel):
         self.title(tr['Preferences'])
         self.geometry(parent.get_geometry(width=600, height=280))
 
-        self.grid_columnconfigure((0,1), weight=0)
-        self.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure((0,2), weight=0)
+        self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(4, weight=1)
 
 
@@ -110,9 +112,20 @@ class PreferencesForm(ctk.CTkToplevel):
 
     def on_save(self):
         # Save preferences logic
-        # selected_theme = self.theme_var.get()
-        # print(f"Selected Theme: {selected_theme}")
-        # self.parent.update_theme(selected_theme)  # Update theme in main form
+        s = settings.LoadOrDefault(self.cfg, self.var)
+        s['app']['lang'] = self.get_code_by_lang(self.lang_combobox.get())
+        s['app']['output'] = self.output_text.get()
+        s['app']['codec'] = self.codec_combobox.get()
+        s['app']['dirs'] = self.get_dir_format_by_translated(self.dirs_combobox.get())
+
+        for lang in self.var['languages']:
+            s['silero'][lang]['voice'] = self.tts_voice_combos[lang].get()
+
+        with open(self.cfg['SETTINGS_FILE'], 'w', encoding='utf-8') as f:
+            json.dump(s, f, indent=2, ensure_ascii=False)
+
+        self.var['settings'] = s
+
         self.destroy()
 
 
@@ -142,4 +155,11 @@ class PreferencesForm(ctk.CTkToplevel):
         for lang in self.var['languages']:
             if value == self.var[lang]['name']:
                 return lang
+        return ''
+    
+
+    def get_dir_format_by_translated(self, value: str):
+        for key in self.dir_formats:
+            if value == self.dir_formats[key]:
+                return key
         return ''

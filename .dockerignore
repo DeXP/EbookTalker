@@ -4,5 +4,6 @@ ready
 build
 __pycache__/
 EbookTalker.spec
+settings.json
 *.py[cod]
 *$py.class
