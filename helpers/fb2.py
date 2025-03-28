@@ -123,7 +123,6 @@ def ParseFB2(file: Path, full = False):
         return {
             'error': '',
             'ext': 'fb2',
-            'suggestedFileName': book.SafeBookName(info, includeAuthor=True) + ".fb2",
             'firstName': getText(author, 'first-name'),
             'middleName': getText(author, 'middle-name'),
             'lastName': getText(author, 'last-name'),

@@ -205,7 +205,10 @@ def ParseEpub(epub_path: Path, full=False):
         'lastName': "",
         'ext': 'epub',
         'sequence': "",
-        'seqNumber': ""
+        'seqNumber': "",
+        'file': epub_path.name,
+        'size': epub_path.stat().st_size,
+        'datetime': epub_path.lstat().st_mtime
     }
     
     cover_image = None

@@ -38,6 +38,11 @@ def BookName(info, includeAuthor = True):
 
 def SafeBookName(info, includeAuthor = True):
     return SafeFileName(BookName(info, includeAuthor=includeAuthor))
+
+
+def SafeBookFileName(info, includeAuthor = True):
+    ext = info['ext'] if ('ext' in info) else 'tmp'
+    return SafeFileName(BookName(info, includeAuthor=includeAuthor)) + "." + ext
     
 
 def GetFileBytes(input: Path):

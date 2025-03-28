@@ -67,6 +67,8 @@ def Init(cfg: dict):
 
     var['tmp'].mkdir(parents=True, exist_ok=True)
     dxfs.CreateDirectory(var['tmp'], var['queue'])
+    dxfs.CreateDirectory(var['tmp'], Path('models'))
+
 
     var['settings'] = settings.LoadOrDefault(cfg, var)
 

@@ -155,7 +155,7 @@ class App(customtkinter.CTk):
         if book_file:
             book_path = Path(book_file)
             info, _ = book.ParseBook(book_path)
-            info['file'] = book.SafeBookName(info) + "." + info['ext']
+            info['file'] = book.SafeBookFileName(info)
             new_file = var['queue'] / info['file']
             shutil.copy(book_path, new_file)
 
