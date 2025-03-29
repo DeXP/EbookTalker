@@ -44,6 +44,24 @@ def SafeBookFileName(info, includeAuthor = True):
     ext = info['ext'] if ('ext' in info) else 'tmp'
     return SafeFileName(BookName(info, includeAuthor=includeAuthor)) + "." + ext
     
+def GetTestBook(tr: dict):
+    return {
+            'error': '',
+            'ext': 'epub',
+            'author': tr["author"],
+            'firstName': tr["firstName"],
+            'middleName': '',
+            'lastName': tr['lastName'],
+            'title': tr['title'],
+            'lang': 'en',
+            'sequence': '',
+            'seqNumber': '',
+            'cover': 'BookCover.jpg',
+            'encoding': 'utf-8',
+            'file': 'file.name',
+            'size': 123456,
+            'datetime': 0.0,
+        }
 
 def GetFileBytes(input: Path):
     try:

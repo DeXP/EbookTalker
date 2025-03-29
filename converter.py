@@ -1,4 +1,4 @@
-import os, re, torch, time, base64
+import os, re, json, torch, time
 from pathlib import Path
 
 from helpers import settings, book, dxfs, dxaudio, dxsplitter, dxnormalizer
@@ -62,7 +62,7 @@ def Init(cfg: dict):
     }
 
     var.update(
-        genfb2 = var['gen'] / 'book.fb2',
+        genjson = var['gen'] / 'book.json',
         genwav = var['gen'] / 'wav',
         genout = var['gen'] / 'output'
     )
@@ -152,14 +152,18 @@ def fillQueue(que, var: dict):
             que.append(info)
 
 
-def MoveEbookToGenerate(file: Path, var: dict):
-    # dxfs.CreateDirectory(var['tmp'], var['gen'])
+def PreConvertBookForTTS(file: Path, var: dict):
     var['gen'].mkdir(parents=True, exist_ok=True)
-    # dxfs.MoveFile(var['tmp'], file, var['genfb2'])
-    if var['genfb2'].exists():
-        var['genfb2'].unlink()
-    file.rename(var['genfb2'])
+    if var['genjson'].exists():
+        var['genjson'].unlink()
 
+    info, cover = book.ParseBook(file, full=True)
+
+    with open(str(var['genjson']), 'w', encoding='utf-8') as f:
+        json.dump(info, f, indent=2, ensure_ascii=False)
+
+    file.unlink()
+    return info, cover
 
 
 def GeneratePause(var, timeMs = 300, name = "pause.wav"):
@@ -194,7 +198,7 @@ def SayText(wavFile, lang, speaker, text, var):
 
 
 
-def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
+def ConvertBook(file: Path, info: dict, coverBytes, outputDirPath, dirFormat, proc, cfg, var):
     dxfs.CreateDirectory(var['tmp'], var['gen'])
     dxfs.CreateDirectory(var['tmp'], var['genwav'])
     dxfs.CreateDirectory(var['tmp'], var['genout'])
@@ -204,7 +208,10 @@ def ConvertBook(file: Path, outputDirPath, dirFormat, proc, cfg, var):
     codec = var['settings']['app']['codec']
     encoder = var['formats'][codec]
 
-    info, coverBytes = book.ParseBook(file, full = True)
+    if info is None:
+        info = json.loads(file.read_text(encoding='utf-8'))
+        # info, coverBytes = book.ParseBook(file, full = True)
+
     proc['bookName'] = book.BookName(info, includeAuthor=True)
     lang = info['lang'] if ('lang' in info) else 'ru'
 
@@ -339,19 +346,23 @@ def ConverterLoop(que, proc, cfg, var):
     fillQueue(que, var)
 
     while not var['askForExit']:
-        if not var['genfb2'].is_file():
+
+        info, cover = None, None
+
+        if not var['genjson'].is_file():
             # Pick up the first book
             books = getBooks(var)
             if len(books) > 0:
                 initFB2 = books[0]
-                MoveEbookToGenerate(initFB2, var)
+                info, cover = PreConvertBookForTTS(initFB2, var)
                 fillQueue(que, var)
             else:
                 proc['status'] = 'idle'
                 proc['ffmpeg'] = dxaudio.get_ffmpeg_exe(cfg)
                 time.sleep(3)
 
-        if var['genfb2'].is_file():
+        if var['genjson'].is_file():
             outputFolder = var['settings']['app']['output']
             directoriesFormat = var['settings']['app']['dirs']
-            ConvertBook(var['genfb2'], outputFolder, directoriesFormat, proc, cfg, var)
+            ConvertBook(var['genjson'], info, cover, outputFolder, directoriesFormat, proc, cfg, var)
+     

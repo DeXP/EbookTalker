@@ -1,9 +1,10 @@
 import sys, json
 import customtkinter as ctk
 from tkinter import filedialog
+from playsound import playsound
 
 import converter
-from helpers import settings
+from helpers import book, settings
 from helpers.UI import Icons
 
 
@@ -17,13 +18,14 @@ class PreferencesForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(tr['Preferences'])
-        self.geometry(parent.get_child_geometry(width=500, height=280))
+        self.geometry(parent.get_child_geometry(width=500, height=310))
 
         self.grid_columnconfigure((0,2), weight=0)
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(4, weight=1)
 
 
+        self.testBook = book.GetTestBook(tr)
         
         self.lang_label = ctk.CTkLabel(self, text=tr['Language:'])
         self.lang_label.grid(row=0, column=0, padx=10, pady=2, sticky="w")
@@ -101,22 +103,22 @@ class PreferencesForm(ctk.CTkToplevel):
                 command=lambda lang=lang: self.on_play('silero', lang),
                 font=parent.icon_font, text=Icons.play
             )
-            if sys.platform == "win32":
-                self.tts_voice_play_buttons[lang].grid(row=0, column=2, padx=10, pady=2, sticky="w")
+            self.tts_voice_play_buttons[lang].grid(row=0, column=2, padx=10, pady=2, sticky="w")
 
 
         first_lang = var['languages'][0]
         self.tts_voice_combos[first_lang].configure(values=converter.GetModel(var, first_lang).speakers)
 
 
-
+        self.warning_note = ctk.CTkLabel(self, text=tr['PreferencesSaveNote'])
+        self.warning_note.grid(row=5, column=0, padx=10, pady=2, columnspan=3, sticky="w")
 
         # Save and Cancel buttons
         self.save_button = ctk.CTkButton(self, text=tr["Save"], command=self.on_save)
-        self.save_button.grid(row=5, column=0, padx=10, pady=7)
+        self.save_button.grid(row=6, column=0, padx=10, pady=7)
 
         self.cancel_button = ctk.CTkButton(self, text=tr["Cancel"], command=self.on_cancel)
-        self.cancel_button.grid(row=5, column=1, padx=10, pady=7, columnspan=2, sticky="e")
+        self.cancel_button.grid(row=6, column=1, padx=10, pady=7, columnspan=2, sticky="e")
 
 
     def on_save(self):
@@ -145,13 +147,14 @@ class PreferencesForm(ctk.CTkToplevel):
 
     def on_play(self, tts, lang):
         voice = self.tts_voice_combos[lang].get()
-        wavName = f"{tts}-{lang}-{voice}.wav"
-        wavFile = self.var['tmp'] / wavName
+        wavFile = self.var['tmp'] / f"{tts}-{lang}-{voice}.wav"
 
         if converter.SayText(wavFile, lang, voice, self.var[lang]['phrase'], self.var):
-            if sys.platform == "win32":
-                import winsound
-                winsound.PlaySound(str(wavFile.absolute()), winsound.SND_ALIAS)
+            # if sys.platform == "win32":
+            #     import winsound
+            #     winsound.PlaySound(str(wavFile.absolute()), winsound.SND_ALIAS)
+            # else:
+            playsound(str(wavFile))
 
 
     def get_output_folder(self):

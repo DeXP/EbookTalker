@@ -19,7 +19,8 @@ if __name__ == '__main__':
     var = converter.Init(cfg)
 
     initFB2 = Path(args.book)
-    if not var['genfb2'].is_file():
-        converter.MoveEbookToGenerate(initFB2, var)
+    info, cover = None, None
+    if not var['genjson'].is_file():
+        info, cover = converter.PreConvertBookForTTS(initFB2, var)
 
-    converter.ConvertBook(var['genfb2'], args.output, args.directories, proc, cfg, var)
+    converter.ConvertBook(var['genjson'], info, cover, args.output, args.directories, proc, cfg, var)

@@ -37,8 +37,7 @@ def LoadOrDefault(cfg: dict, var: dict):
 
     settingsPath = Path(cfg['SETTINGS_FILE'])
     if settingsPath.exists():
-        with open(str(settingsPath)) as json_file:
-            s = json.load(json_file)
+        s = json.loads(settingsPath.read_text(encoding='utf-8'))
 
     outputFolder = cfg['OUTPUT_FOLDER'] if ('OUTPUT_FOLDER' in cfg) else 'AudioBooks'
     dirs = cfg['DIRECTORIES_FORMAT'] if ('DIRECTORIES_FORMAT' in cfg) else 'single'
