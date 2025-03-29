@@ -198,7 +198,7 @@ def SayText(wavFile, lang, speaker, text, var):
 
 
 
-def ConvertBook(file: Path, info: dict, coverBytes, outputDirPath, dirFormat, proc, cfg, var):
+def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat: str, proc: dict, cfg: dict, var:dict):
     dxfs.CreateDirectory(var['tmp'], var['gen'])
     dxfs.CreateDirectory(var['tmp'], var['genwav'])
     dxfs.CreateDirectory(var['tmp'], var['genout'])
@@ -230,8 +230,6 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirPath, dirFormat, pr
         if not cover.exists():                   
             with open(str(cover.absolute()), 'wb') as f:
                 f.write(coverBytes)
-
-    author = book.SafeAuthorName(info)
 
     jingles = getJingles(var)
 
@@ -308,7 +306,8 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirPath, dirFormat, pr
                 
                 dxaudio.concatenate_wav_files(var['genwav'], sectionWavs, sectionWavFile)
             curTitle = sectionTitle if sectionTitle else proc['bookName']
-            dxaudio.convert_wav_to_compressed(encoder, cfg, sectionWavFile, sectionCompressedFile, title=curTitle, author=author, cover=cover, info=info)
+            dxaudio.convert_wav_to_compressed(encoder, cfg, sectionWavFile, sectionCompressedFile, 
+                                              title=curTitle, author=book.AuthorName(info), cover=cover, info=info)
             if sectionCompressedFile.exists() and (sectionCompressedFile.stat().st_size > 0):
                sectionWavFile.unlink()
 
@@ -316,18 +315,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirPath, dirFormat, pr
         return
     
     # Done. Move output
-    outputDir = Path(outputDirPath)
-    if "full" == dirFormat.lower():
-        # Full format - create sub folders
-        bookName = book.SafeBookName(info, includeAuthor=False)
-        if ('sequence' in info) and info['sequence']:
-            outputDir = Path(outputDirPath) / author / book.SafeFileName(info['sequence']) / bookName
-        else:
-            outputDir = Path(outputDirPath) / author / bookName
-    else:
-        # Short - all books into same folder
-        outputDir = Path(outputDirPath) / book.SafeBookName(info, includeAuthor=True)
-    
+    outputDir = book.GetOutputName(Path(outputDirStr), info, dirFormat)   
     dxfs.CreateDirectory(var['tmp'], outputDir)
     dxfs.MoveAllFiles(var['tmp'], var['genout'], outputDir)
 

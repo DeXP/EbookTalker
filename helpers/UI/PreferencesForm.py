@@ -19,7 +19,7 @@ class PreferencesForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(tr['Preferences'])
-        self.geometry(parent.get_child_geometry(width=500, height=310))
+        self.geometry(parent.get_child_geometry(width=500, height=325))
 
         self.grid_columnconfigure((0,2), weight=0)
         self.grid_columnconfigure(1, weight=1)
@@ -66,7 +66,7 @@ class PreferencesForm(ctk.CTkToplevel):
 
 
         self.dir_formats = {
-            # 'single': tr["nf-single"],
+            'single': tr["nf-single"],
             'short': tr["nf-short"],
             'full': tr["nf-full"]
         }
@@ -157,11 +157,14 @@ class PreferencesForm(ctk.CTkToplevel):
         wavFile = self.var['tmp'] / f"{tts}-{lang}-{voice}.wav"
 
         if converter.SayText(wavFile, lang, voice, self.var[lang]['phrase'], self.var):
+            soundfile = str(wavFile.absolute())
             # if sys.platform == "win32":
             #     import winsound
-            #     winsound.PlaySound(str(wavFile.absolute()), winsound.SND_ALIAS)
-            # else:
-            playsound(str(wavFile))
+            #     winsound.PlaySound(soundfile, winsound.SND_ALIAS)
+            # else:    
+            if sys.platform == "win32":
+                soundfile = soundfile.replace('\\', '/')
+            playsound(soundfile)
 
 
     def on_dirs_changed(self, choice):
@@ -170,11 +173,11 @@ class PreferencesForm(ctk.CTkToplevel):
 
 
     def GetNiceTestBookName(self, dir_format: str) -> str:
-        out_path = Path(self.output_text.get()) / book.GetOutputName(self.testBook, dir_format)
-        # name = name.replace("/", " / ").replace("\\", " \\ ")
+        out_path = book.GetOutputName(Path(self.output_text.get()), self.testBook, dir_format)
         if "full" == dir_format.lower():
             out_path /= "1"
         name = str(out_path)
+        # name = name.replace("/", " / ").replace("\\", " \\ ")
         name += "." + self.codec_combobox.get()
         return name
 

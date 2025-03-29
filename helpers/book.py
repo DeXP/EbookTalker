@@ -55,7 +55,7 @@ def GetTestBook(tr: dict):
             'lastName': tr['lastName'],
             'title': tr['title'],
             'lang': 'en',
-            'sequence': '',
+            'sequence': tr["sequence"],
             'seqNumber': '',
             'cover': 'BookCover.jpg',
             'encoding': 'utf-8',
@@ -65,18 +65,19 @@ def GetTestBook(tr: dict):
         }
 
 
-def GetOutputName(info: dict, dirFormat: str) -> Path:
-    author = Path(SafeAuthorName(info))
-    if "full" == dirFormat.lower():
+def GetOutputName(outputDir: Path, info: dict, dirFormat: str) -> Path:
+    lowerFormat = dirFormat.lower()
+    if ("full" == lowerFormat) or ("short" == lowerFormat):
         # Full format - create sub folders
+        author = SafeAuthorName(info)
         bookName = SafeBookName(info, includeAuthor=False)
-        if ('sequence' in info) and info['sequence']:
-            return author / SafeFileName(info['sequence']) / bookName
+        if ("full" == lowerFormat) and ('sequence' in info) and info['sequence']:
+            return outputDir / author / SafeFileName(info['sequence']) / bookName
         else:
-            return author / bookName
+            return outputDir / author / bookName
     else:
-        # Short - all books into same folder
-        return SafeBookName(info, includeAuthor=True)
+        # Single - all books into same folder
+        return outputDir / SafeBookName(info, includeAuthor=True)
 
 
 def GetFileBytes(input: Path):
