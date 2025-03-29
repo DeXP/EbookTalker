@@ -2,6 +2,7 @@ import sys, json
 import customtkinter as ctk
 from tkinter import filedialog
 from playsound import playsound
+from pathlib import Path
 
 import converter
 from helpers import book, settings
@@ -22,7 +23,7 @@ class PreferencesForm(ctk.CTkToplevel):
 
         self.grid_columnconfigure((0,2), weight=0)
         self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(4, weight=1)
+        self.grid_rowconfigure(5, weight=1)
 
 
         self.testBook = book.GetTestBook(tr)
@@ -65,21 +66,27 @@ class PreferencesForm(ctk.CTkToplevel):
 
 
         self.dir_formats = {
-            'single': tr["nf-single"],
+            # 'single': tr["nf-single"],
             'short': tr["nf-short"],
             'full': tr["nf-full"]
         }
         self.dirs_label = ctk.CTkLabel(self, text=tr['NamingFormat:'])
         self.dirs_label.grid(row=3, column=0, padx=10, pady=2, sticky="w")
 
-        self.dirs_combobox = ctk.CTkComboBox(self, values=list(self.dir_formats.values()), state="readonly")
-        self.dirs_combobox.set(self.dir_formats.get(var['settings']['app']['dirs'], tr["nf-single"]))
+        self.dirs_combobox = ctk.CTkComboBox(self, values=list(self.dir_formats.values()), state="readonly", command=self.on_dirs_changed)
+        self.dirs_combobox.set(self.dir_formats.get(var['settings']['app']['dirs'], tr["nf-short"]))
         self.dirs_combobox.grid(row=3, column=1, padx=10, pady=2, columnspan=2, sticky="w")
 
 
+        self.dirs_example_label = ctk.CTkLabel(self, text=tr['Example:'])
+        self.dirs_example_label.grid(row=4, column=0, padx=10, pady=2, sticky="w")
+
+        self.dirs_example = ctk.CTkLabel(self, text=self.GetNiceTestBookName(var['settings']['app']['dirs']))
+        self.dirs_example.grid(row=4, column=1, padx=10, pady=2, sticky="w")
+
 
         self.tts_tabview = ctk.CTkTabview(self, width=250)
-        self.tts_tabview.grid(row=4, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
+        self.tts_tabview.grid(row=5, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
         self.tts_tabview.configure(command=self.on_tab_change)
         self.tts_voice_labels = {}
         self.tts_voice_combos = {}
@@ -111,14 +118,14 @@ class PreferencesForm(ctk.CTkToplevel):
 
 
         self.warning_note = ctk.CTkLabel(self, text=tr['PreferencesSaveNote'])
-        self.warning_note.grid(row=5, column=0, padx=10, pady=2, columnspan=3, sticky="w")
+        self.warning_note.grid(row=6, column=0, padx=10, pady=2, columnspan=3, sticky="w")
 
         # Save and Cancel buttons
         self.save_button = ctk.CTkButton(self, text=tr["Save"], command=self.on_save)
-        self.save_button.grid(row=6, column=0, padx=10, pady=7)
+        self.save_button.grid(row=7, column=0, padx=10, pady=7)
 
         self.cancel_button = ctk.CTkButton(self, text=tr["Cancel"], command=self.on_cancel)
-        self.cancel_button.grid(row=6, column=1, padx=10, pady=7, columnspan=2, sticky="e")
+        self.cancel_button.grid(row=7, column=1, padx=10, pady=7, columnspan=2, sticky="e")
 
 
     def on_save(self):
@@ -156,6 +163,20 @@ class PreferencesForm(ctk.CTkToplevel):
             # else:
             playsound(str(wavFile))
 
+
+    def on_dirs_changed(self, choice):
+        dir_format = self.get_dir_format_by_translated(choice)
+        self.dirs_example.configure(text=self.GetNiceTestBookName(dir_format))
+
+
+    def GetNiceTestBookName(self, dir_format: str) -> str:
+        out_path = Path(self.output_text.get()) / book.GetOutputName(self.testBook, dir_format)
+        # name = name.replace("/", " / ").replace("\\", " \\ ")
+        if "full" == dir_format.lower():
+            out_path /= "1"
+        name = str(out_path)
+        name += "." + self.codec_combobox.get()
+        return name
 
     def get_output_folder(self):
         folder_path = filedialog.askdirectory()

@@ -43,7 +43,8 @@ def SafeBookName(info, includeAuthor = True):
 def SafeBookFileName(info, includeAuthor = True):
     ext = info['ext'] if ('ext' in info) else 'tmp'
     return SafeFileName(BookName(info, includeAuthor=includeAuthor)) + "." + ext
-    
+
+
 def GetTestBook(tr: dict):
     return {
             'error': '',
@@ -62,6 +63,21 @@ def GetTestBook(tr: dict):
             'size': 123456,
             'datetime': 0.0,
         }
+
+
+def GetOutputName(info: dict, dirFormat: str) -> Path:
+    author = Path(SafeAuthorName(info))
+    if "full" == dirFormat.lower():
+        # Full format - create sub folders
+        bookName = SafeBookName(info, includeAuthor=False)
+        if ('sequence' in info) and info['sequence']:
+            return author / SafeFileName(info['sequence']) / bookName
+        else:
+            return author / bookName
+    else:
+        # Short - all books into same folder
+        return SafeBookName(info, includeAuthor=True)
+
 
 def GetFileBytes(input: Path):
     try:
