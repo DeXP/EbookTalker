@@ -68,3 +68,30 @@ def LoadOrDefault(cfg: dict, var: dict):
 def Save(cfg: dict, settings: dict):
     with open(cfg['SETTINGS_FILE'], 'w', encoding='utf-8') as f:
         json.dump(settings, f, ensure_ascii=False, indent=2)
+
+
+def deep_compare_and_update(dict1, dict2):
+    """
+    Recursively compares dict1 with dict2 and overwrites values in dict1 
+    where they exist in dict2 at the same path.
+    
+    Args:
+        dict1 (dict): The dictionary to update
+        dict2 (dict): The dictionary containing new values
+    
+    Returns:
+        dict: The modified dict1
+    """
+    for key, value in dict2.items():
+        if key in dict1:
+            if isinstance(value, dict) and isinstance(dict1[key], dict):
+                # Recursively handle nested dictionaries
+                deep_compare_and_update(dict1[key], value)
+            else:
+                # Overwrite if same path exists
+                dict1[key] = value
+        # else:
+            # Add new key if not in dict1
+            # dict1[key] = value
+            
+    return dict1

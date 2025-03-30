@@ -2,23 +2,33 @@ import sys, uuid
 from pathlib import Path
 
 class TmpStringFile:
-    def __init__(self, tmpFolder: Path, stringContent, ext='.string'):
+    def __init__(self, tmpFolder: Path, stringContent = None, ext='.string'):
         self.file = tmpFolder / f'{uuid.uuid4()}{ext}'
-        self.content = stringContent.encode(encoding="utf-8")
+        self.content = None
+        if stringContent is not None:
+            self.content = stringContent.encode(encoding="utf-8")
 
     def __enter__(self):
-        self.file.write_bytes(self.content)
+        return self.WriteContent(self.content)
+    
+    def WriteContent(self, content):
+        if content is not None:
+            self.file.write_bytes(content)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.file.unlink()
+        if self.file.exists():
+            self.file.unlink()
         return True
+    
+    def Path(self) -> Path:
+        return self.file
 
-    def Path(self):
+    def PathStr(self) -> str:
         return self.file.absolute()
     
     def UnQuotedCat(self):
-        return f"`cat {self.Path()}`"
+        return f"`cat {self.PathStr()}`"
     
     def QuotedCat(self):
         return f"\"{self.UnQuotedCat()}\""

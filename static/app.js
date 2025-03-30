@@ -1,9 +1,16 @@
-var userLang = navigator.language || navigator.userLanguage; 
-var localeJson = 'en.json';
+var userLang = navigator.language || navigator.userLanguage;
+var locale = 'en';
 var tr = {};
 
 if (userLang.toLowerCase().startsWith('ru')) {
-  localeJson = 'ru.json';
+  locale = 'ru';
+}
+
+if (('app' in APP_SETTINGS) && ('lang' in APP_SETTINGS['app']) && APP_SETTINGS['app']['lang']) {
+  locale = APP_SETTINGS['app']['lang'];
+}
+
+if ('ru' == locale) {
   webix.i18n.setLocale("ru-RU");
 }
 
@@ -13,6 +20,180 @@ function readablizeBytes(bytes) {
   return (bytes / Math.pow(1024, e)).toFixed(1) + " " + s[e];
 }
 
+function ShowAboutWindow(id, event) {
+  let win = $$("aboutWindow");
+
+  // If window doesn't exist, create it
+  if (!win) {
+    win = webix.ui({
+      view: "window",
+      id: "aboutWindow",
+      modal: true, close: true, move: true,
+      position: "center", width: 840, height: 440,
+      head: tr["appTitle"],
+      body: {
+        view: "form",
+        padding: 20,
+        elements: [
+          {
+            view: "layout",
+            type: "line",
+            cols: [
+              {
+                view: "template",
+                template: "<img src='/static/default-cover.png' style='width:290px; height:290px;'/>",
+                width: 320,
+                borderless: true
+              },
+              {
+                view: "form",
+                borderless: true,
+                rows: [
+                  { view: "label", label: tr["appDescription"] },
+                  { view: "label", label: tr["appVersion"] + ": " + APP_VERSION },
+                  { view: "label", label: tr["appAuthor-line"] },
+                  { view: "label", label: tr["appBetaTesters-line"] },
+                  { view: "button", value: tr["appLink"], click: "window.open('" + tr["appLink"] + "')" },
+                  { view: "button", value: tr["OK"], css: "webix_primary", click: function () { $$("aboutWindow").close(); } }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    })
+  }
+
+  win.show(); // Show the existing or new window
+}
+
+function PlayClick(id, event) {
+  const sp = id.split("-");
+  const tts = sp[0];
+  const lang = sp[1];
+  const comboId = tts + "-" + lang + "-voice"
+  const voice = $$(comboId).getValue();
+
+  this.disable();  // Disable button during playback
+  const audio = new Audio("/example?tts=" + tts + "&lang=" + lang + "&voice=" + voice);
+  
+  audio.onended = () => this.enable(); // Re-enable when done
+  audio.play().catch(e => {
+    this.enable();
+    webix.message("Error: " + e.message);
+  });
+}
+
+
+function ShowPreferencesWindow() {
+  let win = $$("preferencesWindow");
+
+  // If window doesn't exist, create it
+  if (!win) {
+    langCells = []
+
+    TTS_LANG_LIST.forEach(function(langCode) {
+      var language = TTS_LANGUAGES[langCode];
+      var curId = language.type + "-" + langCode;
+      var comboId = curId + "-voice";
+      langCells.push({
+        header: language.name,
+        body: {
+          id: curId,
+          view:"form", 
+          elements:[
+            {cols:[
+                { view: "select", label: tr["Voice:"], 
+                  name: comboId, id: comboId, options: "/voices?lang=" + langCode, 
+                  value: APP_SETTINGS['silero'][langCode]["voice"] },
+                { view: "icon", id: curId + "-play", icon: "mdi mdi-play", click: PlayClick }
+            ]}
+        ]
+        }
+      });
+    });
+    
+    win = webix.ui({
+      view: "window",
+      id: "preferencesWindow",
+      modal: true, close: true, move: true,
+      position: "center", width: 600, height: 500,
+      head: tr['Preferences'],
+      body: {
+        view: "form",
+        elementsConfig: {
+          labelWidth: 150
+        },
+        padding: 20,
+        elements: [
+          {
+            view: "select", label: tr["Language:"], name: "lang", value: APP_SETTINGS['app']['lang'],
+            options: [
+              { id: "", value: tr["Default"] },
+              { id: "ru", value: TTS_LANGUAGES['ru']['name'] },
+              { id: "en", value: TTS_LANGUAGES['en']['name'] }
+            ]
+          },
+          /*{ view: "text", label: tr["OutputFolder:"], name: "output", value: APP_SETTINGS['app']['output'] },*/
+          { view: "select", label: tr["Codec:"], name: "codec", options: "/formats", value: APP_SETTINGS['app']['codec'] },
+          {
+            view: "select", label: tr["NamingFormat:"], name: "dirs", value: APP_SETTINGS['app']['dirs'],
+            options: [
+              { id: "single", value: tr["nf-single"] + "  (output/author - book.mp3)" },
+              { id: "short", value: tr["nf-short"] + "  (output/author/book/1.mp3)" },
+              { id: "full", value: tr["nf-full"] + "  (output/author/series/book/1.mp3)" }
+            ]    
+          },
+          {
+            view: "tabview", cells: langCells
+          },
+          { view: "text", type: "password", label: tr["password"], name: "preferencesPassword", id: "preferencesPassword", value: "" },
+          {
+            margin: 10,
+            cols: [
+              {
+                view: "button", value: tr["Save"], css: "webix_primary",
+                click: function () {
+                  var values = {};
+                  values['app'] = $$("preferencesWindow").getBody().getValues();
+                  TTS_LANG_LIST.forEach(function(langCode) {
+                    var language = TTS_LANGUAGES[langCode];
+                    var comboId = language.type + "-" + langCode + "-voice";
+                    if (!(language.type in values)) {
+                      values[language.type] = {};
+                    }
+                    values[language.type][langCode] = {};
+                    values[language.type][langCode]['voice'] = $$(comboId).getValue();
+                  });
+
+                  // console.log(JSON.stringify(values));
+                  // webix.message("Preferences saved: " + JSON.stringify(values));
+                  webix.ajax().headers({
+                    "Content-type":"application/json"
+                  }).post("/preferences/save", values).then(function (data) {
+                    j = data.json()
+                    if (('error' in j) && j['error']) {
+                      webix.message({ text: tr["passwordIncorrect"], type: "error" });
+                    }
+                    else {
+                      APP_SETTINGS = values;
+                      $$("preferencesWindow").close();
+                    }
+                  });
+                }
+              },
+              { view: "button", value: tr["Cancel"], click: function () { $$("preferencesWindow").close(); } }
+            ]
+          }
+        ]
+      }
+    });
+  }
+
+  win.show(); // Show the existing or new window
+}
+
+
 function ConstructUI(tr) {
   webix.ui({
     rows: [
@@ -21,10 +202,11 @@ function ConstructUI(tr) {
         css: "webix_dark",
         paddingX: 17,
         elements: [
-          { view: "icon", icon: "mdi mdi-book-open-page-variant" },
-          { view: "label", label: tr["appTitle"] },
+          { view: "icon", icon: "mdi mdi-book-open-page-variant", click: ShowAboutWindow },
+          { view: "label", label: tr["appTitle"] + " (" + APP_VERSION + ")" },
           {},
-          { view: "icon", icon: "mdi mdi-help-circle-outline" }
+          { view: "icon", icon: "mdi mdi-cog", click: ShowPreferencesWindow },
+          { view: "icon", icon: "mdi mdi-help-circle-outline", click: ShowAboutWindow }
         ]
       },
       {
@@ -97,7 +279,7 @@ function ConstructUI(tr) {
             rows: [
               { template: tr["addBookToQueue"], type: "section" },
               { view: "text", label: tr["url"], name: "url", id: "url", value: "" },
-              { view: "text", label: tr["password"], name: "password", id: "password", value: "" },
+              { view: "text", type: "password", label: tr["password"], name: "password", id: "password", value: "" },
               {
                 cols: [
                   {},
@@ -108,25 +290,23 @@ function ConstructUI(tr) {
                       error = '';
                       url = $$("processForm").getValues().url;
                       password = $$("processForm").getValues().password;
-                      if (!password || (password.length < 5)){
-                        error = tr["passwordTooShort"];
+                      if (!password || (password.length < PASSWORD_LENGTH)) {
+                        error = tr["passwordTooShort"].replace("##", PASSWORD_LENGTH);
                       }
-                      if (!url || (url.length < 5)){
+                      if (!url || (url.length < 5)) {
                         error = tr["noURLforDownload"];
                       }
                       if (error) {
-                        webix.message({ text: error, type:"error" });
+                        webix.message({ text: error, type: "error" });
                       } else {
                         // Submit
-                        $$("processForm").setValues({url: ''}, true);
-                        webix.ajax().get("/queue/add", { password:password, url:url }).then(function(data){
+                        webix.ajax().get("/queue/add", { password: password, url: url }).then(function (data) {
                           j = data.json()
-                          if (('error' in j) && j['error'])
-                          {
-                            webix.message({ text: error, type:"error" });
+                          if (('error' in j) && j['error']) {
+                            webix.message({ text: tr["passwordIncorrect"], type: "error" });
                           }
-                          else
-                          {
+                          else {
+                            $$("processForm").setValues({ url: '' }, true);
                             $$("queue").clearAll();
                             $$("queue").load("/queue/list");
                           }
@@ -203,7 +383,7 @@ function UpdateAjaxCall() {
 }
 
 
-webix.ajax("/static/i18n/" + localeJson).then(function (data) {
+webix.ajax("/static/i18n/" + locale + ".json").then(function (data) {
   tr = data.json();
   document.title = tr['appTitle'];
   ConstructUI(tr);

@@ -139,9 +139,7 @@ class PreferencesForm(ctk.CTkToplevel):
         for lang in self.var['languages']:
             s['silero'][lang]['voice'] = self.tts_voice_combos[lang].get()
 
-        with open(self.cfg['SETTINGS_FILE'], 'w', encoding='utf-8') as f:
-            json.dump(s, f, indent=2, ensure_ascii=False)
-
+        settings.Save(self.cfg, s)
         self.var['settings'] = s
 
         self.destroy()
@@ -155,6 +153,8 @@ class PreferencesForm(ctk.CTkToplevel):
     def on_play(self, tts, lang):
         voice = self.tts_voice_combos[lang].get()
         wavFile = self.var['tmp'] / f"{tts}-{lang}-{voice}.wav"
+        if ("random" == voice) and wavFile.exists():
+            wavFile.unlink()
 
         if converter.SayText(wavFile, lang, voice, self.var[lang]['phrase'], self.var):
             soundfile = str(wavFile.absolute())

@@ -7,12 +7,17 @@
     <link rel="stylesheet" href="/static/webix/conditional-dark.css" type="text/css">
     <script src="/static/webix/webix.js" type="text/javascript"></script>
     <link rel="stylesheet" href="/static/webix/md/materialdesignicons.min.css" type="text/css">
-    <link rel="preload" href="/static/i18n/en.json" as="fetch">
-    <link rel="preload" href="/static/i18n/ru.json" as="fetch">
     <title>EbookTalker loading...</title>
 </head>
 
 <body>
+    <script type="text/javascript">
+        var APP_VERSION = "{{ version }}"; 
+        var PASSWORD_LENGTH = {{ passwordLength }}; 
+        var APP_SETTINGS = {{ settings | tojson }};
+        var TTS_LANG_LIST = {{ langList | tojson }};
+        var TTS_LANGUAGES = {{ languages | tojson }};
+    </script>
     <script src="/static/app.js" type="text/javascript"></script>
 </body>
 

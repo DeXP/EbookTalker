@@ -196,6 +196,7 @@ def ParseEpub(epub_path: Path, full=False):
         - cover_image_bytes: Bytes of cover image if found and full=True, else None
     """
     result = {
+        'error': '',
         'title': "",
         'lang': "",
         'encoding': 'utf-8',
