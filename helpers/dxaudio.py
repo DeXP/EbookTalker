@@ -117,8 +117,9 @@ def generate_ogg_metadata_block_picture(image_path):
 
 
 def get_startupinfo():
-    startupinfo = subprocess.STARTUPINFO()
+    startupinfo = None
     if sys.platform == "win32":
+        startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startupinfo.wShowWindow = subprocess.SW_HIDE
     return startupinfo
