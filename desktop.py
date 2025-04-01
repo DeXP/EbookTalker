@@ -161,7 +161,8 @@ class App(customtkinter.CTk):
 
 
     def add_button_callback(self):
-        book_file = filedialog.askopenfilename(filetypes=[(self.tr["Books"], "*.txt *.epub *.fb2 *.fb2.zip *.fb2z *.txt.zip")])
+        book_file = filedialog.askopenfilename(filetypes=[(self.tr["Books"], 
+            "*.txt *.epub *.fb2 *.fb2.zip *.fb2z *.txt.zip *.zip")])
         if book_file:
             book_path = Path(book_file)
             info, _ = book.ParseBook(book_path)

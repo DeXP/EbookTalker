@@ -153,12 +153,30 @@ def convert_jpg_to_png(cfg: dict, input_jpg: Path, output_png: Path, compression
         subprocess.run(command, startupinfo=get_startupinfo(), check=True)
 
 
-def is_ogg_extension(input: Path):
+def is_ogg_extension(input: Path) -> bool:
     format = input.suffix.lower()
     return ".opus" == format or ".ogg" == format
 
 
-def convert_wav_to_compressed(encoder: str, cfg: dict, input_wav: Path, output_file: Path, title = '', author = '', cover = None, info = None, comment = ''):
+def get_chapter_metadata_str(start_time: float, duration: float, title: str) -> str:
+    return (
+        f"[CHAPTER]\n"
+        f"TIMEBASE=1/1000\n"
+        f"START={int(start_time * 1000)}\n"
+        f"END={int((start_time + duration) * 1000)}\n"
+        f"title={title}\n"
+    )  if title and (duration*10000 > 0) else ''
+
+
+def get_wav_duration(input_wav: Path) -> float:
+    with wave.open(str(input_wav.absolute()), 'rb') as wav:
+        num_frames = wav.getnframes()
+        frame_rate = wav.getframerate()
+        return num_frames / float(frame_rate)  
+
+
+def convert_wav_to_compressed(encoder: str, cfg: dict, input_wav: Path, output_file: Path, 
+        title = '', author = '', cover = None, info = None, comment = '', chapters = ''):
     if input_wav.exists():
         is_ogg = is_ogg_extension(output_file)
         metaFile = input_wav.with_suffix('.meta')
@@ -176,6 +194,7 @@ def convert_wav_to_compressed(encoder: str, cfg: dict, input_wav: Path, output_f
             meta += f"comment={comment}\n"
         if cover and is_ogg:
             meta += "metadata_block_picture=" + generate_ogg_metadata_block_picture(str(cover.absolute())) + "\n"
+        meta += chapters
 
         command = [get_ffmpeg_exe(cfg), "-y", "-i", str(input_wav.absolute())]
         inputmap = ["-map", str(0)]

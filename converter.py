@@ -233,6 +233,8 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
 
     jingles = getJingles(var)
 
+    isSingleOutput = (dirFormat == 'single')
+
     sectionCount = 0
     tagCount = 0
     sentenceCount = 0
@@ -306,18 +308,43 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
                 
                 dxaudio.concatenate_wav_files(var['genwav'], sectionWavs, sectionWavFile)
             curTitle = sectionTitle if sectionTitle else proc['bookName']
-            dxaudio.convert_wav_to_compressed(encoder, cfg, sectionWavFile, sectionCompressedFile, 
-                                              title=curTitle, author=book.AuthorName(info), cover=cover, info=info)
-            if sectionCompressedFile.exists() and (sectionCompressedFile.stat().st_size > 0):
-               sectionWavFile.unlink()
+
+            if not isSingleOutput:
+                dxaudio.convert_wav_to_compressed(encoder, cfg, sectionWavFile, sectionCompressedFile, 
+                                                title=curTitle, author=book.AuthorName(info), cover=cover, info=info)
 
     if var['askForExit']:
         return
     
     # Done. Move output
-    outputDir = book.GetOutputName(Path(outputDirStr), info, dirFormat)   
+    outputName = book.GetOutputName(Path(outputDirStr), info, dirFormat)
+    outputDir = outputName.parent if isSingleOutput else outputName
     dxfs.CreateDirectory(var['tmp'], outputDir)
-    dxfs.MoveAllFiles(var['tmp'], var['genout'], outputDir)
+
+    if isSingleOutput:
+        # Concatenate all chapter WAVs in output folder
+        outputName = outputName.with_suffix('.' + codec)
+        bookWavFile = var['genout'] / "book.wav"
+        bookCompressedFile = var['genout'] / f"book.{codec}"
+        chapterWavs = []
+        chapterMeta = ''
+        time = 0.0
+        for i, section in enumerate(info['sections']):
+            sectionWavFile = var['genout'] / f"{sectionCount}.wav"
+            if sectionWavFile.exists() and (sectionWavFile.stat().st_size > 0):
+                chapterWavs.append(sectionWavFile.name)
+                duration = dxaudio.get_wav_duration(sectionWavFile)
+                chapterMeta += dxaudio.get_chapter_metadata_str(time, duration, section['title'])
+                time += duration
+
+        dxaudio.concatenate_wav_files(var['genout'], chapterWavs, bookWavFile)
+        dxaudio.convert_wav_to_compressed(encoder, cfg, bookWavFile, bookCompressedFile, 
+            title=curTitle, author=book.AuthorName(info), cover=cover, info=info, chapters=chapterMeta)
+        
+        dxfs.MoveFile(var['tmp'], bookCompressedFile, outputName)
+
+    else:
+        dxfs.MoveAllFiles(var['tmp'], var['genout'], outputDir)
 
     dxfs.RemoveDirectoryRecursively(var['genout'])
     dxfs.RemoveDirectoryRecursively(var['genwav'])
