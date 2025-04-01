@@ -9,6 +9,13 @@ def is_russian(text):
     return True if re.search(russian_chars, text) else False       
 
 
+def unify_lang(lang: str) -> str:
+    lang = lang.lower()
+    if len(lang) > 2:
+        lang = lang[:2]
+    return lang
+
+
 def detect_language(text, lang = 'ru') -> str:
     if (not text):
         return lang

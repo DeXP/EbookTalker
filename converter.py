@@ -213,7 +213,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
         # info, coverBytes = book.ParseBook(file, full = True)
 
     proc['bookName'] = book.BookName(info, includeAuthor=True)
-    lang = info['lang'] if ('lang' in info) else 'ru'
+    lang = dxnormalizer.unify_lang(info['lang']) if ('lang' in info) else 'ru'
 
     if ('error' in info) and info['error']:
         error = info['error']

@@ -163,6 +163,8 @@ def is_fb2(file_path):
         with open(file_path, 'rb') as f:
             # FB2 files start with XML declaration or directly with <FictionBook
             start = f.read(200).decode('utf-8', errors='ignore').lstrip()
+            if start.startswith('\ufeff'):
+                start = start[1:]
             return start.startswith(('<?xml', '<FictionBook'))
     except:
         return False

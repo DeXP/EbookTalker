@@ -56,4 +56,4 @@ def ParseTXT(file: Path, full = False):
             'title': title,
             'text': p
         }]  
-    }
+    }, None
