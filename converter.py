@@ -312,6 +312,9 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
             if not isSingleOutput:
                 dxaudio.convert_wav_to_compressed(encoder, cfg, sectionWavFile, sectionCompressedFile, 
                                                 title=curTitle, author=book.AuthorName(info), cover=cover, info=info)
+                
+                if sectionCompressedFile.exists() and (sectionCompressedFile.stat().st_size > 0):
+                    sectionWavFile.unlink()
 
     if var['askForExit']:
         return
