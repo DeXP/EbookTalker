@@ -72,7 +72,7 @@ def ParseFB2(file: Path, full = False):
         titleInfo = getElem(descriptionTag, 'title-info')
         sequence = getElem(titleInfo, 'sequence')
         author = getElem(titleInfo, 'author')
-        lang = getText(titleInfo, 'lang')
+        lang = dxnormalizer.unify_lang(getText(titleInfo, 'lang'))
 
         coverBytes = None
         coverPage = getElem(titleInfo, 'coverpage')

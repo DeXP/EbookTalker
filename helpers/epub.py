@@ -240,7 +240,7 @@ def ParseEpub(epub_path: Path, full=False):
         
         # Extract metadata
         result['title'] = get_xml_text(rootfile_xml, './/dc:title', ns)
-        result['lang'] = get_xml_text(rootfile_xml, './/dc:language', ns)
+        result['lang'] = dxnormalizer.unify_lang(get_xml_text(rootfile_xml, './/dc:language', ns))
         result['encoding'] = encoding
         
         # Extract author information
