@@ -17,9 +17,10 @@ def MoveFile(tmpFolder: Path, fromFile: Path, toFile: Path):
 
 
 def MoveAllFiles(tmpFolder: Path, fromFolder: Path, toFolder: Path):
-    for file in fromFolder.iterdir():
-        if file.is_file():
-            MoveFile(tmpFolder, file, toFolder / file.name)
+    if fromFolder.exists():
+        for file in fromFolder.iterdir():
+            if file.is_file():
+                MoveFile(tmpFolder, file, toFolder / file.name)
 
 
 def CreateDirectory(tmpFolder: Path, folder: Path):
