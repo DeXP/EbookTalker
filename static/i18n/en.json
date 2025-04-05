@@ -38,6 +38,7 @@
     "PreferencesSaveNote": "Note: Preferences are applied immediately after you hit Save.",
     "ApplicationSettings:": "Application settings:",
     "Language:": "Language:",
+    "InterfaceLanguage:": "Interface language:",
     "OutputFolder:": "Output folder:",
     "Default": "Default",
     "Codec:": "Codec:",

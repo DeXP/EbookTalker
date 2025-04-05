@@ -115,6 +115,14 @@ def GetModel(var: dict, lang = 'ru'):
     return var[lang]['model']
 
 
+def GetSymbols(var: dict, lang = 'ru'):
+    if (lang in var) and ('model' in var[lang]) and (var[lang]['model'] is None):
+        PreloadModel(var, lang)
+    if (lang in var) and ('symbols' in var[lang]):
+        return var[lang]['symbols']
+    return ''
+
+
 def GetSupportedAudioFormats(cfg: dict, var: dict):
     all_encoders = dxaudio.get_supported_encoders(cfg)
     supported = []
@@ -125,10 +133,11 @@ def GetSupportedAudioFormats(cfg: dict, var: dict):
 
 
 def IsCorrectPhrase(var: dict, lang = 'ru', text = ''):
-    if text and (lang in var) and ('symbols' in var[lang]):
-        if re.search(var[lang]['symbols'], text):
+    symbols = GetSymbols(var, lang)
+    if symbols:
+        if re.search(symbols, text):
             return True
-    return False
+    return True
 
 
 def DownloadFile(fromUrl: str, toFile: Path):

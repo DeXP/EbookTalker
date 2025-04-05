@@ -127,7 +127,7 @@ function ShowPreferencesWindow() {
         padding: 20,
         elements: [
           {
-            view: "select", label: tr["Language:"], name: "lang", value: APP_SETTINGS['app']['lang'],
+            view: "select", label: tr["InterfaceLanguage:"], name: "lang", value: APP_SETTINGS['app']['lang'],
             options: [
               { id: "", value: tr["Default"] },
               { id: "ru", value: TTS_LANGUAGES['ru']['name'] },

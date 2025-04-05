@@ -37,4 +37,7 @@ def RemoveDirectoryRecursively(pth: Path):
             child.unlink()
         else:
             RemoveDirectoryRecursively(child)
-    pth.rmdir()
+    try:
+        pth.rmdir()
+    except:
+        pass

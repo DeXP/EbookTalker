@@ -38,6 +38,7 @@
     "PreferencesSaveNote": "Внимание: Настройки применятся сразу после сохранения",
     "ApplicationSettings:": "Опции приложения:",
     "Language:": "Язык:",
+    "InterfaceLanguage:": "Язык интерфейса:",
     "OutputFolder:": "Папка результата:",
     "Default": "По умолчанию",
     "Codec:": "Кодек:",

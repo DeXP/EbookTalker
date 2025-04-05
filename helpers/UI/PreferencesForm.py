@@ -28,7 +28,7 @@ class PreferencesForm(ctk.CTkToplevel):
 
         self.testBook = book.GetTestBook(tr)
         
-        self.lang_label = ctk.CTkLabel(self, text=tr['Language:'])
+        self.lang_label = ctk.CTkLabel(self, text=tr['InterfaceLanguage:'])
         self.lang_label.grid(row=0, column=0, padx=10, pady=2, sticky="w")
 
         self.supported_languages = {
