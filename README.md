@@ -1,7 +1,7 @@
-FB2 reader in voice
-===================
+Ebook reader in voice
+=====================
 
-Converts textual books into audiobooks. The input is a normal book in FB2 format. Output is a folder with a set of OGG-files - audio book. Remember to feed the software with the books you properly own and have a license!
+Converts textual books into audiobooks. The input is a normal book in Epub/FB2/TXT format. Output is a folder with a set of audio-files - audio book. Remember to feed the software with the books you properly own and have a license!
 
 [Silero](https://github.com/snakers4/silero-models) is used as a TTS engine. List of the supported languages: English, Russian and Ukrainian.
 
@@ -74,10 +74,10 @@ Screenshot on Windows 11:
 
 # Russian
 
-Говорилка FB2 в голос
+Говорилка книг в голос
 =====================
 
-Это программное обеспечение для чтения книг в аудио. На входе - обычная книга в формате FB2. На выходе - аудиокнига. Помните, вы сами несёте ответственность за легальность ваших книг!
+Это программное обеспечение для чтения книг в аудио. На входе - обычная книга в формате FB2/Epub/txt. На выходе - аудиокнига. Помните, вы сами несёте ответственность за легальность ваших книг!
 
 В качестве движка для чтения используется [Silero](https://github.com/snakers4/silero-models). В данный момент поддерживаются русский, украинский и английский языки.
 
