@@ -3,10 +3,10 @@ from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 import customtkinter
 from pathlib import Path
-import sys, json, time, uuid, shutil, locale, datetime, multiprocessing, threading
+import sys, json, time, shutil, locale, datetime, multiprocessing, threading
 
 import converter
-from helpers import book, dxaudio, dxfs
+from helpers import book
 from helpers.UI import Icons, PreferencesForm, AboutForm
 
 

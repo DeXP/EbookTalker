@@ -55,7 +55,7 @@ def Init(cfg: dict):
         'jingle': Path(cfg["JINGLE_FOLDER"]),
         'formats': {
             'mp3': 'libmp3lame',
-            'ogg': 'vorbis',
+            'ogg': 'libvorbis',
             'm4b': 'aac',
             'opus':'opus'
         }
@@ -301,7 +301,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
             break
 
         # All sentences processed - concatenate the section into one file
-        codec = cfg['AUDIO_CODEC']
+        codec = var['settings']['app']['codec']
         encoder = var['formats'][codec]
         sectionWavFile = var['genout'] / f"{sectionCount}.wav"
         sectionCompressedFile = var['genout'] / f"{sectionCount}.{codec}"
