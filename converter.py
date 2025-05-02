@@ -211,7 +211,6 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
     dxfs.CreateDirectory(var['tmp'], var['gen'])
     dxfs.CreateDirectory(var['tmp'], var['genwav'])
     dxfs.CreateDirectory(var['tmp'], var['genout'])
-    proc['file'] = file.name
     proc['status'] = 'process'
 
     codec = var['settings']['app']['codec']

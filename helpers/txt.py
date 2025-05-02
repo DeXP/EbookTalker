@@ -48,7 +48,6 @@ def ParseTXT(file: Path, full = False):
         'seqNumber': '',
         'cover': '',
         'encoding': encoding,
-        'file': file.name,
         'size': file.stat().st_size,
         'datetime': file.lstat().st_mtime,
         # Data, available in a full parse only

@@ -132,7 +132,6 @@ def ParseFB2(file: Path, full = False):
             'seqNumber': getAttrib(sequence, 'number'),
             'cover': coverName,
             'encoding': encoding,
-            'file': file.name,
             'size': file.stat().st_size,
             'datetime': file.lstat().st_mtime,
             # Data, available in a full parse only

@@ -209,9 +209,7 @@ def create_app(test_config=None):
                 info['error'] = 'empty-title'
                 return info
 
-            info['file'] = book.SafeBookFileName(info)
-
-            new_file = var['queue'] / info['file']
+            new_file = var['queue'] / book.SafeBookFileName(info)
             dxfs.MoveFile(var['tmp'], tmpFile.Path(), new_file)
             converter.fillQueue(que, var)
             

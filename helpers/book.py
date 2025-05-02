@@ -59,7 +59,6 @@ def GetTestBook(tr: dict):
             'seqNumber': '',
             'cover': 'BookCover.jpg',
             'encoding': 'utf-8',
-            'file': 'file.name',
             'size': 123456,
             'datetime': 0.0,
         }

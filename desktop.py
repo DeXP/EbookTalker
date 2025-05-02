@@ -166,8 +166,7 @@ class App(customtkinter.CTk):
         if book_file:
             book_path = Path(book_file)
             info, _ = book.ParseBook(book_path)
-            info['file'] = book.SafeBookFileName(info)
-            new_file = var['queue'] / info['file']
+            new_file = var['queue'] / book.SafeBookFileName(info)
             shutil.copy(book_path, new_file)
 
             converter.fillQueue(self.que, self.var)
