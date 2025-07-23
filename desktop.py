@@ -254,7 +254,7 @@ class App(customtkinter.CTk):
             if "sentenceText" in self.proc:
                 self.readingLabel.configure(text=self.proc["sentenceText"])
 
-            if ("totalSentences" in self.proc) and ("sentenceNumber" in self.proc):
+            if ("totalSentences" in self.proc) and ("sentenceNumber" in self.proc) and ("bookName" in self.proc):
                 percent = float(self.proc['sentenceNumber']) / (float(self.proc['totalSentences']) + 1)
                 self.progressbar.set(percent)
                 self.title(f"{self.orig_title} - [ {self.proc['bookName']} ] - {int(100*percent)}%")
