@@ -42,7 +42,7 @@ services:
     container_name: ebooktalker
     restart: unless-stopped
     environment:
-      WEB_PASSWORD: "PASSWORD"
+      FLASK_WEB_PASSWORD: "PASSWORD"
     volumes:
       - /your-output-folder:/ready
     ports:
@@ -120,7 +120,7 @@ services:
     container_name: ebooktalker
     restart: unless-stopped
     environment:
-      WEB_PASSWORD: "PASSWORD"
+      FLASK_WEB_PASSWORD: "PASSWORD"
     volumes:
       - /your-output-folder:/ready
     ports:
