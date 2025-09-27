@@ -11,8 +11,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     global cfg, proc, var
-    cfg = {}
-    cfg["DATA_FOLDER"] = 'data'
+    cfg = { 'DATA_FOLDER': 'data' }
 
     manager = multiprocessing.Manager() 
     proc = manager.dict()

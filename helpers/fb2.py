@@ -33,7 +33,7 @@ def getElText(el: ET.Element):
     return el.text if (el is not None) else None
 
 
-def getSectionTitle(section: ET.Element):
+def getSectionTitle(section: ET.Element) -> str:
     sectionTitle = getElem(section, 'title')
     sectionTitleText = ''
     if sectionTitle is not None:
@@ -46,6 +46,54 @@ def getSectionTitle(section: ET.Element):
     if (sectionTitleText):
         sectionTitleText += '.'
     return sectionTitleText
+
+
+def getSubTagSentences(subTag: ET.Element, lang: str):
+    curText = ''
+    for t in subTag.itertext():
+        curText += t
+
+    # tts = curText
+    tts = dxnormalizer.normalize(curText, lang)
+    
+    # if 'ru' == info['lang']:
+    #     out_text = predictor.stress_text(var['accent_ru'], tts)
+    #     tts = ''.join(out_text)
+
+    #splitter = SentenceSplitter(language=info['lang'])
+    #sentences = splitter.split(tts)
+    sentences = dxsplitter.SplitSentence(tts)
+
+    return sentences
+
+
+def processSection(section: ET.Element, lang: str, skipSubSections=True):
+    p = []
+    rawSectionTitle = getSectionTitle(section)
+    sectionTitle = dxnormalizer.normalize(rawSectionTitle, lang)
+
+    for subTag in section:
+        # Title was processed already
+        if 'title' == subTag.tag:
+            continue
+
+        # Subsections were processed in the loop
+        if skipSubSections and ('section' == subTag.tag):
+            continue
+
+        # Process content nested sub tags which should be plain
+        if 'epigraph' == subTag.tag:
+            for nestedTag in subTag:
+                p.append(getSubTagSentences(nestedTag, lang)) # Add as 2D list
+            continue
+        
+        # Process leftovers - usually paragraphs etc
+        p.append(getSubTagSentences(subTag, lang)) # Add as 2D list
+
+    return {
+        'title': sectionTitle,
+        'text': p
+    }
 
 
 def ParseFB2(file: Path, full = False):
@@ -89,35 +137,12 @@ def ParseFB2(file: Path, full = False):
         if full:
             body = root.find('body')
             for section in body.findall('section'):
-                p = []
-                rawSectionTitle = getSectionTitle(section)
-                sectionTitle = dxnormalizer.normalize(rawSectionTitle, lang)
 
-                for subTag in section:
-                    if 'title' == subTag.tag:
-                        continue
+                for subSection in section.findall('section'):
+                    sections.append(processSection(subSection, lang, skipSubSections=False))
 
-                    curText = ''
-                    for t in subTag.itertext():
-                        curText += t
-
-                    # tts = curText
-                    tts = dxnormalizer.normalize(curText, lang)
-                    
-                    # if 'ru' == info['lang']:
-                    #     out_text = predictor.stress_text(var['accent_ru'], tts)
-                    #     tts = ''.join(out_text)
-
-                    #splitter = SentenceSplitter(language=info['lang'])
-                    #sentences = splitter.split(tts)
-                    sentences = dxsplitter.SplitSentence(tts)
-
-                    p.append(sentences) # Add as 2D list
-
-                sections.append({
-                    'title': sectionTitle,
-                    'text': p
-                })
+                # Skip sub sections since it was already processed in the loop above
+                sections.append(processSection(section, lang, skipSubSections=True))
                 
 
         return {

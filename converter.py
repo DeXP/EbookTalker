@@ -11,6 +11,7 @@ def Init(cfg: dict):
     # accentRuPredictor = predictor.Predictor('accentru/model-accentru.onnx', 'accentru/vocab-accentru.json', 'accentru/ru_stress_compressed.txt')
 
     dataDir = Path(cfg["DATA_FOLDER"])
+    jingleDir = Path(cfg["JINGLE_FOLDER"]) if ('JINGLE_FOLDER' in cfg) else 'jingle'
 
     var = {
         'askForExit': False,
@@ -52,7 +53,7 @@ def Init(cfg: dict):
         'tmp': dataDir / 'tmp',
         'queue': dataDir / 'queue',
         'gen': dataDir / 'generate',
-        'jingle': Path(cfg["JINGLE_FOLDER"]),
+        'jingle': jingleDir,
         'formats': {
             'mp3': 'libmp3lame',
             'ogg': 'libvorbis',

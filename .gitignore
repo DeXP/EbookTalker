@@ -6,5 +6,6 @@ models
 __pycache__/
 EbookTalker.spec
 settings.json
+debug.log
 *.py[cod]
 *$py.class

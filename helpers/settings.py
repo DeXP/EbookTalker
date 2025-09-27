@@ -35,9 +35,10 @@ def set_if_cat_none(d: dict, cat: str, sub: str, key: str, value):
 def LoadOrDefault(cfg: dict, var: dict):
     s = {}
 
-    settingsPath = Path(cfg['SETTINGS_FILE'])
-    if settingsPath.exists():
-        s = json.loads(settingsPath.read_text(encoding='utf-8'))
+    if 'SETTINGS_FILE' in cfg:
+        settingsPath = Path(cfg['SETTINGS_FILE'])
+        if settingsPath.exists():
+            s = json.loads(settingsPath.read_text(encoding='utf-8'))
 
     outputFolder = cfg['OUTPUT_FOLDER'] if ('OUTPUT_FOLDER' in cfg) else 'AudioBooks'
     dirs = cfg['DIRECTORIES_FORMAT'] if ('DIRECTORIES_FORMAT' in cfg) else 'single'
