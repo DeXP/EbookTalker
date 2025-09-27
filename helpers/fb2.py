@@ -33,8 +33,8 @@ def getElText(el: ET.Element):
     return el.text if (el is not None) else None
 
 
-def getSectionTitle(section: ET.Element) -> str:
-    sectionTitle = getElem(section, 'title')
+def getSectionTitleByTag(section: ET.Element, tagName: str) -> str:
+    sectionTitle = getElem(section, tagName)
     sectionTitleText = ''
     if sectionTitle is not None:
         for st in sectionTitle.itertext():
@@ -46,6 +46,12 @@ def getSectionTitle(section: ET.Element) -> str:
     if (sectionTitleText):
         sectionTitleText += '.'
     return sectionTitleText
+
+
+def getSectionTitle(section: ET.Element) -> str:
+    title = getSectionTitleByTag(section, 'title')
+    subTitle = getSectionTitleByTag(section, 'subtitle')
+    return title + ' ' + subTitle if subTitle else title
 
 
 def getSubTagSentences(subTag: ET.Element, lang: str):
@@ -62,7 +68,11 @@ def getSubTagSentences(subTag: ET.Element, lang: str):
 
     #splitter = SentenceSplitter(language=info['lang'])
     #sentences = splitter.split(tts)
-    sentences = dxsplitter.SplitSentence(tts)
+    #sentences = dxsplitter.SplitSentence(tts)
+
+    sentences = []
+    for s in tts.split('\n'):
+        sentences += dxsplitter.SplitSentence(s)
 
     return sentences
 
@@ -74,7 +84,7 @@ def processSection(section: ET.Element, lang: str, skipSubSections=True):
 
     for subTag in section:
         # Title was processed already
-        if 'title' == subTag.tag:
+        if subTag.tag in ['title', 'subtitle']:
             continue
 
         # Subsections were processed in the loop
@@ -137,12 +147,13 @@ def ParseFB2(file: Path, full = False):
         if full:
             body = root.find('body')
             for section in body.findall('section'):
+                # Skip sub sections since it would be processed in the loop
+                sections.append(processSection(section, lang, skipSubSections=True))
 
                 for subSection in section.findall('section'):
-                    sections.append(processSection(subSection, lang, skipSubSections=False))
-
-                # Skip sub sections since it was already processed in the loop above
-                sections.append(processSection(section, lang, skipSubSections=True))
+                    sections.append(processSection(subSection, lang, skipSubSections=True))
+                    for subSubSection in subSection.findall('section'):
+                        sections.append(processSection(subSubSection, lang, skipSubSections=False)) 
                 
 
         return {
@@ -178,6 +189,5 @@ if __name__ == "__main__":
         print("Please provide input file")
     else:
         input = Path(args.input)
-        isFull = True
-        info, _ = ParseFB2(input, full=isFull)
+        info, _ = ParseFB2(input, full=True)
         print(info)
