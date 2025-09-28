@@ -16,6 +16,19 @@ from helpers.UI import Icons, PreferencesForm, AboutForm
 
 
 class App(customtkinter.CTk):
+    def GetVersionExt(self):
+        if (sys.platform == "win32") and hasattr(sys, 'frozen'):
+            try:
+                from win32api import GetFileVersionInfo, LOWORD, HIWORD
+                info = GetFileVersionInfo(sys.executable, '\\')
+                ms, ls = info['FileVersionMS'], info['FileVersionLS']
+                major, minor, build = HIWORD(ms), LOWORD(ms), HIWORD(ls)
+                return f"{major}.{minor}.{build}"
+            except:
+                return None
+        return None
+
+
     def __init__(self, tr: dict, que: list, proc, cfg, var):
         super().__init__()
 
@@ -28,7 +41,13 @@ class App(customtkinter.CTk):
         self.sizeFmt = (tr["byte"], tr["KB"], tr["MB"], tr["GB"], tr["TB"], tr["PB"], "EiB", "ZiB")
         self.icon_font = customtkinter.CTkFont(size=18)
 
-        self.version = Path('static/version.txt').read_text()
+        self.version = self.GetVersionExt()
+        if not self.version:
+            versionFile = Path('static/version.txt')
+            if versionFile.exists():
+                self.version = versionFile.read_text()
+            else:
+                self.version = '0.0.0'
 
         self.orig_title = f"{tr['appTitle']} ({self.version})"
         self.title(self.orig_title)

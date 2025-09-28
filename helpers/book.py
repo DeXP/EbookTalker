@@ -33,7 +33,7 @@ def BookName(info, includeAuthor = True):
     if includeAuthor and author:
         return (author + " -" + num + title).strip()
     else:
-        return (num + title).strip()
+        return (num + "." + title).strip()
     
 
 def SafeBookName(info, includeAuthor = True):
