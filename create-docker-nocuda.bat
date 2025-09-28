@@ -1,0 +1,1 @@
+docker build -t dexperix/ebooktalker --build-arg TORCH_URL="--index-url https://download.pytorch.org/whl/cpu" .
