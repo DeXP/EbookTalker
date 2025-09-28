@@ -157,7 +157,7 @@ def process_content(content_bytes, encoding, language):
     # Get title from <title> tag if it exists
     title_elem = content_xml.find('.//{*}title')
     if title_elem is not None and title_elem.text:
-        title = dxnormalizer.normalize(html.unescape(title_elem.text.strip()), language)
+        title = html.unescape(title_elem.text.strip())
     
     # Collect all other text content
     for elem in content_xml.iter():

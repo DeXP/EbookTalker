@@ -267,6 +267,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
         rawSectionTitle = section['title']
         sectionTitle = dxnormalizer.normalize(rawSectionTitle, lang)
         # print(f"Section {sectionCount} ({len(section)}): {sectionTitle}")
+        proc['rawSectionTitle'] = rawSectionTitle
         proc['sectionTitle'] = sectionTitle
         if sectionTitle:
             sentenceCount += 1
@@ -316,7 +317,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
                     sectionWavs.append(curJingle.absolute())
                 
                 dxaudio.concatenate_wav_files(var['genwav'], sectionWavs, sectionWavFile)
-            curTitle = sectionTitle if sectionTitle else proc['bookName']
+            curTitle = rawSectionTitle if rawSectionTitle else proc['bookName']
 
             if not isSingleOutput:
                 dxaudio.convert_wav_to_compressed(encoder, cfg, sectionWavFile, sectionCompressedFile, 

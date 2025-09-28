@@ -267,8 +267,8 @@ class App(customtkinter.CTk):
                     self.load_cover()
                     self.title(f"{self.orig_title} - [ {bookName} ]")
 
-            if "sectionTitle" in self.proc:
-                self.chapterLabel.configure(text=self.proc["sectionTitle"])
+            if "rawSectionTitle" in self.proc:
+                self.chapterLabel.configure(text=self.proc["rawSectionTitle"])
 
             if "sentenceText" in self.proc:
                 self.readingLabel.configure(text=self.proc["sentenceText"])

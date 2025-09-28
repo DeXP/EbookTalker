@@ -79,8 +79,7 @@ def getSubTagSentences(subTag: ET.Element, lang: str):
 
 def processSection(section: ET.Element, lang: str, skipSubSections=True):
     p = []
-    rawSectionTitle = getSectionTitle(section)
-    sectionTitle = dxnormalizer.normalize(rawSectionTitle, lang)
+    sectionTitle = getSectionTitle(section)
 
     for subTag in section:
         # Title was processed already
@@ -146,6 +145,14 @@ def ParseFB2(file: Path, full = False):
         sections = []
         if full:
             body = root.find('body')
+
+            bodyTitle = getSectionTitle(body)
+            epigraphText = []
+            for epigraph in body.findall('epigraph'):
+                epigraphText += processSection(epigraph, lang, skipSubSections=False)['text']
+            if bodyTitle or len(epigraphText) > 0:
+                sections.append({'title': bodyTitle, 'text': epigraphText})
+
             for section in body.findall('section'):
                 # Skip sub sections since it would be processed in the loop
                 sections.append(processSection(section, lang, skipSubSections=True))
