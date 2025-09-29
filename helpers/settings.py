@@ -1,4 +1,4 @@
-import os, json
+import os, json, torch
 from pathlib import Path
 
 
@@ -43,7 +43,8 @@ def LoadOrDefault(cfg: dict, var: dict):
     outputFolder = cfg['OUTPUT_FOLDER'] if ('OUTPUT_FOLDER' in cfg) else 'AudioBooks'
     dirs = cfg['DIRECTORIES_FORMAT'] if ('DIRECTORIES_FORMAT' in cfg) else 'single'
     codec = cfg['AUDIO_CODEC'] if ('AUDIO_CODEC' in cfg) else 'mp3'
-    processor = cfg['TORCH_DEVICE'] if ('TORCH_DEVICE' in cfg) else 'cpu'
+    defaultProcessor = 'cuda' if torch.cuda.is_available() else 'cpu'
+    processor = cfg['TORCH_DEVICE'] if ('TORCH_DEVICE' in cfg) else defaultProcessor
 
     check_sub_dict(s, 'app')
     set_if_none(s, 'app', 'lang', '')
