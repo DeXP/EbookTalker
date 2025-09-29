@@ -80,7 +80,7 @@ def create_app(test_config=None):
                 'name': var[lang]['name']
             }
         return flask.render_template('index.html', 
-            version=version, passwordLength=len(app.config['WEB_PASSWORD']), settings=var['settings'], langList=var['languages'], languages=l)
+            version=version, passwordLength=len(str(app.config['WEB_PASSWORD'])), settings=var['settings'], langList=var['languages'], languages=l)
 
 
     @app.route("/favicon.ico")
