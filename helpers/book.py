@@ -28,12 +28,12 @@ def BookName(info, includeAuthor = True):
     if not info:
         return None
     author = AuthorName(info) if includeAuthor else ""
-    num = (" " + info['seqNumber']) if ('seqNumber' in info) and info['seqNumber'] else ""
+    num = (" " + info['seqNumber'] + ".") if ('seqNumber' in info) and info['seqNumber'] else ""
     title = (" " + info['title']) if ('title' in info) and info['title'] else ""
     if includeAuthor and author:
         return (author + " -" + num + title).strip()
     else:
-        return (num + "." + title).strip()
+        return (num + title).strip()
     
 
 def SafeBookName(info, includeAuthor = True):
