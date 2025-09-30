@@ -49,7 +49,7 @@ services:
       - 5000:5000
 ```
 
-You can use `nocuda` tag instead of `latest` if you don't have Nvidia graphics card on your server. The version without CUDA runs on CPU and takes around ~10 times less disk space.
+You can use `cuda` tag instead of `latest` if you have an Nvidia graphics card on your server. The version without CUDA runs on CPU and takes around ~10 times less disk space.
 
 
 ### Direct Python run
@@ -130,7 +130,7 @@ services:
       - 5000:5000
 ```
 
-Вместо `latest` можно использовать тэг `nocuda` - если на Вашем сервере нет видеокарты от Nvidia. Версия без CUDA занимает примерно в 10 раз меньше места на диске и исполняется только на процессоре.
+Вместо `latest` можно использовать тэг `cuda` - если на Вашем сервере установлена видеокарта от Nvidia и есть желание использовать её для вычислений. Версия без CUDA занимает примерно в 10 раз меньше места на диске и исполняется только на процессоре.
 
 
 ### Прямой запуск через Python
