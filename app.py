@@ -143,8 +143,8 @@ def create_app(test_config=None):
     @app.route('/preferences/save', methods=['POST'])
     def savePreferences():
         s = flask.request.get_json(force=True)
-        webPassword = app.config.get('WEB_PASSWORD', '')
-        postPassword = s.get('app', {}).get('preferencesPassword', '')
+        webPassword = str(app.config.get('WEB_PASSWORD', ''))
+        postPassword = str(s.get('app', {}).get('preferencesPassword', ''))
         if webPassword and (webPassword != postPassword):
             return {'error': 'password'}
         
@@ -186,9 +186,9 @@ def create_app(test_config=None):
     @app.route('/queue/add')
     def addToQueue():
         #tmp_file = var['tmp'] / f'{uuid.uuid4()}.book'
-        url = flask.request.args.get('url', default = None, type = str)
-        pwd = flask.request.args.get('password', default = None, type = str)
-        if ('WEB_PASSWORD' in app.config) and app.config['WEB_PASSWORD'] and (app.config['WEB_PASSWORD'] != pwd):
+        url = str(flask.request.args.get('url', default = None, type = str))
+        pwd = str(flask.request.args.get('password', default = None, type = str))
+        if ('WEB_PASSWORD' in app.config) and app.config['WEB_PASSWORD'] and (str(app.config['WEB_PASSWORD']) != pwd):
             return {'error': 'password'}
         if not url:
             return {'error': 'file-access', 'failure': 'Empty download URL'}
