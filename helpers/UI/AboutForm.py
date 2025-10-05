@@ -17,7 +17,7 @@ class AboutForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(f"{tr['AboutApplication']}: {tr["appTitle"]}")
-        self.geometry(parent.get_child_geometry(width=750, height=380))
+        self.geometry(parent.get_child_geometry(width=770, height=350))
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
 
@@ -45,17 +45,14 @@ class AboutForm(ctk.CTkToplevel):
         self.beta_testers_label = ctk.CTkLabel(self, text=tr["appBetaTesters-line"])
         self.beta_testers_label.grid(row=4, column=1, sticky="w")
 
-        self.sysinfo_label = ctk.CTkLabel(self, text=tr["SystemInformation"])
-        self.sysinfo_label.grid(row=5, column=1, sticky="w")
-
         sysinfo_str = settings.get_system_info_str()
         self.sysinfo_text = ctk.CTkTextbox(self, height=120, width=400)
         #self.sysinfo_text.delete("0.0", "end")  # delete all text
-        self.sysinfo_text.insert(tk.END, sysinfo_str) 
-        self.sysinfo_text.grid(row=6, column=1, sticky="w")
+        self.sysinfo_text.insert(tk.END, tr["SystemInformation"] + "\n\n" + sysinfo_str) 
+        self.sysinfo_text.grid(row=5, column=1, sticky="w")
 
         self.ok_button = ctk.CTkButton(self, text=tr['OK'], command=self.on_ok)
-        self.ok_button.grid(row=7, column=1, sticky="s")
+        self.ok_button.grid(row=6, column=1, sticky="s")
     
 
     def on_ok(self):

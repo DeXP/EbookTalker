@@ -1,4 +1,4 @@
-import os, json, torch, psutil, platform
+import os, json, torch
 from pathlib import Path
 
 
@@ -101,32 +101,41 @@ def deep_compare_and_update(dict1, dict2):
 
 def get_system_info_str():
     s = ""
-    # OS Information
-    s += f"Operating System: {platform.system()} {platform.release()}\n"
-    s += f"OS Version: {platform.version()}\n"
-    s += f"Architecture: {platform.machine()}\n"
-    s += f"Hostname: {platform.node()}\n"
-    s += f"Processor: {platform.processor()}\n"
+
+    try:
+        # OS Information
+        import platform
+        s += f"Operating System: {platform.system()} {platform.release()}\n"
+        s += f"OS Version: {platform.version()}\n"
+        s += f"Architecture: {platform.machine()}\n"
+        s += f"Hostname: {platform.node()}\n"
+        s += f"Processor: {platform.processor()}\n"
+    except:
+        pass
     
-    # Memory Information
-    memory = psutil.virtual_memory()
-    s += f"\nTotal RAM: {memory.total / (1024**3):.2f} GB\n"
-    s += f"Available RAM: {memory.available / (1024**3):.2f} GB\n"
-    s += f"Used RAM: {memory.used / (1024**3):.2f} GB\n"
-    s += f"RAM Usage: {memory.percent}%\n"
-    
-    # Current Process Information
-    current_process = psutil.Process(os.getpid())
-    s += f"\nCurrent Process: {current_process.name()}\n"
-    s += f"Process ID: {current_process.pid}\n"
-    s += f"CPU Time (User): {current_process.cpu_times().user:.2f}s\n"
-    s += f"CPU Time (System): {current_process.cpu_times().system:.2f}s\n"
-    s += f"Total CPU Time: {sum(current_process.cpu_times())}s\n"
-    s += f"Memory Usage: {current_process.memory_info().rss / (1024**2):.2f} MB\n"
-    
-    # Total System CPU Usage
-    s += f"\nTotal CPU Usage: {psutil.cpu_percent(interval=1)}%\n"
-    s += f"Number of CPU Cores: {psutil.cpu_count(logical=False)} physical, {psutil.cpu_count(logical=True)} logical\n"
+    try:
+        # Memory Information
+        import psutil
+        memory = psutil.virtual_memory()
+        s += f"\nTotal RAM: {memory.total / (1024**3):.2f} GB\n"
+        s += f"Available RAM: {memory.available / (1024**3):.2f} GB\n"
+        s += f"Used RAM: {memory.used / (1024**3):.2f} GB\n"
+        s += f"RAM Usage: {memory.percent}%\n"
+        
+        # Current Process Information
+        current_process = psutil.Process(os.getpid())
+        s += f"\nCurrent Process: {current_process.name()}\n"
+        s += f"Process ID: {current_process.pid}\n"
+        s += f"CPU Time (User): {current_process.cpu_times().user:.2f}s\n"
+        s += f"CPU Time (System): {current_process.cpu_times().system:.2f}s\n"
+        s += f"Total CPU Time: {sum(current_process.cpu_times())}s\n"
+        s += f"Memory Usage: {current_process.memory_info().rss / (1024**2):.2f} MB\n"
+        
+        # Total System CPU Usage
+        s += f"\nTotal CPU Usage: {psutil.cpu_percent(interval=1)}%\n"
+        s += f"Number of CPU Cores: {psutil.cpu_count(logical=False)} physical, {psutil.cpu_count(logical=True)} logical\n"
+    except:
+        pass
     
     # Check for CUDA availability
     try:
