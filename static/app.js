@@ -20,6 +20,15 @@ function readablizeBytes(bytes) {
   return (bytes / Math.pow(1024, e)).toFixed(1) + " " + s[e];
 }
 
+function composeFailureText(j) {
+  if (('error' in j) && j['error']) {
+    errorIndex = j['error'];
+    errorText = (errorIndex in tr["error"])? tr["error"][errorIndex]: tr["error"]["unknown-error"];
+    return (('failure' in j) && j['failure'])? errorText + ': ' + j['failure']: errorText;
+  };
+  return '';
+}
+
 function ShowAboutWindow(id, event) {
   let win = $$("aboutWindow");
 
@@ -29,7 +38,7 @@ function ShowAboutWindow(id, event) {
       view: "window",
       id: "aboutWindow",
       modal: true, close: true, move: true,
-      position: "center", width: 840, height: 440,
+      position: "center", width: 940, height: 660,
       head: tr["appTitle"],
       body: {
         view: "form",
@@ -41,8 +50,8 @@ function ShowAboutWindow(id, event) {
             cols: [
               {
                 view: "template",
-                template: "<img src='/static/default-cover.png' style='width:290px; height:290px;'/>",
-                width: 320,
+                template: "<img src='/static/default-cover.png' style='width:400px; height:400px;'/>",
+                width: 420,
                 borderless: true
               },
               {
@@ -54,6 +63,7 @@ function ShowAboutWindow(id, event) {
                   { view: "label", label: tr["appAuthor-line"] },
                   { view: "label", label: tr["appBetaTesters-line"] },
                   { view: "button", value: tr["appLink"], click: "window.open('" + tr["appLink"] + "')" },
+                  { view: "textarea", height: 120, value: tr["SystemInformation"] + "\n\n" + SYS_INFO },
                   { view: "button", value: tr["OK"], css: "webix_primary", click: function () { $$("aboutWindow").close(); } }
                 ]
               }
@@ -173,7 +183,7 @@ function ShowPreferencesWindow() {
                   }).post("/preferences/save", values).then(function (data) {
                     j = data.json()
                     if (('error' in j) && j['error']) {
-                      webix.message({ text: tr["passwordIncorrect"], type: "error" });
+                      webix.message({ text: composeFailureText(j), type: "error" });
                     }
                     else {
                       APP_SETTINGS = values;
@@ -291,10 +301,10 @@ function ConstructUI(tr) {
                       url = $$("processForm").getValues().url;
                       password = $$("processForm").getValues().password;
                       if (!password || (password.length < PASSWORD_LENGTH)) {
-                        error = tr["passwordTooShort"].replace("##", PASSWORD_LENGTH);
+                        error = tr["error"]["passwordTooShort"].replace("##", PASSWORD_LENGTH);
                       }
                       if (!url || (url.length < 5)) {
-                        error = tr["noURLforDownload"];
+                        error = tr["error"]["noURLforDownload"];
                       }
                       if (error) {
                         webix.message({ text: error, type: "error" });
@@ -303,7 +313,7 @@ function ConstructUI(tr) {
                         webix.ajax().get("/queue/add", { password: password, url: url }).then(function (data) {
                           j = data.json()
                           if (('error' in j) && j['error']) {
-                            webix.message({ text: tr["passwordIncorrect"], type: "error" });
+                            webix.message({ text: composeFailureText(j), type: "error" });
                           }
                           else {
                             $$("processForm").setValues({ url: '' }, true);

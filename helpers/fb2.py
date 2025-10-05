@@ -7,6 +7,9 @@ if __name__ == "__main__":
 else:
     from . import book, dxnormalizer, dxsplitter
 
+# from stressrnn import StressRNN
+# stress_rnn = StressRNN()
+
 
 def getElem(el: ET.Element, name):
     return el.find(name) if (el is not None) else None
@@ -54,6 +57,18 @@ def getSectionTitle(section: ET.Element) -> str:
     return title + ' ' + subTitle if subTitle else title
 
 
+def move_plus_left(s):
+    chars = list(s)
+    i = 0
+    while i < len(chars):
+        if chars[i] == '+':
+            if i > 0:
+                chars[i-1], chars[i] = chars[i], chars[i-1]
+                i += 1
+        i += 1
+    return ''.join(chars)
+
+
 def getSubTagSentences(subTag: ET.Element, lang: str):
     curText = ''
     for t in subTag.itertext():
@@ -62,9 +77,13 @@ def getSubTagSentences(subTag: ET.Element, lang: str):
     # tts = curText
     tts = dxnormalizer.normalize(curText, lang)
     
-    # if 'ru' == info['lang']:
+    # if 'ru' == lang:
     #     out_text = predictor.stress_text(var['accent_ru'], tts)
     #     tts = ''.join(out_text)
+
+    # if 'ru' == lang:
+    #     tts = move_plus_left(stress_rnn.put_stress(tts, stress_symbol='+', accuracy_threshold=0.75, replace_similar_symbols=True))
+
 
     #splitter = SentenceSplitter(language=info['lang'])
     #sentences = splitter.split(tts)

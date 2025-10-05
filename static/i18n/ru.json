@@ -23,9 +23,6 @@
     "url": "Ссылка",
     "password": "Пароль",
     "add": "Добавить",
-    "passwordIncorrect": "Неправильный пароль",
-    "passwordTooShort": "Пароль должен содержать больше ## символов",
-    "noURLforDownload": "Введите ссылку для скачивания",
     "emptyBookName": "нет",
     "datetimeFormat": "%d.%m.%Y %H:%M",
     "byte": "байт",
@@ -54,5 +51,16 @@
     "Cancel": "Отменить",
     "VoiceoverSettings:": "Опции озвучивания:",
     "AboutApplication": "О программе",
-    "OK": "OK"
+    "SystemInformation": "Информация о системе", 
+    "OK": "OK",
+    "error": {
+        "noURLforDownload": "Введите ссылку для скачивания",
+        "password": "Неправильный пароль",
+        "passwordTooShort": "Пароль должен содержать больше ## символов",
+        "file-access": "Файл недоступен",
+        "download": "Невозможно скачать файл",
+        "empty-title": "Файл кнгиги некорректный - название пустое",
+        "charset-decoding": "Невозможно опеределить кодировку",
+        "unknown-error": "Внезапная неизвестная ошибка"
+    }
 }

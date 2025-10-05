@@ -1,4 +1,4 @@
-import os, json, torch
+import os, json, torch, psutil, platform
 from pathlib import Path
 
 
@@ -97,3 +97,50 @@ def deep_compare_and_update(dict1, dict2):
             # dict1[key] = value
             
     return dict1
+
+
+def get_system_info_str():
+    s = ""
+    # OS Information
+    s += f"Operating System: {platform.system()} {platform.release()}\n"
+    s += f"OS Version: {platform.version()}\n"
+    s += f"Architecture: {platform.machine()}\n"
+    s += f"Hostname: {platform.node()}\n"
+    s += f"Processor: {platform.processor()}\n"
+    
+    # Memory Information
+    memory = psutil.virtual_memory()
+    s += f"\nTotal RAM: {memory.total / (1024**3):.2f} GB\n"
+    s += f"Available RAM: {memory.available / (1024**3):.2f} GB\n"
+    s += f"Used RAM: {memory.used / (1024**3):.2f} GB\n"
+    s += f"RAM Usage: {memory.percent}%\n"
+    
+    # Current Process Information
+    current_process = psutil.Process(os.getpid())
+    s += f"\nCurrent Process: {current_process.name()}\n"
+    s += f"Process ID: {current_process.pid}\n"
+    s += f"CPU Time (User): {current_process.cpu_times().user:.2f}s\n"
+    s += f"CPU Time (System): {current_process.cpu_times().system:.2f}s\n"
+    s += f"Total CPU Time: {sum(current_process.cpu_times())}s\n"
+    s += f"Memory Usage: {current_process.memory_info().rss / (1024**2):.2f} MB\n"
+    
+    # Total System CPU Usage
+    s += f"\nTotal CPU Usage: {psutil.cpu_percent(interval=1)}%\n"
+    s += f"Number of CPU Cores: {psutil.cpu_count(logical=False)} physical, {psutil.cpu_count(logical=True)} logical\n"
+    
+    # Check for CUDA availability
+    try:
+        import torch
+        cuda_available = torch.cuda.is_available()
+        s += f"\nCUDA Available: {cuda_available}"
+        if cuda_available:
+            s += f"CUDA Device Count: {torch.cuda.device_count()}\n"
+            s += f"CUDA Current Device: {torch.cuda.current_device()}\n"
+            s += f"CUDA Device Name: {torch.cuda.get_device_name()}\n"
+            s += f"CUDA Memory - Total: {torch.cuda.get_device_properties(0).total_memory / (1024**3):.2f} GB\n"
+            s += f"CUDA Memory - Allocated: {torch.cuda.memory_allocated() / (1024**2):.2f} MB\n"
+            s += f"CUDA Memory - Cached: {torch.cuda.memory_reserved() / (1024**2):.2f} MB\n"
+    except ImportError:
+        s += "\nCUDA Check: PyTorch not installed - Cannot verify CUDA availability\n"
+    
+    return s

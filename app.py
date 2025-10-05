@@ -80,7 +80,8 @@ def create_app(test_config=None):
                 'name': var[lang]['name']
             }
         return flask.render_template('index.html', 
-            version=version, passwordLength=len(str(app.config['WEB_PASSWORD'])), settings=var['settings'], langList=var['languages'], languages=l)
+            version=version, passwordLength=len(str(app.config['WEB_PASSWORD'])), settings=var['settings'], 
+            langList=var['languages'], languages=l, sysinfo=settings.get_system_info_str())
 
 
     @app.route("/favicon.ico")
@@ -197,8 +198,8 @@ def create_app(test_config=None):
         with dxtmpfile.TmpStringFile(var['tmp'], ext='.book') as tmpFile:
             try:
                 converter.DownloadFile(url, tmpFile.Path())
-            except:
-                return {'error': 'download'}
+            except Exception as error:
+                return {'error': 'download', 'failure': str(error)}
             
             info, _ = book.ParseBook(tmpFile.Path())
 

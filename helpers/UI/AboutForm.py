@@ -5,6 +5,7 @@ from PIL import Image, ImageTk
 from pathlib import Path
 
 from helpers.UI import Icons
+from helpers import settings
 
 class AboutForm(ctk.CTkToplevel):
     def __init__(self, parent, tr: dict, cfg:dict, var: dict):
@@ -16,18 +17,18 @@ class AboutForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(f"{tr['AboutApplication']}: {tr["appTitle"]}")
-        self.geometry(parent.get_child_geometry(width=750, height=320))
+        self.geometry(parent.get_child_geometry(width=750, height=380))
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
 
         image_open = Image.open('static/default-cover.png')
         width, height = image_open.size
-        h = 300
+        h = 320
         w = int((width * h) / height)
         resized_img = image_open.resize((w,h))
         self.img = ImageTk.PhotoImage(resized_img)
         self.cover_label = ttk.Label(self, text="", image=self.img, background=parent.imageBG)
-        self.cover_label.grid(row=0, column=0, padx=20, pady=10, sticky="ew", columnspan=1, rowspan=6)
+        self.cover_label.grid(row=0, column=0, padx=20, pady=10, sticky="ew", columnspan=1, rowspan=8)
 
         self.title_label = ctk.CTkLabel(self, text=tr["appTitle"])
         self.title_label.grid(row=0, column=1, sticky="w")
@@ -44,9 +45,17 @@ class AboutForm(ctk.CTkToplevel):
         self.beta_testers_label = ctk.CTkLabel(self, text=tr["appBetaTesters-line"])
         self.beta_testers_label.grid(row=4, column=1, sticky="w")
 
+        self.sysinfo_label = ctk.CTkLabel(self, text=tr["SystemInformation"])
+        self.sysinfo_label.grid(row=5, column=1, sticky="w")
+
+        sysinfo_str = settings.get_system_info_str()
+        self.sysinfo_text = ctk.CTkTextbox(self, height=120, width=400)
+        #self.sysinfo_text.delete("0.0", "end")  # delete all text
+        self.sysinfo_text.insert(tk.END, sysinfo_str) 
+        self.sysinfo_text.grid(row=6, column=1, sticky="w")
 
         self.ok_button = ctk.CTkButton(self, text=tr['OK'], command=self.on_ok)
-        self.ok_button.grid(row=5, column=1)
+        self.ok_button.grid(row=7, column=1, sticky="s")
     
 
     def on_ok(self):
