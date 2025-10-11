@@ -2,16 +2,14 @@ import os, re, json, torch, time
 from pathlib import Path
 
 from helpers import settings, book, dxfs, dxaudio, dxsplitter, dxnormalizer
-
-#from sentence_splitter import SentenceSplitter
-#from accentru import predictor
+from silero_stress import load_accentor
 
 
 def Init(cfg: dict):
-    # accentRuPredictor = predictor.Predictor('accentru/model-accentru.onnx', 'accentru/vocab-accentru.json', 'accentru/ru_stress_compressed.txt')
-
     dataDir = Path(cfg["DATA_FOLDER"])
     jingleDir = Path(cfg["JINGLE_FOLDER"]) if ('JINGLE_FOLDER' in cfg) else 'jingle'
+
+    accentor = load_accentor()
 
     var = {
         'askForExit': False,
@@ -46,7 +44,7 @@ def Init(cfg: dict):
             'default': 'en_0',
             'phrase': 'London is the capital of Great Britain.' 
         },
-        #'accent_ru': accentRuPredictor,
+        'accentor': accentor,
         'sample_rate': 24000,
         'put_accent': True,
         'put_yo': True,
@@ -77,7 +75,7 @@ def Init(cfg: dict):
 
     device = torch.device(var['settings']['app']['processor'])
     num_threads = int(var['settings']['app']['threads'])
-    if num_threads > 0:
+    if ('cpu' == var['settings']['app']['processor']) and (num_threads > 0):
         torch.set_num_threads(num_threads)
     var['device'] = device
 
@@ -217,6 +215,8 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
     codec = var['settings']['app']['codec']
     encoder = var['formats'][codec]
 
+    accentor = var['accentor']
+
     if info is None:
         info = json.loads(file.read_text(encoding='utf-8'))
         # info, coverBytes = book.ParseBook(file, full = True)
@@ -266,6 +266,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
         sectionWavs = []    
         rawSectionTitle = section['title']
         sectionTitle = dxnormalizer.normalize(rawSectionTitle, lang)
+        sectionTitle = accentor(sectionTitle) if 'ru' == lang else sectionTitle
         # print(f"Section {sectionCount} ({len(section)}): {sectionTitle}")
         proc['rawSectionTitle'] = rawSectionTitle
         proc['sectionTitle'] = sectionTitle
@@ -289,7 +290,8 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
                 proc['lineSentenceNumber'] = lineSentence
                 proc['sentenceNumber'] = sentenceCount
                 proc['sentenceText'] = s
-                if ProcessSentence(lang, sentenceCount, s, var):
+                accentedText = accentor(s) if 'ru' == lang else s
+                if ProcessSentence(lang, sentenceCount, accentedText, var):
                     sectionWavs.append(f"{sentenceCount}.wav")
                     # last senctence in paragraph - long pause
                     pauseName = "pause-long.wav" if lineSentence == (len(p) - 1) else 'pause.wav'
@@ -302,8 +304,6 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
             break
 
         # All sentences processed - concatenate the section into one file
-        codec = var['settings']['app']['codec']
-        encoder = var['formats'][codec]
         sectionWavFile = var['genout'] / f"{sectionCount}.wav"
         sectionCompressedFile = var['genout'] / f"{sectionCount}.{codec}"
 

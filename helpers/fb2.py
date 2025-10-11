@@ -7,8 +7,11 @@ if __name__ == "__main__":
 else:
     from . import book, dxnormalizer, dxsplitter
 
-# from stressrnn import StressRNN
-# stress_rnn = StressRNN()
+# from silero_stress import load_accentor
+# accentor = load_accentor()
+
+# import torch
+# torch.set_num_threads(12)
 
 
 def getElem(el: ET.Element, name):
@@ -57,37 +60,15 @@ def getSectionTitle(section: ET.Element) -> str:
     return title + ' ' + subTitle if subTitle else title
 
 
-def move_plus_left(s):
-    chars = list(s)
-    i = 0
-    while i < len(chars):
-        if chars[i] == '+':
-            if i > 0:
-                chars[i-1], chars[i] = chars[i], chars[i-1]
-                i += 1
-        i += 1
-    return ''.join(chars)
-
-
 def getSubTagSentences(subTag: ET.Element, lang: str):
     curText = ''
     for t in subTag.itertext():
         curText += t
 
-    # tts = curText
     tts = dxnormalizer.normalize(curText, lang)
-    
-    # if 'ru' == lang:
-    #     out_text = predictor.stress_text(var['accent_ru'], tts)
-    #     tts = ''.join(out_text)
 
     # if 'ru' == lang:
-    #     tts = move_plus_left(stress_rnn.put_stress(tts, stress_symbol='+', accuracy_threshold=0.75, replace_similar_symbols=True))
-
-
-    #splitter = SentenceSplitter(language=info['lang'])
-    #sentences = splitter.split(tts)
-    #sentences = dxsplitter.SplitSentence(tts)
+    #     tts = accentor(tts)
 
     sentences = []
     for s in tts.split('\n'):

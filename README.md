@@ -45,6 +45,7 @@ services:
       FLASK_WEB_PASSWORD: "PASSWORD"
     volumes:
       - /your-output-folder:/ready
+      - /your-settings-folder:/settings
     ports:
       - 5000:5000
 ```
@@ -126,6 +127,7 @@ services:
       FLASK_WEB_PASSWORD: "PASSWORD"
     volumes:
       - /your-output-folder:/ready
+      - /your-settings-folder:/settings
     ports:
       - 5000:5000
 ```
