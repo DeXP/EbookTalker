@@ -39,6 +39,7 @@
     "OutputFolder:": "Output folder:",
     "Default": "Default",
     "Codec:": "Codec:",
+    "Bitrate:": "Bitrate:",
     "Voice:": "Voice:",
     "NamingFormat:": "Naming format:",
     "nf-single": "Single file",

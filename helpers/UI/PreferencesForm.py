@@ -19,11 +19,11 @@ class PreferencesForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(tr['Preferences'])
-        self.geometry(parent.get_child_geometry(width=500, height=325))
+        self.geometry(parent.get_child_geometry(width=500, height=360))
 
         self.grid_columnconfigure((0,2), weight=0)
         self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(5, weight=1)
+        self.grid_rowconfigure(6, weight=1)
 
 
         self.testBook = book.GetTestBook(tr)
@@ -65,28 +65,37 @@ class PreferencesForm(ctk.CTkToplevel):
         self.codec_combobox.grid(row=2, column=1, columnspan=2, padx=10, pady=2, sticky="w")
 
 
+        self.bitrate_label = ctk.CTkLabel(self, text=tr['Bitrate:'])
+        self.bitrate_label.grid(row=3, column=0, padx=10, pady=2, sticky="w")
+
+        self.available_bitrate = ['32', '64', '128', '192', '320']
+        self.bitrate_combobox = ctk.CTkComboBox(self, values=self.available_bitrate, state="readonly")
+        self.bitrate_combobox.set(var['settings']['app']['bitrate'])
+        self.bitrate_combobox.grid(row=3, column=1, columnspan=2, padx=10, pady=2, sticky="w")
+
+
         self.dir_formats = {
             'single': tr["nf-single"],
             'short': tr["nf-short"],
             'full': tr["nf-full"]
         }
         self.dirs_label = ctk.CTkLabel(self, text=tr['NamingFormat:'])
-        self.dirs_label.grid(row=3, column=0, padx=10, pady=2, sticky="w")
+        self.dirs_label.grid(row=4, column=0, padx=10, pady=2, sticky="w")
 
         self.dirs_combobox = ctk.CTkComboBox(self, values=list(self.dir_formats.values()), state="readonly", command=self.on_dirs_changed)
         self.dirs_combobox.set(self.dir_formats.get(var['settings']['app']['dirs'], tr["nf-short"]))
-        self.dirs_combobox.grid(row=3, column=1, padx=10, pady=2, columnspan=2, sticky="w")
+        self.dirs_combobox.grid(row=4, column=1, padx=10, pady=2, columnspan=2, sticky="w")
 
 
         self.dirs_example_label = ctk.CTkLabel(self, text=tr['Example:'])
-        self.dirs_example_label.grid(row=4, column=0, padx=10, pady=2, sticky="w")
+        self.dirs_example_label.grid(row=5, column=0, padx=10, pady=2, sticky="w")
 
         self.dirs_example = ctk.CTkLabel(self, text=self.GetNiceTestBookName(var['settings']['app']['dirs']))
-        self.dirs_example.grid(row=4, column=1, padx=10, pady=2, sticky="w")
+        self.dirs_example.grid(row=5, column=1, padx=10, pady=2, sticky="w")
 
 
         self.tts_tabview = ctk.CTkTabview(self, width=250)
-        self.tts_tabview.grid(row=5, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
+        self.tts_tabview.grid(row=6, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
         self.tts_tabview.configure(command=self.on_tab_change)
         self.tts_voice_labels = {}
         self.tts_voice_combos = {}
@@ -118,14 +127,14 @@ class PreferencesForm(ctk.CTkToplevel):
 
 
         self.warning_note = ctk.CTkLabel(self, text=tr['PreferencesSaveNote'])
-        self.warning_note.grid(row=6, column=0, padx=10, pady=2, columnspan=3, sticky="w")
+        self.warning_note.grid(row=7, column=0, padx=10, pady=2, columnspan=3, sticky="w")
 
         # Save and Cancel buttons
         self.save_button = ctk.CTkButton(self, text=tr["Save"], command=self.on_save)
-        self.save_button.grid(row=7, column=0, padx=10, pady=7)
+        self.save_button.grid(row=8, column=0, padx=10, pady=7)
 
         self.cancel_button = ctk.CTkButton(self, text=tr["Cancel"], command=self.on_cancel)
-        self.cancel_button.grid(row=7, column=1, padx=10, pady=7, columnspan=2, sticky="e")
+        self.cancel_button.grid(row=8, column=1, padx=10, pady=7, columnspan=2, sticky="e")
 
 
     def on_save(self):
@@ -134,6 +143,7 @@ class PreferencesForm(ctk.CTkToplevel):
         s['app']['lang'] = self.get_code_by_lang(self.lang_combobox.get())
         s['app']['output'] = self.output_text.get()
         s['app']['codec'] = self.codec_combobox.get()
+        s['app']['bitrate'] = int(self.bitrate_combobox.get())
         s['app']['dirs'] = self.get_dir_format_by_translated(self.dirs_combobox.get())
 
         for lang in self.var['languages']:

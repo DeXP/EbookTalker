@@ -213,6 +213,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
     proc['status'] = 'process'
 
     codec = var['settings']['app']['codec']
+    bitrate = var['settings']['app']['bitrate']
     encoder = var['formats'][codec]
 
     accentor = var['accentor']
@@ -320,7 +321,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
             curTitle = rawSectionTitle if rawSectionTitle else proc['bookName']
 
             if not isSingleOutput:
-                dxaudio.convert_wav_to_compressed(encoder, cfg, sectionWavFile, sectionCompressedFile, 
+                dxaudio.convert_wav_to_compressed(encoder, cfg, sectionWavFile, sectionCompressedFile, bitrate=bitrate,
                                                 title=curTitle, author=book.AuthorName(info), cover=cover, info=info)
                 
                 if sectionCompressedFile.exists() and (sectionCompressedFile.stat().st_size > 0):
@@ -351,7 +352,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
                 time += duration
 
         dxaudio.concatenate_wav_files(var['genout'], chapterWavs, bookWavFile)
-        dxaudio.convert_wav_to_compressed(encoder, cfg, bookWavFile, bookCompressedFile, 
+        dxaudio.convert_wav_to_compressed(encoder, cfg, bookWavFile, bookCompressedFile, bitrate=bitrate,
             title=curTitle, author=book.AuthorName(info), cover=cover, info=info, chapters=chapterMeta)
         
         dxfs.MoveFile(var['tmp'], bookCompressedFile, outputName)

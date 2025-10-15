@@ -43,6 +43,7 @@ def LoadOrDefault(cfg: dict, var: dict):
     outputFolder = cfg['OUTPUT_FOLDER'] if ('OUTPUT_FOLDER' in cfg) else 'AudioBooks'
     dirs = cfg['DIRECTORIES_FORMAT'] if ('DIRECTORIES_FORMAT' in cfg) else 'single'
     codec = cfg['AUDIO_CODEC'] if ('AUDIO_CODEC' in cfg) else 'mp3'
+    bitrate = int(cfg['AUDIO_BITRATE']) if ('AUDIO_BITRATE' in cfg) else 64
     defaultProcessor = 'cuda' if torch.cuda.is_available() else 'cpu'
     processor = cfg['TORCH_DEVICE'] if ('TORCH_DEVICE' in cfg) else defaultProcessor
 
@@ -50,6 +51,7 @@ def LoadOrDefault(cfg: dict, var: dict):
     set_if_none(s, 'app', 'lang', '')
     set_if_none(s, 'app', 'output', outputFolder)
     set_if_none(s, 'app', 'codec', codec)
+    set_if_none(s, 'app', 'bitrate', bitrate)
     set_if_none(s, 'app', 'dirs', dirs)
     set_if_none(s, 'app', 'processor', processor)
 
