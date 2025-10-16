@@ -184,9 +184,49 @@ def create_app(test_config=None):
         return list(que)
 
 
+    def processNewBook(tmpFile: dxtmpfile):
+        info, _ = book.ParseBook(tmpFile.Path())
+
+        if info['error']:
+            return info
+
+        if not info['title']:
+            info['error'] = 'empty-title'
+            return info
+
+        new_file = var['queue'] / book.SafeBookFileName(info)
+        dxfs.MoveFile(var['tmp'], tmpFile.Path(), new_file)
+        converter.fillQueue(que, var)
+        
+        return info
+    
+
+    @app.route('/queue/upload', methods=['POST'])
+    def uploadToQueue():
+        pwd = str(flask.request.form.get('password', default = None, type = str))
+        if ('WEB_PASSWORD' in app.config) and app.config['WEB_PASSWORD'] and (str(app.config['WEB_PASSWORD']) != pwd):
+            return {'error': 'password'}
+        try:
+            # Webix sends file under the key 'upload'
+            uploaded_file = flask.request.files.get('upload')
+            
+            if not uploaded_file or uploaded_file.filename == '':
+                return flask.jsonify({"error": "No file selected"}), 400
+
+            with dxtmpfile.TmpStringFile(var['tmp'], ext='.book') as tmpFile:
+                uploaded_file.save(tmpFile.Path())
+
+                return processNewBook(tmpFile)
+
+            # Return success (Webix expects a JSON response)
+            #return flask.jsonify({"status": "success", "filename": filename})
+
+        except Exception as e:
+            return flask.jsonify({"error": str(e)}), 500
+
+
     @app.route('/queue/add')
     def addToQueue():
-        #tmp_file = var['tmp'] / f'{uuid.uuid4()}.book'
         url = str(flask.request.args.get('url', default = None, type = str))
         pwd = str(flask.request.args.get('password', default = None, type = str))
         if ('WEB_PASSWORD' in app.config) and app.config['WEB_PASSWORD'] and (str(app.config['WEB_PASSWORD']) != pwd):
@@ -194,27 +234,13 @@ def create_app(test_config=None):
         if not url:
             return {'error': 'file-access', 'failure': 'Empty download URL'}
         
-        #if not tmp_file.exists():
         with dxtmpfile.TmpStringFile(var['tmp'], ext='.book') as tmpFile:
             try:
                 converter.DownloadFile(url, tmpFile.Path())
             except Exception as error:
                 return {'error': 'download', 'failure': str(error)}
             
-            info, _ = book.ParseBook(tmpFile.Path())
-
-            if info['error']:
-                return info
-
-            if not info['title']:
-                info['error'] = 'empty-title'
-                return info
-
-            new_file = var['queue'] / book.SafeBookFileName(info)
-            dxfs.MoveFile(var['tmp'], tmpFile.Path(), new_file)
-            converter.fillQueue(que, var)
-            
-            return info
+            return processNewBook(tmpFile)
         return {'error': 'unknown-error'}
     
     return app
