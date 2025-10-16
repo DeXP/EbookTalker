@@ -59,6 +59,7 @@ function ShowAboutWindow(id, event) {
                 borderless: true,
                 rows: [
                   { view: "label", label: tr["appDescription"] },
+                  { view: "label", label: tr["silero-line"] },
                   { view: "label", label: tr["appVersion"] + ": " + APP_VERSION },
                   { view: "label", label: tr["appAuthor-line"] },
                   { view: "label", label: tr["appBetaTesters-line"] },

@@ -6,6 +6,7 @@
     "appDescription": "Программа для конвертации обычных книг в аудиокниги",
     "appAuthor-line": "Автор программы: Храбров Дмитрий a.k.a. DeXPeriX",
     "appBetaTesters-line": "Бэта-тестеры: e-vred",
+    "silero-line": "Движок для озвучивания - нейронные сети от Silero",
     "bookInProcess": "Книга в процессе",
     "inProcess:": "В процессе:",
     "chapter:": "Глава:",

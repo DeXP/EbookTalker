@@ -209,7 +209,9 @@ def convert_wav_to_compressed(encoder: str, cfg: dict, input_wav: Path, output_f
                 command.extend(["-i", str(metaFile.absolute())])
                 inputmap.extend(["-map_metadata", str(input_counter)])
         command.extend(inputmap)
-        command.extend(["-c:a", encoder, "-b:a", f"{bitrate}k", "-strict", "experimental", str(output_file.absolute())])
+        if int(bitrate) > 0:
+            command.extend(["-b:a", f"{bitrate}k"])
+        command.extend(["-c:a", encoder, "-strict", "experimental", str(output_file.absolute())])
 
         try:
             subprocess.run(command, startupinfo=get_startupinfo(), check=True)
