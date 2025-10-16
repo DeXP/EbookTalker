@@ -337,7 +337,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
 
     if isSingleOutput:
         # Concatenate all chapter WAVs in output folder
-        outputName = outputName.with_suffix('.' + codec)
+        outputName = outputName.with_name(f"{outputName.name}.{codec}")
         bookWavFile = var['genout'] / "book.wav"
         bookCompressedFile = var['genout'] / f"book.{codec}"
         chapterWavs = []
@@ -353,7 +353,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
 
         dxaudio.concatenate_wav_files(var['genout'], chapterWavs, bookWavFile)
         dxaudio.convert_wav_to_compressed(encoder, cfg, bookWavFile, bookCompressedFile, bitrate=bitrate,
-            title=curTitle, author=book.AuthorName(info), cover=cover, info=info, chapters=chapterMeta)
+            title=book.BookName(info, includeAuthor=False), author=book.AuthorName(info), cover=cover, info=info, chapters=chapterMeta)
         
         dxfs.MoveFile(var['tmp'], bookCompressedFile, outputName)
 
