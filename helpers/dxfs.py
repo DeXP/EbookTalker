@@ -6,7 +6,7 @@ from . import dxtmpfile
 
 def MoveFile(tmpFolder: Path, fromFile: Path, toFile: Path):
     if dxtmpfile.IsPythonNative():
-        if not toFile.exists():
+        if fromFile.exists() and (not toFile.exists()):
             # fromFile.rename(toFile) # - don't work on different FS. Example: mounted docker folder
             shutil.move(fromFile.absolute(), toFile.absolute())
     else:

@@ -23,6 +23,7 @@
     "addBookToQueue": "Add ebook to queue",
     "uploadFromPC": "Upload from PC",
     "chooseEbookFile": "Choose ebook file",
+    "or/and": "or/and",
     "downloadFromURL": "Download from URL",
     "url": "URL",
     "password": "Password",
@@ -60,6 +61,8 @@
     "OK": "OK",
     "error": {
         "noURLforDownload": "Enter download link",
+        "pleaseChooseAFileToProcess": "Please choose a file to process",
+        "uploadFailed.": "Failed to upload the file. ",
         "password": "Incorrect password",
         "passwordTooShort": "Password must contain more than ## characters",
         "file-access": "File is not accessible",

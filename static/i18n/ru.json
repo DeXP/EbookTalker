@@ -23,6 +23,7 @@
     "addBookToQueue": "Добавить книгу в очередь",
     "uploadFromPC": "Загрузить с компьютера",
     "chooseEbookFile": "Выбрать файл книги",
+    "or/and": "или/и",
     "downloadFromURL": "Скачать по ссылке",
     "url": "Ссылка",
     "password": "Пароль",
@@ -60,6 +61,8 @@
     "OK": "OK",
     "error": {
         "noURLforDownload": "Введите ссылку для скачивания",
+        "pleaseChooseAFileToProcess": "Пожалуйста выберите файл для добавления",
+        "uploadFailed.": "Ошибка загрузки файла. ", 
         "password": "Неправильный пароль",
         "passwordTooShort": "Пароль должен содержать больше ## символов",
         "file-access": "Файл недоступен",

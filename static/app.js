@@ -242,7 +242,7 @@ function ConstructUI(tr) {
                       {
                         cols: [
                           { view: "label", label: tr["inProcess:"], width: 130 },
-                          { view: "label", name: "processBookLabel", label: "нет" }
+                          { view: "label", name: "processBookLabel", label: tr["emptyBookName"] }
                         ]
                       },
                       {
@@ -290,126 +290,86 @@ function ConstructUI(tr) {
           {
             rows: [
               { template: tr["addBookToQueue"], type: "section" },
-              { view: "tabview",
-                cells: [
-                  {
-                    header: "<span class='webix_icon wxi-folder-open'></span>" + tr["uploadFromPC"],
-                    body: {
-                      id: "uploadFormPCView",
-                      view: "form", 
-                      elements:[
-                          {
-                            view:"uploader",
-                            id: "uploader",
-                            link: "uploaderList",
-                            value: tr["chooseEbookFile"],
-                            upload:"/queue/upload",
-                            autosend: false,
-                            multiple: false,
-                            datatype:"json",
-                            on: {
-                              onFileUpload: function(file) {
-                                $$("queue").clearAll();
-                                $$("queue").load("/queue/list");
-                              },
-                              onFileUploadError: function(file, response) {
-                                webix.message({ type: "error", text: "Upload failed" });
-                              }
-                            }
-                          },
-                          {
-                            view:"list",  id:"uploaderList", type:"uploader",
-                            autoheight:true, borderless:true	
-                          },
-                          { view: "text", type: "password", label: tr["password"], name: "uploadPassword", id: "uploadPassword", value: "" },
-                          {
-                            cols: [
-                              {},
-                              //{ view: "button", css: "webix_danger", value: "Cancel", width: 150 },
-                              {
-                                view: "button", css: "webix_primary", value: tr["add"], width: 150,
-                                click: function() {
-                                  const password = $$("uploadPassword").getValue();
-                                  const uploader = $$("uploader");
-                                  error = '';
-
-                                  if (!password || (password.length < PASSWORD_LENGTH)) {
-                                    error = tr["error"]["passwordTooShort"].replace("##", PASSWORD_LENGTH);
-                                  }
-
-                                  // Get the first (or only) file
-                                  const files = uploader.files;
-                                  if (files.length === 0) {
-                                    error = "No file selected" ;
-                                  }
-
-                                  if (error) {
-                                    webix.message({ text: error, type: "error" });
-                                  } else {
-                                    // Send file + password
-                                    uploader.files.data.each(function(obj){
-                                      //add file specific additional parameters
-                                      obj.formData = { password:password };
-                                      //send the file
-                                      $$("uploader").send();
-                                    });
-                                  }
-                                }
-                              }
-                            ]
-                          }
-                      ]
-                    }
+              {
+                view:"uploader",
+                id: "uploader",
+                link: "uploaderList",
+                value: tr["chooseEbookFile"],
+                upload:"/queue/upload",
+                autosend: false,
+                multiple: true,
+                css: "webix_secondary",
+                datatype:"json",
+                on: {
+                  onFileUpload: function(file) {
+                    $$("queue").clearAll();
+                    $$("queue").load("/queue/list");
+                    // $$("uploader").files.clearAll();
                   },
+                  onFileUploadError: function(file, response) {
+                    webix.message({ type: "error", text: tr["error"]["uploadFailed."] + composeFailureText(response) });
+                  }
+                }
+              },
+              { view:"list",  id:"uploaderList", type:"uploader", autoheight:true, borderless:true },
+              { view: "label", label: tr["or/and"] },
+              { view: "text", label: tr["url"], name: "url", id: "url", value: "" },
+              { view: "text", type: "password", label: tr["password"], name: "password", id: "password", value: "" },
+              {
+                cols: [
+                  {},
+                  //{ view: "button", css: "webix_danger", value: "Cancel", width: 150 },
                   {
-                    header: "<span class='webix_icon wxi-download'></span>" + tr["downloadFromURL"],
-                    body: {
-                      id: "downloadFromURLView",
-                      view: "form",
-                      elements:[
-                        { view: "text", label: tr["url"], name: "url", id: "url", value: "" },
-                        { view: "text", type: "password", label: tr["password"], name: "password", id: "password", value: "" },
-                        {
-                          cols: [
-                            {},
-                            //{ view: "button", css: "webix_danger", value: "Cancel", width: 150 },
-                            {
-                              view: "button", css: "webix_primary", value: tr["add"], width: 150,
-                              click: function () {
-                                error = '';
-                                url = $$("processForm").getValues().url;
-                                password = $$("processForm").getValues().password;
-                                if (!password || (password.length < PASSWORD_LENGTH)) {
-                                  error = tr["error"]["passwordTooShort"].replace("##", PASSWORD_LENGTH);
-                                }
-                                if (!url || (url.length < 5)) {
-                                  error = tr["error"]["noURLforDownload"];
-                                }
-                                if (error) {
-                                  webix.message({ text: error, type: "error" });
-                                } else {
-                                  // Submit
-                                  webix.ajax().get("/queue/add", { password: password, url: url }).then(function (data) {
-                                    j = data.json()
-                                    if (('error' in j) && j['error']) {
-                                      webix.message({ text: composeFailureText(j), type: "error" });
-                                    }
-                                    else {
-                                      $$("processForm").setValues({ url: '' }, true);
-                                      $$("queue").clearAll();
-                                      $$("queue").load("/queue/list");
-                                    }
-                                  });
-                                }
-                              }
+                    view: "button", css: "webix_primary", value: tr["addBookToQueue"], width: 250,
+                    click: function () {     
+                      const uploader = $$("uploader");
+                      const url = $$("processForm").getValues().url;
+                      const password = $$("processForm").getValues().password;
+
+                      const urlSet = (url && (url.length >= 5));
+                      const fileSet = (uploader.files.data && uploader.files.data.count() > 0);
+                      const passwordSet = (password && (password.length >= PASSWORD_LENGTH));
+                      
+                      if (passwordSet && (urlSet || fileSet)) {
+
+                        if (urlSet) {
+                          // Submit URL
+                          webix.ajax().get("/queue/add", { password: password, url: url }).then(function (data) {
+                            j = data.json()
+                            if (('error' in j) && j['error']) {
+                              webix.message({ text: composeFailureText(j), type: "error" });
                             }
-                          ]
+                            else {
+                              $$("processForm").setValues({ url: '' }, true);
+                              $$("queue").clearAll();
+                              $$("queue").load("/queue/list");
+                            }
+                          });
                         }
-                      ]
+
+                        if (fileSet) {
+                          // Submit file
+                          uploader.files.data.each(function(obj){
+                            //add file specific additional parameters
+                            obj.formData = { password:password };
+                          });
+                          $$("uploader").send();
+                        }
+
+                      } else {
+                        error = '';
+                        if (!urlSet || !fileSet) {
+                          error = tr["error"]["pleaseChooseAFileToProcess"];
+                        }
+                        if (!passwordSet) {
+                          error = tr["error"]["passwordTooShort"].replace("##", PASSWORD_LENGTH);
+                        }
+                        webix.message({ text: error, type: "error" });
+                      }
                     }
                   }
-                ] 
-              },
+                ]
+              }
             ]
           }
 
@@ -447,8 +407,8 @@ function updateTick(data) {
   }
 
   sectionTitle = ''
-  if ("sectionTitle" in data) {
-    sectionTitle = data["sectionTitle"];
+  if ("rawSectionTitle" in data) {
+    sectionTitle = data["rawSectionTitle"];
   }
 
   perc = 0.0;
