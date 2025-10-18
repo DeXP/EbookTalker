@@ -292,8 +292,9 @@ class App(customtkinter.CTk):
 if __name__ == '__main__':
     multiprocessing.freeze_support()
 
+    homedir = str(Path.home().absolute())
     with open("default.cfg", "rt") as f:
-        cfg = dict((lambda l: (l[0].strip(" '\""), l[2][:-1].strip(" '\"")))(line.partition("="))
+        cfg = dict((lambda l: (l[0].strip(" '\""), l[2][:-1].strip(" '\"").replace("##HOME##", homedir)))(line.partition("="))
                     for line in f)
     
     manager = multiprocessing.Manager()
