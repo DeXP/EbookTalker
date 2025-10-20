@@ -3,7 +3,7 @@ from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 import customtkinter
 from pathlib import Path
-import sys, json, time, shutil, locale, datetime, multiprocessing, threading
+import sys, json, time, shutil, locale, datetime, multiprocessing, threading, platformdirs
 
 import converter
 from helpers import book
@@ -13,6 +13,11 @@ from helpers.UI import Icons, PreferencesForm, AboutForm
 # customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
 # customtkinter.set_default_color_theme("blue")
 
+
+def replace_substrings(s: str, replacements) -> str:
+    for key, value in replacements.items():
+        s = s.replace(key, value)
+    return s
 
 
 class App(customtkinter.CTk):
@@ -213,7 +218,7 @@ class App(customtkinter.CTk):
         for c in self.var['genout'].glob("cover.*"):
             cover = c
         if not cover:
-            cover = 'static/default-cover.png'
+            cover = 'static/book.png'
 
         # Load and display an image 
         image_open = Image.open(cover)
@@ -292,9 +297,19 @@ class App(customtkinter.CTk):
 if __name__ == '__main__':
     multiprocessing.freeze_support()
 
-    homedir = str(Path.home().absolute())
+    appname = "EbookTalker"
+    appauthor = "DeXPeriX"
+    userFolders = {
+        '##HOME##': str(Path.home().absolute()),
+        '##MUSIC##': platformdirs.user_music_dir(),
+        '##LOGS##': platformdirs.user_log_dir(appname, appauthor),
+        '##CONFIG##': platformdirs.user_config_dir(appname, appauthor),
+        '##APPDATA##': platformdirs.user_data_dir(appname, appauthor, roaming=True), # synchronized
+        '##LOCALAPPDATA##': platformdirs.user_data_dir(appname, appauthor)
+    }
+    
     with open("default.cfg", "rt") as f:
-        cfg = dict((lambda l: (l[0].strip(" '\""), l[2][:-1].strip(" '\"").replace("##HOME##", homedir)))(line.partition("="))
+        cfg = dict((lambda l: (l[0].strip(" '\""), replace_substrings(l[2][:-1].strip(" '\""), userFolders)))(line.partition("="))
                     for line in f)
     
     manager = multiprocessing.Manager()

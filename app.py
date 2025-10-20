@@ -168,7 +168,7 @@ def create_app(test_config=None):
         for c in var['genout'].glob("cover.*"):
             cover = c
         if not cover:
-            cover = ROOT_DIR + '/static/default-cover.png'
+            cover = ROOT_DIR + '/static/book.png'
         coverFile = Path(cover)
         mime = mimetypes.guess_type(cover)[0] or "image/jpeg"
         return flask.send_file(

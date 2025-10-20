@@ -50,7 +50,7 @@ function ShowAboutWindow(id, event) {
             cols: [
               {
                 view: "template",
-                template: "<img src='/static/default-cover.png' style='width:400px; height:400px;'/>",
+                template: "<img src='/static/book.png' style='width:400px; height:400px;'/>",
                 width: 420,
                 borderless: true
               },

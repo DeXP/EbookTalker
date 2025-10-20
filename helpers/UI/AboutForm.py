@@ -17,19 +17,19 @@ class AboutForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(f"{tr['AboutApplication']}: {tr["appTitle"]}")
-        self.geometry(parent.get_child_geometry(width=770, height=350))
+        self.geometry(parent.get_child_geometry(width=580, height=350))
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(6, weight=1)
 
-        image_open = Image.open('static/default-cover.png')
+        image_open = Image.open('static/book.png')
         width, height = image_open.size
-        h = 320
+        h = 128
         w = int((width * h) / height)
         resized_img = image_open.resize((w,h))
         self.img = ImageTk.PhotoImage(resized_img)
-        self.cover_label = ttk.Label(self, text="", image=self.img, background=parent.imageBG)
-        self.cover_label.grid(row=0, column=0, padx=20, pady=10, sticky="ew", columnspan=1, rowspan=8)
+        self.cover_label = ttk.Label(self, text="", image=self.img, background=parent.imageBG, anchor="n")
+        self.cover_label.grid(row=0, column=0, padx=20, pady=10, sticky="n", columnspan=1, rowspan=8)
 
         self.title_label = ctk.CTkLabel(self, text=tr["appTitle"])
         self.title_label.grid(row=0, column=1, pady=0, sticky="w")
@@ -56,7 +56,7 @@ class AboutForm(ctk.CTkToplevel):
         self.sysinfo_text.grid(row=6, column=1, sticky="nswe")
 
         self.ok_button = ctk.CTkButton(self, text=tr['OK'], command=self.on_ok)
-        self.ok_button.grid(row=7, column=1, pady=7, sticky="s")
+        self.ok_button.grid(row=7, column=0, columnspan=2, pady=7, sticky="s")
     
 
     def on_ok(self):
