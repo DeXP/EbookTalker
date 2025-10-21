@@ -1,0 +1,154 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Fragment>
+        <StandardDirectory Id="TARGETDIR">
+            <Directory Id="EbookTalker_Win64" Name="EbookTalker-Win64">
+                <Component Id="default.cfg" Guid="{5BCA250B-D003-4942-99F6-10C954437C23}">
+                    <File Id="default.cfg" KeyPath="yes" Source="$(var.SourceDir)\default.cfg" />
+                </Component>
+                <Component Id="LICENSE.md" Guid="{25049E7A-404E-488F-BB1A-D0255BCFDDF3}">
+                    <File Id="LICENSE.md" KeyPath="yes" Source="$(var.SourceDir)\LICENSE.md" />
+                </Component>
+                <Directory Id="ffmpeg" Name="ffmpeg">
+                    <Component Id="avcodec_61.dll" Guid="{93F70C05-3598-4B47-9198-418D47312286}">
+                        <File Id="avcodec_61.dll" KeyPath="yes" Source="$(var.SourceDir)\ffmpeg\avcodec-61.dll" />
+                    </Component>
+                    <Component Id="avdevice_61.dll" Guid="{BDA2EDE7-385A-44CB-B8D4-345E34C5A3A8}">
+                        <File Id="avdevice_61.dll" KeyPath="yes" Source="$(var.SourceDir)\ffmpeg\avdevice-61.dll" />
+                    </Component>
+                    <Component Id="avfilter_10.dll" Guid="{405431F2-2229-4B31-B5EA-7B7DE86CBB07}">
+                        <File Id="avfilter_10.dll" KeyPath="yes" Source="$(var.SourceDir)\ffmpeg\avfilter-10.dll" />
+                    </Component>
+                    <Component Id="avformat_61.dll" Guid="{12FBE301-46E4-4037-9532-704969C795AA}">
+                        <File Id="avformat_61.dll" KeyPath="yes" Source="$(var.SourceDir)\ffmpeg\avformat-61.dll" />
+                    </Component>
+                    <Component Id="avutil_59.dll" Guid="{06FEA82D-F84A-4441-A945-AB7BA3360300}">
+                        <File Id="avutil_59.dll" KeyPath="yes" Source="$(var.SourceDir)\ffmpeg\avutil-59.dll" />
+                    </Component>
+                    <Component Id="ffmpeg.exe" Guid="{D75F3780-0D3A-4AB2-A3F8-6AE09DA11305}">
+                        <File Id="ffmpeg.exe" KeyPath="yes" Source="$(var.SourceDir)\ffmpeg\ffmpeg.exe" />
+                    </Component>
+                    <Component Id="ffprobe.exe" Guid="{D8A4ECF0-CF9A-46E7-8CF7-5637D138C15A}">
+                        <File Id="ffprobe.exe" KeyPath="yes" Source="$(var.SourceDir)\ffmpeg\ffprobe.exe" />
+                    </Component>
+                    <Component Id="LICENSE.txt" Guid="{45E110D1-BA48-4A43-A8E0-A1B31A7E9F3B}">
+                        <File Id="LICENSE.txt" KeyPath="yes" Source="$(var.SourceDir)\ffmpeg\LICENSE.txt" />
+                    </Component>
+                    <Component Id="postproc_58.dll" Guid="{D4BBFE58-02BD-4014-8592-775637477C78}">
+                        <File Id="postproc_58.dll" KeyPath="yes" Source="$(var.SourceDir)\ffmpeg\postproc-58.dll" />
+                    </Component>
+                    <Component Id="swresample_5.dll" Guid="{9CE5B27F-49EB-4ED7-9325-9FA5E5536C23}">
+                        <File Id="swresample_5.dll" KeyPath="yes" Source="$(var.SourceDir)\ffmpeg\swresample-5.dll" />
+                    </Component>
+                    <Component Id="swscale_8.dll" Guid="{5298C3F6-43BE-4D13-85E8-AA023173927D}">
+                        <File Id="swscale_8.dll" KeyPath="yes" Source="$(var.SourceDir)\ffmpeg\swscale-8.dll" />
+                    </Component>
+                </Directory>
+                <Directory Id="jingle" Name="jingle">
+                    <Component Id="_741381__viramiller__dark_omens.wav" Guid="{D6B05E10-7777-465A-AFF4-C74792BB5645}">
+                        <File Id="_741381__viramiller__dark_omens.wav" KeyPath="yes" Source="$(var.SourceDir)\jingle\741381__viramiller__dark-omens.wav" />
+                    </Component>
+                    <Component Id="_745885__viramiller__15_second_strum.wav" Guid="{21D606D5-7775-4F1E-8C8B-780C7681EDC5}">
+                        <File Id="_745885__viramiller__15_second_strum.wav" KeyPath="yes" Source="$(var.SourceDir)\jingle\745885__viramiller__15-second-strum.wav" />
+                    </Component>
+                    <Component Id="_746385__viramiller__sunny_day_serenade.wav" Guid="{BCB29A59-3728-4742-8904-CBF6B5FD13B7}">
+                        <File Id="_746385__viramiller__sunny_day_serenade.wav" KeyPath="yes" Source="$(var.SourceDir)\jingle\746385__viramiller__sunny-day-serenade.wav" />
+                    </Component>
+                    <Component Id="_746546__viramiller__sunny_serenity.wav" Guid="{C657F381-FB0E-40D6-8998-DEC04324E4B0}">
+                        <File Id="_746546__viramiller__sunny_serenity.wav" KeyPath="yes" Source="$(var.SourceDir)\jingle\746546__viramiller__sunny-serenity.wav" />
+                    </Component>
+                    <Component Id="_746587__viramiller__tranquil_melody.wav" Guid="{92D3B3C0-A7E6-4672-8503-453B0302AD67}">
+                        <File Id="_746587__viramiller__tranquil_melody.wav" KeyPath="yes" Source="$(var.SourceDir)\jingle\746587__viramiller__tranquil-melody.wav" />
+                    </Component>
+                    <Component Id="_748211__viramiller__mysterious_and_atmospheric_music_for_dark_themes.wa" Guid="{22395DFF-FA01-4FDB-9FD5-96873E59D82A}">
+                        <File Id="_748211__viramiller__mysterious_and_atmospheric_music_for_dark_themes.wa" KeyPath="yes" Source="$(var.SourceDir)\jingle\748211__viramiller__mysterious-and-atmospheric-music-for-dark-themes.wav" />
+                    </Component>
+                    <Component Id="_748395__viramiller__dark_and_tense_background_atmosphere.wav" Guid="{0B19BA06-2F4F-4DAD-89E7-915831C31528}">
+                        <File Id="_748395__viramiller__dark_and_tense_background_atmosphere.wav" KeyPath="yes" Source="$(var.SourceDir)\jingle\748395__viramiller__dark-and-tense-background-atmosphere.wav" />
+                    </Component>
+                    <Component Id="_748404__viramiller__galactic_space_journey.wav" Guid="{89EA265C-8E38-48C3-A84E-1BE18B30ABC8}">
+                        <File Id="_748404__viramiller__galactic_space_journey.wav" KeyPath="yes" Source="$(var.SourceDir)\jingle\748404__viramiller__galactic-space-journey.wav" />
+                    </Component>
+                    <Component Id="_748408__viramiller__suspenseful_and_atmospheric_background.wav" Guid="{20B434F7-0937-43C6-A5DD-B5FBE84013C7}">
+                        <File Id="_748408__viramiller__suspenseful_and_atmospheric_background.wav" KeyPath="yes" Source="$(var.SourceDir)\jingle\748408__viramiller__suspenseful-and-atmospheric-background.wav" />
+                    </Component>
+                    <Component Id="license.txt_1" Guid="{A413B25B-9867-4A3E-86FE-AC15B7A584E3}">
+                        <File Id="license.txt_1" KeyPath="yes" Source="$(var.SourceDir)\jingle\license.txt" />
+                    </Component>
+                    <Component Id="ViraMiller.txt" Guid="{431358A7-731F-427E-9CAE-83FBAB50225B}">
+                        <File Id="ViraMiller.txt" KeyPath="yes" Source="$(var.SourceDir)\jingle\ViraMiller.txt" />
+                    </Component>
+                </Directory>
+                <Directory Id="models" Name="models">
+                    <Component Id="LICENSE.txt_2" Guid="{E1691B79-FD11-4D18-9C42-F2AD474F8D66}">
+                        <File Id="LICENSE.txt_2" KeyPath="yes" Source="$(var.SourceDir)\models\LICENSE.txt" />
+                    </Component>
+                    <Component Id="v3_1_ru.pt" Guid="{261CAE7C-1624-4E79-9590-54E3B7FE0465}">
+                        <File Id="v3_1_ru.pt" KeyPath="yes" Source="$(var.SourceDir)\models\v3_1_ru.pt" />
+                    </Component>
+                    <Component Id="v3_en.pt" Guid="{1B7DCFA7-D0A7-4C3D-985B-B1430817DD8A}">
+                        <File Id="v3_en.pt" KeyPath="yes" Source="$(var.SourceDir)\models\v3_en.pt" />
+                    </Component>
+                    <Component Id="v3_ua.pt" Guid="{12DA2E6B-A452-414F-965A-8AE2A464BD06}">
+                        <File Id="v3_ua.pt" KeyPath="yes" Source="$(var.SourceDir)\models\v3_ua.pt" />
+                    </Component>
+                </Directory>
+                <Directory Id="static" Name="static">
+                    <Component Id="book.png" Guid="{3E03683F-032F-4A68-B9B4-4C50D085C2EC}">
+                        <File Id="book.png" KeyPath="yes" Source="$(var.SourceDir)\static\book.png" />
+                    </Component>
+                    <Component Id="favicon.ico" Guid="{3D956FDD-A0A3-4BF4-B6AC-664F04A5965F}">
+                        <File Id="favicon.ico" KeyPath="yes" Source="$(var.SourceDir)\static\favicon.ico" />
+                    </Component>
+                    <Component Id="splash.png" Guid="{22D5A0C7-07D9-43CB-93C7-4000B74D74B9}">
+                        <File Id="splash.png" KeyPath="yes" Source="$(var.SourceDir)\static\splash.png" />
+                    </Component>
+                    <Directory Id="i18n" Name="i18n">
+                        <Component Id="en.json" Guid="{F56FEAA4-9513-4A41-ABAF-06BDD2A37237}">
+                            <File Id="en.json" KeyPath="yes" Source="$(var.SourceDir)\static\i18n\en.json" />
+                        </Component>
+                        <Component Id="ru.json" Guid="{DDE56F6F-2414-4C88-8D13-395AF2626205}">
+                            <File Id="ru.json" KeyPath="yes" Source="$(var.SourceDir)\static\i18n\ru.json" />
+                        </Component>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </StandardDirectory>
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="AppFiles">
+            <ComponentRef Id="default.cfg" />
+            <ComponentRef Id="LICENSE.md" />
+            <ComponentRef Id="avcodec_61.dll" />
+            <ComponentRef Id="avdevice_61.dll" />
+            <ComponentRef Id="avfilter_10.dll" />
+            <ComponentRef Id="avformat_61.dll" />
+            <ComponentRef Id="avutil_59.dll" />
+            <ComponentRef Id="ffmpeg.exe" />
+            <ComponentRef Id="ffprobe.exe" />
+            <ComponentRef Id="LICENSE.txt" />
+            <ComponentRef Id="postproc_58.dll" />
+            <ComponentRef Id="swresample_5.dll" />
+            <ComponentRef Id="swscale_8.dll" />
+            <ComponentRef Id="_741381__viramiller__dark_omens.wav" />
+            <ComponentRef Id="_745885__viramiller__15_second_strum.wav" />
+            <ComponentRef Id="_746385__viramiller__sunny_day_serenade.wav" />
+            <ComponentRef Id="_746546__viramiller__sunny_serenity.wav" />
+            <ComponentRef Id="_746587__viramiller__tranquil_melody.wav" />
+            <ComponentRef Id="_748211__viramiller__mysterious_and_atmospheric_music_for_dark_themes.wa" />
+            <ComponentRef Id="_748395__viramiller__dark_and_tense_background_atmosphere.wav" />
+            <ComponentRef Id="_748404__viramiller__galactic_space_journey.wav" />
+            <ComponentRef Id="_748408__viramiller__suspenseful_and_atmospheric_background.wav" />
+            <ComponentRef Id="license.txt_1" />
+            <ComponentRef Id="ViraMiller.txt" />
+            <ComponentRef Id="LICENSE.txt_2" />
+            <ComponentRef Id="v3_1_ru.pt" />
+            <ComponentRef Id="v3_en.pt" />
+            <ComponentRef Id="v3_ua.pt" />
+            <ComponentRef Id="book.png" />
+            <ComponentRef Id="favicon.ico" />
+            <ComponentRef Id="splash.png" />
+            <ComponentRef Id="en.json" />
+            <ComponentRef Id="ru.json" />
+        </ComponentGroup>
+    </Fragment>
+</Wix>

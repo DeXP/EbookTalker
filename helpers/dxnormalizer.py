@@ -1,5 +1,4 @@
 import re
-#from transliterate import translit
 from num2words import num2words
 
 russian_chars = re.compile('[а-яА-ЯёЁ]')

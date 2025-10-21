@@ -3,7 +3,10 @@ from pathlib import Path
 
 
 def get_ffmpeg_exe(cfg: dict):
-    return cfg['FFMPEG_PATH'] if ('FFMPEG_PATH' in cfg) and cfg['FFMPEG_PATH'] else "ffmpeg"
+    if ('FFMPEG_PATH' in cfg):
+        if (Path(cfg['FFMPEG_PATH']).exists()):
+            return cfg['FFMPEG_PATH']
+    return "ffmpeg"
 
 
 def get_png_info(data):
