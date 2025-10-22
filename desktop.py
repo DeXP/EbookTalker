@@ -7,7 +7,7 @@ import sys, json, time, shutil, locale, datetime, multiprocessing, threading, pl
 
 import converter
 from helpers import book
-from helpers.UI import Icons, PreferencesForm, AboutForm
+from helpers.UI import Icons, PreferencesForm, AboutForm, loading_splash
 
 
 # customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
@@ -293,12 +293,7 @@ class App(customtkinter.CTk):
             time.sleep(1)
 
 
-
-if __name__ == '__main__':
-    multiprocessing.freeze_support()
-
-    appname = "EbookTalker"
-    appauthor = "DeXPeriX"
+def do_background_initialization(splash, res):   
     userFolders = {
         '##HOME##': str(Path.home().absolute()),
         '##MUSIC##': platformdirs.user_music_dir(),
@@ -309,27 +304,41 @@ if __name__ == '__main__':
     }
     
     with open("default.cfg", "rt") as f:
-        cfg = dict((lambda l: (l[0].strip(" '\""), replace_substrings(l[2][:-1].strip(" '\""), userFolders)))(line.partition("="))
+        res['cfg'] = dict((lambda l: (l[0].strip(" '\""), replace_substrings(l[2][:-1].strip(" '\""), userFolders)))(line.partition("="))
                     for line in f)
     
-    manager = multiprocessing.Manager()
-    global que, proc, var
-    que = manager.list()
-    proc = manager.dict()
-    var = converter.Init(cfg)
+    res['status'] = "Creating variables"
+    res['manager'] = multiprocessing.Manager()
+    res['que'] = res['manager'].list()
+    res['proc'] = res['manager'].dict()
 
+    if splash.is_exit_requested():
+        res['cancelled'] = True
+        return
+
+    res['status'] = "Initializing neural networks"
+    res['var'] = converter.Init(res['cfg'])
+    var = res['var']
+
+    if splash.is_exit_requested():
+        res['cancelled'] = True
+        return
+
+    res['status'] = "Initializing locale"
     localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
     localeFile = localeFile if not var['settings']['app']['lang'] else var['settings']['app']['lang'] + ".json"
-    tr = None
+    res['tr'] = None
     with open("static/i18n/" + localeFile, encoding='utf-8') as json_file:
-        tr = json.load(json_file)
+        res['tr'] = json.load(json_file)
 
-    if sys.platform == "win32":
-        p = threading.Thread(target=converter.ConverterLoop, args=(que, proc, cfg, var))
-    else:
-        p = multiprocessing.Process(target=converter.ConverterLoop, args=(que, proc, cfg, var))
+    res['success'] = True
 
-    p.start()
+
+if __name__ == '__main__':
+    global que, proc, var, cfg, tr
+    appname = "EbookTalker"
+    appauthor = "DeXPeriX"
+    multiprocessing.freeze_support()
 
     try:
         import pyi_splash
@@ -337,5 +346,36 @@ if __name__ == '__main__':
     except:
         pass
 
-    app = App(tr, que, proc, cfg, var)
-    app.mainloop()
+    splash = loading_splash.LoadingSplashScreen(app_name=appname, image_path='static/book.png')
+    splash.show()
+
+    # Start background work
+    res = {'status': '', 'success': False, 'cancelled': False, 'error': None}
+    init_worker = threading.Thread(target=do_background_initialization, args=(splash, res), daemon=True)
+    init_worker.start()
+
+    while init_worker.is_alive():
+        if res['status']:
+            splash.status(res['status'])
+            res['status'] = ''
+        splash.update()
+        time.sleep(0.05)
+
+    if splash.is_exit_requested():
+        splash.hide()
+        splash.destroy()
+    else:
+        que, proc, var, cfg, tr = res['que'], res['proc'], res['var'], res['cfg'], res['tr']
+
+        if sys.platform == "win32":
+            p = threading.Thread(target=converter.ConverterLoop, args=(que, proc, cfg, var))
+        else:
+            p = multiprocessing.Process(target=converter.ConverterLoop, args=(que, proc, cfg, var))
+
+        p.start()
+
+        splash.hide()
+        splash.destroy()
+
+        app = App(tr, que, proc, cfg, var)
+        app.mainloop()
