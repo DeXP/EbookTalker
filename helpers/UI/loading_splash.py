@@ -113,7 +113,7 @@ class LoadingSplashScreen:
         self.status_label.grid(row=1, column=1, padx=16, pady=(0, 6), sticky="w")
         
         # Taller progress bar (height=8)
-        self.progress = ctk.CTkProgressBar(self.root, mode="indeterminate", height=8)
+        self.progress = ctk.CTkProgressBar(self.root, mode="indeterminate", height=16)
         self.progress.grid(row=2, column=1, padx=16, pady=(0, 8), sticky="ew")
         self.progress.start()
         

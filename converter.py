@@ -9,8 +9,6 @@ def Init(cfg: dict):
     dataDir = Path(cfg["DATA_FOLDER"])
     jingleDir = Path(cfg["JINGLE_FOLDER"]) if ('JINGLE_FOLDER' in cfg) else 'jingle'
 
-    accentor = load_accentor()
-
     var = {
         'askForExit': False,
         'languages': ['ru', 'uk', 'en'],
@@ -44,7 +42,6 @@ def Init(cfg: dict):
             'default': 'en_0',
             'phrase': 'London is the capital of Great Britain.' 
         },
-        'accentor': accentor,
         'sample_rate': 24000,
         'put_accent': True,
         'put_yo': True,
@@ -66,12 +63,17 @@ def Init(cfg: dict):
         genout = var['gen'] / 'output'
     )
 
+    var['settings'] = settings.LoadOrDefault(cfg, var)
+
+    return var
+
+
+def InitModels(cfg: dict, var: dict):
     var['tmp'].mkdir(parents=True, exist_ok=True)
     dxfs.CreateDirectory(var['tmp'], var['queue'])
     dxfs.CreateDirectory(var['tmp'], Path('models'))
 
-
-    var['settings'] = settings.LoadOrDefault(cfg, var)
+    var['accentor'] = load_accentor()  
 
     device = torch.device(var['settings']['app']['processor'])
     num_threads = int(var['settings']['app']['threads'])
@@ -81,7 +83,6 @@ def Init(cfg: dict):
 
     PreloadModel(var, 'ru')
     # PreloadModel(var, 'en')
-
     return var
 
 

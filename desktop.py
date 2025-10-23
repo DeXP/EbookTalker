@@ -8,6 +8,7 @@ import sys, json, time, shutil, locale, datetime, multiprocessing, threading, pl
 import converter
 from helpers import book
 from helpers.UI import Icons, PreferencesForm, AboutForm, loading_splash
+from helpers.translation import TT
 
 
 # customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
@@ -293,7 +294,10 @@ class App(customtkinter.CTk):
             time.sleep(1)
 
 
-def do_background_initialization(splash, res):   
+def do_background_initialization(splash, res, appname, appauthor):
+    global tr
+    res['status'] = "Init..."
+
     userFolders = {
         '##HOME##': str(Path.home().absolute()),
         '##MUSIC##': platformdirs.user_music_dir(),
@@ -306,8 +310,18 @@ def do_background_initialization(splash, res):
     with open("default.cfg", "rt") as f:
         res['cfg'] = dict((lambda l: (l[0].strip(" '\""), replace_substrings(l[2][:-1].strip(" '\""), userFolders)))(line.partition("="))
                     for line in f)
+        
+    var = converter.Init(res['cfg'])
     
-    res['status'] = "Creating variables"
+    localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
+    localeFile = localeFile if not var['settings']['app']['lang'] else var['settings']['app']['lang'] + ".json"
+    tr = None
+    with open("static/i18n/" + localeFile, encoding='utf-8') as json_file:
+        tr = json.load(json_file)
+    res['tr'] = tr
+
+    
+    res['status'] = TT(tr, "Creating variables", "status")
     res['manager'] = multiprocessing.Manager()
     res['que'] = res['manager'].list()
     res['proc'] = res['manager'].dict()
@@ -316,20 +330,13 @@ def do_background_initialization(splash, res):
         res['cancelled'] = True
         return
 
-    res['status'] = "Initializing neural networks"
-    res['var'] = converter.Init(res['cfg'])
-    var = res['var']
+    res['status'] = TT(tr, "Initializing neural networks", "status")
+    var = converter.InitModels(res['cfg'], var)
+    res['var'] = var
 
     if splash.is_exit_requested():
         res['cancelled'] = True
         return
-
-    res['status'] = "Initializing locale"
-    localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
-    localeFile = localeFile if not var['settings']['app']['lang'] else var['settings']['app']['lang'] + ".json"
-    res['tr'] = None
-    with open("static/i18n/" + localeFile, encoding='utf-8') as json_file:
-        res['tr'] = json.load(json_file)
 
     res['success'] = True
 
@@ -350,14 +357,17 @@ if __name__ == '__main__':
     splash.show()
 
     # Start background work
-    res = {'status': '', 'success': False, 'cancelled': False, 'error': None}
-    init_worker = threading.Thread(target=do_background_initialization, args=(splash, res), daemon=True)
+    res = {'status': '', 'success': False, 'cancelled': False, 'error': None, 'translated': False}
+    init_worker = threading.Thread(target=do_background_initialization, args=(splash, res, appname, appauthor), daemon=True)
     init_worker.start()
 
     while init_worker.is_alive():
         if res['status']:
             splash.status(res['status'])
             res['status'] = ''
+        if ('tr' in res) and not res['translated']:
+            splash.set_title(TT(tr, "appTitle"))
+            res['translated'] = True
         splash.update()
         time.sleep(0.05)
 

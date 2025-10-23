@@ -59,6 +59,10 @@
     "AboutApplication": "О программе",
     "SystemInformation": "Информация о системе", 
     "OK": "OK",
+    "status": {
+        "Creating variables": "Создание переменных",
+        "Initializing neural networks": "Инициализация нейронных сетей"
+    },
     "error": {
         "noURLforDownload": "Введите ссылку для скачивания",
         "pleaseChooseAFileToProcess": "Пожалуйста выберите файл для добавления",

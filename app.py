@@ -52,6 +52,7 @@ def create_app(test_config=None):
     que = manager.list()
     proc = manager.dict()
     var = converter.Init(app.config)
+    var = converter.InitModels(app.config, var)
 
     if sys.platform == "win32":
         p = threading.Thread(target=converter.ConverterLoop, args=(que, proc, app.config, var))
