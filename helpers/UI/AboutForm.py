@@ -22,13 +22,14 @@ class AboutForm(ctk.CTkToplevel):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(6, weight=1)
 
-        image_open = Image.open('static/book.png')
-        width, height = image_open.size
+        self.img = Image.open('static/book.png')
+        width, height = self.img.size
         h = 128
         w = int((width * h) / height)
-        resized_img = image_open.resize((w,h))
-        self.img = ImageTk.PhotoImage(resized_img)
-        self.cover_label = ttk.Label(self, text="", image=self.img, background=parent.imageBG, anchor="n")
+        image_size = (w, h)
+        self.img = self.img.resize((w, h), Image.LANCZOS)
+        self.photo = ctk.CTkImage(light_image=self.img, dark_image=self.img, size=image_size)
+        self.cover_label = ctk.CTkLabel(self, image=self.photo, text="", fg_color="transparent")
         self.cover_label.grid(row=0, column=0, padx=20, pady=10, sticky="n", columnspan=1, rowspan=8)
 
         self.title_label = ctk.CTkLabel(self, text=tr["appTitle"])

@@ -98,14 +98,14 @@ class App(customtkinter.CTk):
         self.inProcessLabel.grid(row=0, column=2, padx=10, pady=2, sticky="w")
 
         self.preferences_button = customtkinter.CTkButton(
-            self, fg_color="transparent", border_color=self.imageBG,
+            self, fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"), border_color=self.imageBG,
             command=self.show_preferences, border_width=2, width=24, height=24,
             font=self.icon_font, text=Icons.options
         )
         self.preferences_button.grid(row=0, column=2, padx=(10,40), pady=0, sticky="e", columnspan=1)
 
         self.about_button = customtkinter.CTkButton(
-            self, fg_color="transparent", border_color=self.imageBG,
+            self, fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"), border_color=self.imageBG,
             command=self.show_about, border_width=2, width=24, height=24,
             font=self.icon_font, text=Icons.info
         )
@@ -346,7 +346,7 @@ if __name__ == '__main__':
     except:
         pass
 
-    splash = loading_splash.LoadingSplashScreen(app_name=appname, image_path='static/book.png')
+    splash = loading_splash.LoadingSplashScreen(app_name=appname, image_path='static/book.png', icon="static/favicon.ico", topmost=True)
     splash.show()
 
     # Start background work

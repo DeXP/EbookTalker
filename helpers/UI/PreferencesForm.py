@@ -50,7 +50,7 @@ class PreferencesForm(ctk.CTkToplevel):
 
         self.output_browse_button = ctk.CTkButton(
             self, width=30, border_width=2,
-            fg_color="transparent", border_color=parent.imageBG,
+            fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"), border_color=parent.imageBG,
             command=self.get_output_folder,
             font=parent.icon_font, text=Icons.folder_open
         )
@@ -115,7 +115,7 @@ class PreferencesForm(ctk.CTkToplevel):
 
             self.tts_voice_play_buttons[lang] = ctk.CTkButton(
                 voice_parent, width=30, border_width=2,
-                fg_color="transparent", border_color=parent.imageBG,
+                fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"), border_color=parent.imageBG,
                 command=lambda lang=lang: self.on_play('silero', lang),
                 font=parent.icon_font, text=Icons.play
             )
