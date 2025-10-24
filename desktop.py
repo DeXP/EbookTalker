@@ -3,11 +3,12 @@ from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 import customtkinter
 from pathlib import Path
+from CTkTable import CTkTable
 import sys, json, time, shutil, locale, datetime, multiprocessing, threading, platformdirs
 
 import converter
 from helpers import book
-from helpers.UI import Icons, PreferencesForm, AboutForm, loading_splash
+from helpers.UI import Icons, PreferencesForm, AboutForm, ScrollableCTkTable, loading_splash
 from helpers.translation import TT
 
 
@@ -66,26 +67,6 @@ class App(customtkinter.CTk):
         self.imageBG = "white"
         if 'Dark' == customtkinter.get_appearance_mode():
             self.imageBG = "#242424"
-
-            self.style = ttk.Style()
-    
-            self.style.theme_use("default")
-    
-            self.style.configure("Treeview",
-                            background="#2a2d2e",
-                            foreground="white",
-                            fieldbackground="#343638",
-                            bordercolor="#343638",
-                            borderwidth=0)
-            self.style.map('Treeview', background=[('selected', '#22559b')])
-    
-            self.style.configure("Treeview.Heading",
-                            background="#565b5e",
-                            foreground="white",
-                            relief="flat")
-            self.style.map("Treeview.Heading", background=[('active', '#3484F0')])
-        
-        ttk.Style().configure("Treeview", rowheight=30)
         
         # self.cover_label = customtkinter.CTkLabel(self, text="", image=self.default_cover)
         self.cover_label = ttk.Label(self, text="", background=self.imageBG)
@@ -131,28 +112,16 @@ class App(customtkinter.CTk):
         self.progressbar.grid(row=3, column=1, padx=10, pady=10, sticky="nswe", columnspan=2)
 
 
-        self.treeview = ttk.Treeview(columns=("lastName", "title", "seqNumber", "sequence", "size", "datetime"))
-        self.treeview.heading("#0", text=tr["firstName"])
-        self.treeview.column("#0", minwidth=70, width=120, anchor='center')
-        self.treeview.heading("lastName", text=tr["lastName"])
-        self.treeview.column("lastName", minwidth=70, width=120, anchor='center')
-        self.treeview.heading("title", text=tr["title"])
-        self.treeview.column("title", minwidth=80, width=250, anchor='center')
-        self.treeview.heading("seqNumber", text=tr["seqNumber"])
-        self.treeview.column("seqNumber", minwidth=20, width=30, anchor='center')
-        self.treeview.heading("sequence", text=tr["sequence"])
-        self.treeview.column("sequence", minwidth=80, width=170, anchor='center')
-        self.treeview.heading("size", text=tr["size"])
-        self.treeview.column("size", minwidth=40, width=70, anchor='center')
-        self.treeview.heading("datetime", text=tr["datetime"])
-        self.treeview.column("datetime", minwidth=90, width=150, anchor='center')
-        # self.treeview.insert(
-        #     "",
-        #     tk.END,
-        #     text="Ольга",
-        #     values=("Громыко", "Профессия Ведьма", "1", "Белорский цикл", "234 KБ", "15.03.2025 12:34")
-        # )
-        self.treeview.grid(row=4, column=0, padx=10, pady=0, sticky="nswe", columnspan=3)
+        self.book_table = ScrollableCTkTable.ScrollableCTkTable(parent=self,
+            headers=[
+                tr["author"],
+                tr["title"],
+                tr["size"],
+                tr["datetime"]
+            ]
+        )
+        self.book_table.grid(row=4, column=0, padx=10, pady=0, sticky="nswe", columnspan=3)
+
 
         self.add_button = customtkinter.CTkButton(self, text=tr["addBookToQueue"], command=self.add_button_callback, border_spacing=10)
         self.add_button.grid(row=5, column=0, padx=10, pady=10, sticky="e", columnspan=3)
@@ -241,22 +210,15 @@ class App(customtkinter.CTk):
 
 
     def refresh_queue(self):
-        for row in self.treeview.get_children():
-            self.treeview.delete(row)
+        all_data = list()
+        for info in self.que:
+            new_row = [ book.AuthorName(info),
+                       info['title'] or "",
+                       self.sizeof_fmt(info['size'] or 0), 
+                       datetime.datetime.fromtimestamp(info['datetime'] or 0).strftime(self.tr["datetimeFormat"])]
+            all_data.append(new_row)
 
-        for book in self.que:
-            self.treeview.insert(
-                "",
-                tk.END,
-                text=book['firstName'] or "",
-                values=(book['lastName'] or "",
-                        book['title'] or "", 
-                        book['seqNumber'] or "", 
-                        book['sequence'] or "", 
-                        self.sizeof_fmt(book['size'] or 0), 
-                        datetime.datetime.fromtimestamp(book['datetime'] or 0).strftime(self.tr["datetimeFormat"])
-                )
-            )
+        self.book_table.update_table(all_data)
 
 
     def update_UI(self):
@@ -294,6 +256,12 @@ class App(customtkinter.CTk):
             time.sleep(1)
 
 
+def terminate_background_requested(splash, res):
+    if splash.is_exit_requested():
+        res['cancelled'] = True
+        return True
+    
+
 def do_background_initialization(splash, res, appname, appauthor):
     global tr
     res['status'] = "Init..."
@@ -312,6 +280,9 @@ def do_background_initialization(splash, res, appname, appauthor):
                     for line in f)
         
     var = converter.Init(res['cfg'])
+
+    if terminate_background_requested(splash, res):
+        return
     
     localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
     localeFile = localeFile if not var['settings']['app']['lang'] else var['settings']['app']['lang'] + ".json"
@@ -320,22 +291,23 @@ def do_background_initialization(splash, res, appname, appauthor):
         tr = json.load(json_file)
     res['tr'] = tr
 
+    if terminate_background_requested(splash, res):
+        return
+
     
     res['status'] = TT(tr, "Creating variables", "status")
     res['manager'] = multiprocessing.Manager()
     res['que'] = res['manager'].list()
     res['proc'] = res['manager'].dict()
 
-    if splash.is_exit_requested():
-        res['cancelled'] = True
+    if terminate_background_requested(splash, res):
         return
 
     res['status'] = TT(tr, "Initializing neural networks", "status")
     var = converter.InitModels(res['cfg'], var)
     res['var'] = var
 
-    if splash.is_exit_requested():
-        res['cancelled'] = True
+    if terminate_background_requested(splash, res):
         return
 
     res['success'] = True
@@ -368,11 +340,12 @@ if __name__ == '__main__':
         if ('tr' in res) and not res['translated']:
             splash.set_title(TT(tr, "appTitle"))
             res['translated'] = True
+        if splash.is_exit_requested():
+            splash.hide()
         splash.update()
         time.sleep(0.05)
 
     if splash.is_exit_requested():
-        splash.hide()
         splash.destroy()
     else:
         que, proc, var, cfg, tr = res['que'], res['proc'], res['var'], res['cfg'], res['tr']
