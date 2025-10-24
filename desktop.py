@@ -16,12 +16,6 @@ from helpers.translation import TT
 # customtkinter.set_default_color_theme("blue")
 
 
-def replace_substrings(s: str, replacements) -> str:
-    for key, value in replacements.items():
-        s = s.replace(key, value)
-    return s
-
-
 class App(customtkinter.CTk):
     def GetVersionExt(self):
         if (sys.platform == "win32") and hasattr(sys, 'frozen'):
@@ -64,12 +58,7 @@ class App(customtkinter.CTk):
         self.grid_rowconfigure(4, weight=1)
         self.iconbitmap('static/favicon.ico')
 
-        self.imageBG = "white"
-        if 'Dark' == customtkinter.get_appearance_mode():
-            self.imageBG = "#242424"
-        
-        # self.cover_label = customtkinter.CTkLabel(self, text="", image=self.default_cover)
-        self.cover_label = ttk.Label(self, text="", background=self.imageBG)
+        self.cover_label = customtkinter.CTkLabel(self, text="", fg_color="transparent")
         self.cover_label.grid(row=0, column=0, padx=10, pady=10, sticky="ew", columnspan=1, rowspan=4)
         self.load_cover()
 
@@ -80,15 +69,15 @@ class App(customtkinter.CTk):
         self.inProcessLabel.grid(row=0, column=2, padx=10, pady=2, sticky="w")
 
         self.preferences_button = customtkinter.CTkButton(
-            self, fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"), border_color=self.imageBG,
-            command=self.show_preferences, border_width=2, width=24, height=24,
+            self, fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"),
+            command=self.show_preferences, width=24, height=24,
             font=self.icon_font, text=Icons.options
         )
-        self.preferences_button.grid(row=0, column=2, padx=(10,40), pady=0, sticky="e", columnspan=1)
+        self.preferences_button.grid(row=0, column=2, padx=(10,50), pady=0, sticky="e", columnspan=1)
 
         self.about_button = customtkinter.CTkButton(
-            self, fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"), border_color=self.imageBG,
-            command=self.show_about, border_width=2, width=24, height=24,
+            self, fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"),
+            command=self.show_about, width=24, height=24,
             font=self.icon_font, text=Icons.info
         )
         self.about_button.grid(row=0, column=2, padx=10, pady=0, sticky="e", columnspan=1)
@@ -113,12 +102,7 @@ class App(customtkinter.CTk):
 
 
         self.book_table = ScrollableCTkTable.ScrollableCTkTable(parent=self,
-            headers=[
-                tr["author"],
-                tr["title"],
-                tr["size"],
-                tr["datetime"]
-            ]
+            headers=[tr["author"], tr["title"], tr["size"], tr["datetime"]]
         )
         self.book_table.grid(row=4, column=0, padx=10, pady=0, sticky="nswe", columnspan=3)
 
@@ -195,10 +179,10 @@ class App(customtkinter.CTk):
         width, height = image_open.size
         w, h = 150, 180
         w = int((width * h) / height)
-
-        img = image_open.resize((w,h))
-        self.cover_img = ImageTk.PhotoImage(img)
-        self.cover_label.configure(image=self.cover_img)
+        image_size = (w,h)
+        img = image_open.resize(image_size, Image.LANCZOS)
+        self.photo = customtkinter.CTkImage(light_image=img, dark_image=img, size=image_size)
+        self.cover_label.configure(image=self.photo)
 
 
     def sizeof_fmt(self, num):
@@ -254,6 +238,12 @@ class App(customtkinter.CTk):
                 self.progressbar.set(0)
 
             time.sleep(1)
+
+
+def replace_substrings(s: str, replacements) -> str:
+    for key, value in replacements.items():
+        s = s.replace(key, value)
+    return s
 
 
 def terminate_background_requested(splash, res):
