@@ -345,7 +345,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
         chapterMeta = ''
         time = 0.0
         for i, section in enumerate(info['sections']):
-            sectionWavFile = var['genout'] / f"{i}.wav"
+            sectionWavFile = var['genout'] / f"{i + 1}.wav"
             if sectionWavFile.exists() and (sectionWavFile.stat().st_size > 0):
                 chapterWavs.append(sectionWavFile.name)
                 duration = dxaudio.get_wav_duration(sectionWavFile)
