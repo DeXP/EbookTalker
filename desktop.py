@@ -1,9 +1,7 @@
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-from PIL import Image, ImageTk
+from tkinter import filedialog, messagebox
+from PIL import Image
 import customtkinter
 from pathlib import Path
-from CTkTable import CTkTable
 import sys, json, time, shutil, locale, datetime, multiprocessing, threading, platformdirs
 
 import converter
@@ -139,9 +137,9 @@ class App(customtkinter.CTk):
 
 
     def add_button_callback(self):
-        book_file = filedialog.askopenfilename(filetypes=[(self.tr["Books"], 
+        book_file_list = filedialog.askopenfilenames(filetypes=[(self.tr["Books"], 
             "*.txt *.epub *.fb2 *.fb2.zip *.fb2z *.txt.zip *.zip")])
-        if book_file:
+        for book_file in book_file_list:
             book_path = Path(book_file)
             info, _ = book.ParseBook(book_path)
             new_file = var['queue'] / book.SafeBookFileName(info)
@@ -244,12 +242,6 @@ def replace_substrings(s: str, replacements) -> str:
     for key, value in replacements.items():
         s = s.replace(key, value)
     return s
-
-
-def terminate_background_requested(splash, res):
-    if splash.is_exit_requested():
-        res['cancelled'] = True
-        return True
     
 
 def do_background_initialization(splash, res, appname, appauthor):
@@ -271,7 +263,7 @@ def do_background_initialization(splash, res, appname, appauthor):
         
     var = converter.Init(res['cfg'])
 
-    if terminate_background_requested(splash, res):
+    if splash.is_exit_requested():
         return
     
     localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
@@ -281,7 +273,7 @@ def do_background_initialization(splash, res, appname, appauthor):
         tr = json.load(json_file)
     res['tr'] = tr
 
-    if terminate_background_requested(splash, res):
+    if splash.is_exit_requested():
         return
 
     
@@ -290,14 +282,14 @@ def do_background_initialization(splash, res, appname, appauthor):
     res['que'] = res['manager'].list()
     res['proc'] = res['manager'].dict()
 
-    if terminate_background_requested(splash, res):
+    if splash.is_exit_requested():
         return
 
     res['status'] = TT(tr, "Initializing neural networks", "status")
     var = converter.InitModels(res['cfg'], var)
     res['var'] = var
 
-    if terminate_background_requested(splash, res):
+    if splash.is_exit_requested():
         return
 
     res['success'] = True
@@ -319,7 +311,7 @@ if __name__ == '__main__':
     splash.show()
 
     # Start background work
-    res = {'status': '', 'success': False, 'cancelled': False, 'error': None, 'translated': False}
+    res = {'status': '', 'success': False, 'translated': False}
     init_worker = threading.Thread(target=do_background_initialization, args=(splash, res, appname, appauthor), daemon=True)
     init_worker.start()
 
@@ -338,17 +330,23 @@ if __name__ == '__main__':
     if splash.is_exit_requested():
         splash.destroy()
     else:
-        que, proc, var, cfg, tr = res['que'], res['proc'], res['var'], res['cfg'], res['tr']
+        if 'var' in res:
+            que, proc, var, cfg, tr = res['que'], res['proc'], res['var'], res['cfg'], res['tr']
 
-        if sys.platform == "win32":
-            p = threading.Thread(target=converter.ConverterLoop, args=(que, proc, cfg, var))
+            if sys.platform == "win32":
+                p = threading.Thread(target=converter.ConverterLoop, args=(que, proc, cfg, var))
+            else:
+                p = multiprocessing.Process(target=converter.ConverterLoop, args=(que, proc, cfg, var))
+
+            p.start()
+
+            splash.hide()
+            splash.destroy()
+
+            app = App(tr, que, proc, cfg, var)
+            app.mainloop()
         else:
-            p = multiprocessing.Process(target=converter.ConverterLoop, args=(que, proc, cfg, var))
+            splash.hide()
+            splash.destroy()
+            messagebox.showerror(f"{appname} - Crash", f"Cannot initialize {appname}. Unexpected exit from initialization thread")
 
-        p.start()
-
-        splash.hide()
-        splash.destroy()
-
-        app = App(tr, que, proc, cfg, var)
-        app.mainloop()

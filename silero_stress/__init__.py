@@ -1,1 +1,0 @@
-from silero_stress.accentor import load_accentor
