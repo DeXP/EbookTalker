@@ -41,7 +41,7 @@
 
 !define COMPANY "DeXPeriX"
 !define PACKAGE_ID "DeXPeriX.EbookTalker"
-!define ICON_PATH "${SOURCE_DIR}\static\favicon.ico"
+!define ICON_PATH "..\static\favicon.ico"
 
 Name "EbookTalker"
 OutFile "${OUT}"
@@ -113,20 +113,19 @@ Section "Main"
   File /r "${SOURCE_DIR}\*"
 
   ; Shortcuts with custom icon
-  CreateShortCut "$DESKTOP\EbookTalker.lnk" "$INSTDIR\EbookTalker.exe" "" "${ICON_PATH}" 0
-  CreateShortCut "$SMPrograms\EbookTalker.lnk" "$INSTDIR\EbookTalker.exe" "" "${ICON_PATH}" 0
+  CreateShortCut "$DESKTOP\EbookTalker.lnk" "$INSTDIR\EbookTalker.exe" "" "$INSTDIR\static\favicon.ico" 0
+  CreateShortCut "$SMPrograms\EbookTalker.lnk" "$INSTDIR\EbookTalker.exe" "" "$INSTDIR\static\favicon.ico" 0
 
   WriteUninstaller "$INSTDIR\uninstall.exe"
 
   ; Write localized uninstall entry
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "DisplayName" "$localizedAppName"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "Publisher" "${COMPANY}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "DisplayName" "EbookTalker - $localizedAppName"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "DisplayVersion" "${VERSION}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "Publisher" "${COMPANY}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "InstallLocation" "$INSTDIR"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "DisplayIcon" "$INSTDIR\EbookTalker.exe,0"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "UninstallString" '"$INSTDIR\uninstall.exe"'
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "DisplayIcon" '"$INSTDIR\EbookTalker.exe",0'
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "HelpLink" "https://github.com/DeXPeriX/EbookTalker"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "URLInfoAbout" "https://github.com/DeXPeriX/EbookTalker"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "QuietUninstallString" '"$INSTDIR\uninstall.exe" /S'
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}" "NoRepair" 1
 

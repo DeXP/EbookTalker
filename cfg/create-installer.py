@@ -1,12 +1,15 @@
 #!/usr/bin/python3
 
-import sys, json, shutil, subprocess
+import sys, json, shutil, subprocess, hashlib
 from pathlib import Path
 
 # --- Configuration ---
 APP_NAME = "EbookTalker"
 EXE_NAME = f"{APP_NAME}.exe"
 PRODUCER_NAME = "DeXPeriX"
+
+GITHUB_REPO = "DeXP/EbookTalker"
+LICENSE = "GPL-3.0"
 
 OUTPUT_DIR = Path(__file__).parent.parent.parent.resolve()
 ROOT_DIR = Path(__file__).parent.parent.resolve()
@@ -95,6 +98,13 @@ def ensure_nsis_installed():
         sys.exit(1)
 
 
+def calculate_sha256(file_path: Path) -> str:
+    hash_sha256 = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_sha256.update(chunk)
+    return hash_sha256.hexdigest().upper()
+
 
 
 def create_exe():
@@ -156,8 +166,8 @@ def create_exe():
 
 
 
-def create_zip(version):
-    ZIP_PATH = OUTPUT_DIR / f"{APP_NAME}-{version}-win64-Portable.zip"
+def create_zip(version: str):
+    ZIP_PATH = OUTPUT_DIR / f"{APP_NAME}-{version}-Win64-Portable.zip"
 
     if ZIP_PATH.exists():
         ZIP_PATH.unlink()
@@ -167,10 +177,7 @@ def create_zip(version):
 
 
 
-def create_installer(version, full_version, en, ru):
-    OUTPUT_EXE = OUTPUT_DIR  / f"{APP_NAME}-{version}-win64.exe"
-
-    # MSI
+def create_installer(OUTPUT_EXE: Path, version: str, full_version: str, en: dict, ru: dict):
     print(f"\n📦 Building {APP_NAME} installer...\n")
 
     # Ensure NSIS is available
@@ -208,10 +215,100 @@ def create_installer(version, full_version, en, ru):
         size_mb = OUTPUT_EXE.stat().st_size / (1024 * 1024)
         print(f"✅ Success! {OUTPUT_EXE.name} ({size_mb:.1f} MB) ready.")
         print(f"   Silent install: .\\{OUTPUT_EXE.name} /S")
-        print(f"   Package ID for winget: DeXPeriX.EbookTalker")
+        print(f"   Package ID for winget: {PRODUCER_NAME}.{APP_NAME}")
     else:
         print("❌ Output EXE not found.", file=sys.stderr)
         sys.exit(1)
+
+
+
+def generate_winget_manifest(version: str, OUTPUT_EXE: Path, en: dict, ru: dict):
+    installer_url = f"https://github.com/{GITHUB_REPO}/releases/download/{version}/{OUTPUT_EXE.name}"
+    installer_hash = calculate_sha256(OUTPUT_EXE)
+    
+    version_manifest = f"""# Created using wingetcreate 1.10.3.0
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.10.0.schema.json
+
+PackageIdentifier: {PRODUCER_NAME}.{APP_NAME}
+PackageVersion: {version}
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.10.0
+"""
+    
+    installer_manifest = f"""# Created using wingetcreate 1.10.3.0
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+
+PackageIdentifier: {PRODUCER_NAME}.{APP_NAME}
+PackageVersion: {version}
+InstallerType: nullsoft
+Installers:
+- Architecture: x64
+  InstallerUrl: {installer_url}
+  InstallerSha256: {installer_hash}
+ManifestType: installer
+ManifestVersion: 1.10.0
+"""
+
+    locale_en_manifest = f"""# Created using wingetcreate 1.10.3.0
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+
+PackageIdentifier: {PRODUCER_NAME}.{APP_NAME}
+PackageVersion: {version}
+PackageLocale: en-US
+Publisher: {PRODUCER_NAME}
+PublisherUrl: https://github.com/DeXP
+PublisherSupportUrl: https://github.com/{GITHUB_REPO}/issues
+Author: DeXP
+PackageName: EbookTalker
+PackageUrl: https://github.com/{GITHUB_REPO}
+License: GPL-3.0
+LicenseUrl: https://github.com/{GITHUB_REPO}/blob/main/LICENSE.md
+Copyright: {en["LegalCopyright"]}
+ShortDescription: {en["appDescription"]}
+Moniker: {APP_NAME.lower()}
+Tags:
+- ebook
+- tts
+- reader
+- accessibility
+- open-source
+ReleaseNotes: See release notes on GitHub - https://github.com/{GITHUB_REPO}/releases/tag/{version}
+ReleaseNotesUrl: https://github.com/{GITHUB_REPO}/releases/tag/{version}
+ManifestType: defaultLocale
+ManifestVersion: 1.10.0
+"""
+    
+    locale_ru_manifest = f"""# yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.10.0.schema.json
+
+PackageIdentifier: {PRODUCER_NAME}.{APP_NAME}
+PackageVersion: {version}
+PackageLocale: ru-RU
+Publisher: {PRODUCER_NAME}
+Copyright: {ru["LegalCopyright"]}
+ShortDescription: {ru["appDescription"]}
+ReleaseNotes: Смотрите изменения на GitHub - https://github.com/{GITHUB_REPO}/releases/tag/{version}
+ReleaseNotesUrl: https://github.com/{GITHUB_REPO}/releases/tag/{version}
+ManifestType: locale
+ManifestVersion: 1.10.0
+"""
+
+    manifest_folder = OUTPUT_DIR / "winget-pkgs" / "manifests" / f"{PRODUCER_NAME[0].lower()}" / PRODUCER_NAME / APP_NAME / version
+    manifest_folder.mkdir(parents=True, exist_ok=True)    
+
+    version_manifest_path = manifest_folder / f"{PRODUCER_NAME}.{APP_NAME}.yaml"
+    version_manifest_path.write_text(version_manifest, encoding="utf-8")
+
+    installer_manifest_path = manifest_folder / f"{PRODUCER_NAME}.{APP_NAME}.installer.yaml"
+    installer_manifest_path.write_text(installer_manifest, encoding="utf-8")
+
+    locale_en_manifest_path = manifest_folder / f"{PRODUCER_NAME}.{APP_NAME}.locale.en-US.yaml"
+    locale_en_manifest_path.write_text(locale_en_manifest, encoding="utf-8")
+
+    locale_ru_manifest_path = manifest_folder / f"{PRODUCER_NAME}.{APP_NAME}.locale.ru-RU.yaml"
+    locale_ru_manifest_path.write_text(locale_ru_manifest, encoding="utf-8")
+
+    print(f"\n📝 Generated winget manifest: {manifest_folder}")
 
 
 # === Main build logic ===
@@ -231,22 +328,28 @@ def main():
     RC_OUTPUT_PATH.write_text(generate_rc(en, ru, comma_version, version), encoding='utf8')
     print(f"\n📚 RC has been written to: {Path(RC_OUTPUT_PATH).resolve()}")
 
+    OUTPUT_EXE = OUTPUT_DIR / f"{APP_NAME}-{version}-Win64-Installer.exe"
+
+
     if (len(sys.argv) < 2) or ('all' == sys.argv[1]):
         # Default - do all
         create_exe()
         create_zip(version)
-        create_installer(version, full_version, en, ru)
+        create_installer(OUTPUT_EXE, version, full_version, en, ru)
+        generate_winget_manifest(version, OUTPUT_EXE, en, ru)
     else:
-        mode = str(sys.argv[1]).lower()
-
-        if ('exe' == mode):
-            create_exe()
-        elif ('zip' == mode):
-            create_zip(version)
-        elif ('installer' == mode):
-            create_installer(version, full_version, en, ru)
-        elif ('-h' == mode) or ('/?' == mode) or ('h' == mode) or ('help' == mode) or ('--help' == mode):
-            print("\nCall the script without arguments - all artifacts would be created. Or provide one of the following: exe, zip, installer")
+        for i in range(1, len(sys.argv)):
+            mode = str(sys.argv[i]).lower()
+            if ('exe' == mode):
+                create_exe()
+            elif ('zip' == mode):
+                create_zip(version)
+            elif ('installer' == mode):
+                create_installer(OUTPUT_EXE, version, full_version, en, ru)
+            elif ('manifest' == mode):
+                generate_winget_manifest(version, OUTPUT_EXE, en, ru)
+            elif ('-h' == mode) or ('/?' == mode) or ('h' == mode) or ('help' == mode) or ('--help' == mode):
+                print("\nCall the script without arguments - all artifacts would be created. Or provide one or multiple of the following: exe, zip, installer, manifest")
 
 
 
