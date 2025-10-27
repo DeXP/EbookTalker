@@ -50,7 +50,7 @@ class AboutForm(ctk.CTkToplevel):
         self.beta_testers_label = ctk.CTkLabel(self, text=tr["appBetaTesters-line"])
         self.beta_testers_label.grid(row=5, column=1, pady=0, sticky="w")
 
-        sysinfo_str = settings.get_system_info_str()
+        sysinfo_str = settings.get_system_info_str(var)
         self.sysinfo_text = ctk.CTkTextbox(self, height=120, width=400)
         #self.sysinfo_text.delete("0.0", "end")  # delete all text
         self.sysinfo_text.insert(tk.END, tr["SystemInformation"] + "\n\n" + sysinfo_str) 

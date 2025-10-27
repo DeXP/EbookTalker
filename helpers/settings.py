@@ -32,7 +32,7 @@ def set_if_cat_none(d: dict, cat: str, sub: str, key: str, value):
         d[cat][sub][key] = value
 
 
-def Init(cfg: dict, var: dict):
+def LoadOrDefault(cfg: dict, var: dict):
     s = {}
 
     if 'SETTINGS_FILE' in cfg:
@@ -56,21 +56,7 @@ def Init(cfg: dict, var: dict):
         check_sub_cat_dict(s, 'silero', lang)
         set_if_cat_none(s, 'silero', lang, 'voice', var[lang]['default'])
 
-    var['settings'] = s
-
-
-def SetTorch(cfg: dict, var: dict):
-    import torch
-    defaultProcessor = 'cuda' if torch.cuda.is_available() else 'cpu'
-    processor = cfg['TORCH_DEVICE'] if ('TORCH_DEVICE' in cfg) else defaultProcessor
-
-    set_if_none(var['settings'], 'app', 'processor', processor)
-
-    num_threads = os.cpu_count() if ('cpu' == var['settings']['app']['processor']) else -1
-    if ('TORCH_NUM_THREADS' in cfg) and int(cfg['TORCH_NUM_THREADS']) > 0:
-        num_threads = cfg['TORCH_NUM_THREADS']
-    set_if_none(var['settings'], 'app', 'threads', num_threads)
-
+    return s
 
 
 def Save(cfg: dict, settings: dict):
@@ -105,7 +91,7 @@ def deep_compare_and_update(dict1, dict2):
     return dict1
 
 
-def get_system_info_str():
+def get_system_info_str(var: dict):
     s = ""
 
     try:
@@ -155,6 +141,9 @@ def get_system_info_str():
             s += f"CUDA Memory - Total: {torch.cuda.get_device_properties(0).total_memory / (1024**3):.2f} GB\n"
             s += f"CUDA Memory - Allocated: {torch.cuda.memory_allocated() / (1024**2):.2f} MB\n"
             s += f"CUDA Memory - Cached: {torch.cuda.memory_reserved() / (1024**2):.2f} MB\n"
+
+        if ('cuda' in var['warning']) and var['warning']['cuda']:
+            s += "\n" + var['warning']['cuda']
     except ImportError:
         s += "\nCUDA Check: PyTorch not installed - Cannot verify CUDA availability\n"
     

@@ -139,7 +139,7 @@ class PreferencesForm(ctk.CTkToplevel):
 
     def on_save(self):
         # Save preferences logic
-        s = settings.LoadOrDefault(self.cfg, self.var)
+        s = settings.Init(self.cfg, self.var)
         s['app']['lang'] = self.get_code_by_lang(self.lang_combobox.get())
         s['app']['output'] = self.output_text.get()
         s['app']['codec'] = self.codec_combobox.get()

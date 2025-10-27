@@ -49,6 +49,9 @@ def GetDefaultVar(cfg: dict):
             'ogg': 'libvorbis',
             'm4b': 'aac',
             'opus':'opus'
+        },
+        'warning': {
+            'cuda': None
         }
     }
 

@@ -274,7 +274,7 @@ def do_background_initialization(splash, res):
     import defaults
     from helpers import settings
     var = defaults.GetDefaultVar(res['cfg'])
-    settings.Init(res['cfg'], var)
+    var['settings'] = settings.LoadOrDefault(res['cfg'], var)
 
     if splash.is_exit_requested():
         return
@@ -292,7 +292,6 @@ def do_background_initialization(splash, res):
     
     res['status'] = TT(tr, "Importing modules", "status")
     import torch, converter
-    settings.SetTorch(res['cfg'], var)
     
     if splash.is_exit_requested():
         return

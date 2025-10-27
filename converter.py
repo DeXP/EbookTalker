@@ -10,12 +10,17 @@ def InitModels(cfg: dict, var: dict):
     dxfs.CreateDirectory(var['tmp'], var['queue'])
     dxfs.CreateDirectory(var['tmp'], Path('models'))
 
-    var['accentor'] = load_accentor()  
+    var['accentor'] = load_accentor()
 
-    device = torch.device(var['settings']['app']['processor'])
-    num_threads = int(var['settings']['app']['threads'])
-    if ('cpu' == var['settings']['app']['processor']) and (num_threads > 0):
-        torch.set_num_threads(num_threads)
+    cudaWarning = get_cuda_version_warning()
+    useCuda = cudaWarning is None
+
+    var['useCuda'] = useCuda
+    var['warning']['cuda'] = cudaWarning
+
+    device = torch.device('cuda' if useCuda else 'cpu')
+    if not useCuda:
+        torch.set_num_threads(os.cpu_count())
     var['device'] = device
 
     PreloadModel(var, 'ru')
@@ -49,6 +54,52 @@ def GetModel(var: dict, lang = 'ru'):
     if (lang in var) and ('model' in var[lang]) and (var[lang]['model'] is None):
         PreloadModel(var, lang)
     return var[lang]['model']
+
+
+def _extract_arch_version(arch_string: str):
+    """Extracts the architecture string from a CUDA version"""
+    base = arch_string.split("_")[1]
+    base = base.removesuffix("a")
+    return int(base)
+
+
+def get_cuda_version_warning():
+    incompatible_gpu_warn = """
+    Found GPU%d %s which is of cuda capability %d.%d.
+    Minimum and Maximum cuda capability supported by this version of PyTorch is
+    (%d.%d) - (%d.%d)
+    """
+
+    import torch
+    if (
+        torch.version.cuda is not None and torch.cuda.get_arch_list()
+    ):  # on ROCm we don't want this check
+        for d in range(torch.cuda.device_count()):
+            capability = torch.cuda.get_device_capability(d)
+            major = capability[0]
+            minor = capability[1]
+            name = torch.cuda.get_device_name(d)
+            current_arch = major * 10 + minor
+            min_arch = min(
+                (_extract_arch_version(arch) for arch in torch.cuda.get_arch_list()),
+                default=50,
+            )
+            max_arch = max(
+                (_extract_arch_version(arch) for arch in torch.cuda.get_arch_list()),
+                default=50,
+            )
+            if current_arch < min_arch or current_arch > max_arch:
+                return incompatible_gpu_warn % (
+                        d,
+                        major,
+                        minor,
+                        min_arch // 10,
+                        min_arch % 10,
+                        max_arch // 10,
+                        max_arch % 10,
+                    )
+        return None
+    return "CUDA disabled or doesn't supports any architectures"
 
 
 def GetSymbols(var: dict, lang = 'ru'):

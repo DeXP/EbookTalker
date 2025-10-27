@@ -52,8 +52,7 @@ def create_app(test_config=None):
     que = manager.list()
     proc = manager.dict()
     var = defaults.GetDefaultVar(app.config)
-    settings.Init(app.config, var)
-    settings.SetTorch(app.config, var)
+    var['settings'] = settings.LoadOrDefault(app.config, var)
     converter.InitModels(app.config, var)
 
     if sys.platform == "win32":
@@ -84,7 +83,7 @@ def create_app(test_config=None):
             }
         return flask.render_template('index.html', 
             version=version, passwordLength=len(str(app.config['WEB_PASSWORD'])), settings=var['settings'], 
-            langList=var['languages'], languages=l, sysinfo=settings.get_system_info_str())
+            langList=var['languages'], languages=l, sysinfo=settings.get_system_info_str(var))
 
 
     @app.route("/favicon.ico")

@@ -267,6 +267,6 @@ if __name__ == "__main__":
     elif ('encoders' == args.mode):
         print(sorted(get_supported_encoders(cfg)))
     elif args.input and args.output:
-        convert_wav_to_compressed(args.encoder, cfg, Path(args.input), Path(args.output), args.title, args.author, Path(args.cover))
+        convert_wav_to_compressed(args.encoder, cfg, Path(args.input), Path(args.output), title=args.title, author=args.author, cover=Path(args.cover))
     else:
         print("Unknown mode and input. Run the script with '-h' switch for more details.")
