@@ -107,8 +107,12 @@ def calculate_sha256(file_path: Path) -> str:
 
 
 
-def create_exe():
-    from PyInstaller.__main__ import run as pyinstaller_run
+def create_exe(en: dict, ru: dict, version: str, full_version: str):
+    # --- Step 1: Read version and generate RC file ---
+    comma_version = full_version.replace('.', ',')
+
+    RC_OUTPUT_PATH.write_text(generate_rc(en, ru, comma_version, version), encoding='utf8')
+    print(f"\n📚 RC has been written to: {Path(RC_OUTPUT_PATH).resolve()}")
 
     # Clean temp dev files
     if DIST_DATA_PATH.exists():
@@ -116,6 +120,9 @@ def create_exe():
 
     if DIST_SETTINGS_PATH.exists():
         DIST_SETTINGS_PATH.unlink()
+
+    # --- Step 2: Create exe with PyInstaller ---
+    from PyInstaller.__main__ import run as pyinstaller_run
 
     pyinstaller_args = [
         str(ENTRY_POINT),
@@ -127,6 +134,8 @@ def create_exe():
         "--distpath", str(DIST_PATH),
         "--icon", str(ICON_PATH),
         "--splash", str(SPLASH_PATH),
+        "--collect-data", "TTS",
+        "--collect-data", "coqui-tts",
         "--collect-data", "silero_stress",
         "--version-file", str(RC_OUTPUT_PATH)
     ]
@@ -172,8 +181,11 @@ def create_zip(version: str):
     if ZIP_PATH.exists():
         ZIP_PATH.unlink()
 
-    print(f"\n🗜️ Creating ZIP archive: {ZIP_PATH}")
+    print(f"\n🗜️ Creating ZIP archive")
     shutil.make_archive(base_name=ZIP_PATH.with_suffix(''), format='zip', root_dir=DIST_PATH)
+
+    size_mb = ZIP_PATH.stat().st_size / (1024 * 1024)
+    print(f"✅ Success! {ZIP_PATH.name} ({size_mb:.1f} MB) ready.")
 
 
 
@@ -214,8 +226,6 @@ def create_installer(OUTPUT_EXE: Path, version: str, full_version: str, en: dict
     if OUTPUT_EXE.exists():
         size_mb = OUTPUT_EXE.stat().st_size / (1024 * 1024)
         print(f"✅ Success! {OUTPUT_EXE.name} ({size_mb:.1f} MB) ready.")
-        print(f"   Silent install: .\\{OUTPUT_EXE.name} /S")
-        print(f"   Package ID for winget: {PRODUCER_NAME}.{APP_NAME}")
     else:
         print("❌ Output EXE not found.", file=sys.stderr)
         sys.exit(1)
@@ -262,7 +272,7 @@ PublisherSupportUrl: https://github.com/{GITHUB_REPO}/issues
 Author: DeXP
 PackageName: EbookTalker
 PackageUrl: https://github.com/{GITHUB_REPO}
-License: GPL-3.0
+License: {LICENSE}
 LicenseUrl: https://github.com/{GITHUB_REPO}/blob/main/LICENSE.md
 Copyright: {en["LegalCopyright"]}
 ShortDescription: {en["appDescription"]}
@@ -294,7 +304,7 @@ ManifestVersion: 1.10.0
 """
 
     manifest_folder = OUTPUT_DIR / "winget-pkgs" / "manifests" / f"{PRODUCER_NAME[0].lower()}" / PRODUCER_NAME / APP_NAME / version
-    manifest_folder.mkdir(parents=True, exist_ok=True)    
+    manifest_folder.mkdir(parents=True, exist_ok=True)
 
     version_manifest_path = manifest_folder / f"{PRODUCER_NAME}.{APP_NAME}.yaml"
     version_manifest_path.write_text(version_manifest, encoding="utf-8")
@@ -317,23 +327,17 @@ def main():
     en = json.loads(EN_PATH.read_text(encoding='utf8'))
     ru = json.loads(RU_PATH.read_text(encoding='utf8'))
 
-    # --- Step 1: Read version and generate RC file ---
     version = VERSION_FILE_PATH.read_text().strip()
     full_version = version
     while full_version.count('.') < 3:
         full_version += '.0'
-
-    comma_version = full_version.replace('.', ',')
-
-    RC_OUTPUT_PATH.write_text(generate_rc(en, ru, comma_version, version), encoding='utf8')
-    print(f"\n📚 RC has been written to: {Path(RC_OUTPUT_PATH).resolve()}")
 
     OUTPUT_EXE = OUTPUT_DIR / f"{APP_NAME}-{version}-Win64-Installer.exe"
 
 
     if (len(sys.argv) < 2) or ('all' == sys.argv[1]):
         # Default - do all
-        create_exe()
+        create_exe(en, ru, version, full_version)
         create_zip(version)
         create_installer(OUTPUT_EXE, version, full_version, en, ru)
         generate_winget_manifest(version, OUTPUT_EXE, en, ru)
@@ -341,7 +345,7 @@ def main():
         for i in range(1, len(sys.argv)):
             mode = str(sys.argv[i]).lower()
             if ('exe' == mode):
-                create_exe()
+                create_exe(en, ru, version, full_version)
             elif ('zip' == mode):
                 create_zip(version)
             elif ('installer' == mode):
@@ -349,7 +353,20 @@ def main():
             elif ('manifest' == mode):
                 generate_winget_manifest(version, OUTPUT_EXE, en, ru)
             elif ('-h' == mode) or ('/?' == mode) or ('h' == mode) or ('help' == mode) or ('--help' == mode):
-                print("\nCall the script without arguments - all artifacts would be created. Or provide one or multiple of the following: exe, zip, installer, manifest")
+                print(f"""
+Call the script without arguments, so all artifacts would be created. Or provide one or multiple of the following:
+  help - Show this help
+  exe - Pack python files to executable with PyInstaller
+  zip - Archive Portable-version of the app
+  installer - Make a Nullsoft installer
+  manifest - Generate manifest to submit to WinGet
+
+Example:
+                      
+{sys.argv[0]} installer manifest
+
+This command will not invoke PyInstaller or zip-archiver. Might be useful for installer tweaking.
+""")
 
 
 

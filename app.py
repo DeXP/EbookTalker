@@ -12,7 +12,7 @@ import logging, logging.handlers
 import flask, uuid, multiprocessing, threading, datetime, mimetypes, atexit
 
 from helpers import book, settings, dxfs, dxtmpfile
-import converter
+import defaults, converter
 
 
 def create_app(test_config=None):
@@ -51,15 +51,17 @@ def create_app(test_config=None):
     global que, proc, var
     que = manager.list()
     proc = manager.dict()
-    var = converter.Init(app.config)
-    var = converter.InitModels(app.config, var)
+    var = defaults.GetDefaultVar(app.config)
+    settings.Init(app.config, var)
+    settings.SetTorch(app.config, var)
+    converter.InitModels(app.config, var)
 
     if sys.platform == "win32":
-        p = threading.Thread(target=converter.ConverterLoop, args=(que, proc, app.config, var))
+        convert_worker = threading.Thread(target=converter.ConverterLoop, args=(que, proc, app.config, var))
     else:
-        p = multiprocessing.Process(target=converter.ConverterLoop, args=(que, proc, app.config, var))
+        convert_worker = multiprocessing.Process(target=converter.ConverterLoop, args=(que, proc, app.config, var))
 
-    p.start()
+    convert_worker.start()
 
 
     def close_running_threads():

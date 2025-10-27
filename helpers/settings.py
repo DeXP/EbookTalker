@@ -1,4 +1,4 @@
-import os, json, torch
+import os, json
 from pathlib import Path
 
 
@@ -32,7 +32,7 @@ def set_if_cat_none(d: dict, cat: str, sub: str, key: str, value):
         d[cat][sub][key] = value
 
 
-def LoadOrDefault(cfg: dict, var: dict):
+def Init(cfg: dict, var: dict):
     s = {}
 
     if 'SETTINGS_FILE' in cfg:
@@ -44,8 +44,6 @@ def LoadOrDefault(cfg: dict, var: dict):
     dirs = cfg['DIRECTORIES_FORMAT'] if ('DIRECTORIES_FORMAT' in cfg) else 'single'
     codec = cfg['AUDIO_CODEC'] if ('AUDIO_CODEC' in cfg) else 'mp3'
     bitrate = int(cfg['AUDIO_BITRATE']) if ('AUDIO_BITRATE' in cfg) else 64
-    defaultProcessor = 'cuda' if torch.cuda.is_available() else 'cpu'
-    processor = cfg['TORCH_DEVICE'] if ('TORCH_DEVICE' in cfg) else defaultProcessor
 
     check_sub_dict(s, 'app')
     set_if_none(s, 'app', 'lang', '')
@@ -53,19 +51,25 @@ def LoadOrDefault(cfg: dict, var: dict):
     set_if_none(s, 'app', 'codec', codec)
     set_if_none(s, 'app', 'bitrate', bitrate)
     set_if_none(s, 'app', 'dirs', dirs)
-    set_if_none(s, 'app', 'processor', processor)
-
-    num_threads = os.cpu_count() if ('cpu' == s['app']['processor']) else -1
-    if ('TORCH_NUM_THREADS' in cfg) and int(cfg['TORCH_NUM_THREADS']) > 0:
-        num_threads = cfg['TORCH_NUM_THREADS']
-    set_if_none(s, 'app', 'threads', num_threads)
-
 
     for lang in var['languages']:
         check_sub_cat_dict(s, 'silero', lang)
         set_if_cat_none(s, 'silero', lang, 'voice', var[lang]['default'])
 
-    return s
+    var['settings'] = s
+
+
+def SetTorch(cfg: dict, var: dict):
+    import torch
+    defaultProcessor = 'cuda' if torch.cuda.is_available() else 'cpu'
+    processor = cfg['TORCH_DEVICE'] if ('TORCH_DEVICE' in cfg) else defaultProcessor
+
+    set_if_none(var['settings'], 'app', 'processor', processor)
+
+    num_threads = os.cpu_count() if ('cpu' == var['settings']['app']['processor']) else -1
+    if ('TORCH_NUM_THREADS' in cfg) and int(cfg['TORCH_NUM_THREADS']) > 0:
+        num_threads = cfg['TORCH_NUM_THREADS']
+    set_if_none(var['settings'], 'app', 'threads', num_threads)
 
 
 
@@ -143,7 +147,7 @@ def get_system_info_str():
     try:
         import torch
         cuda_available = torch.cuda.is_available()
-        s += f"\nCUDA Available: {cuda_available}"
+        s += f"\nCUDA Available: {cuda_available}\n"
         if cuda_available:
             s += f"CUDA Device Count: {torch.cuda.device_count()}\n"
             s += f"CUDA Current Device: {torch.cuda.current_device()}\n"

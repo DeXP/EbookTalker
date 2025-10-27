@@ -4,10 +4,12 @@ import customtkinter
 from pathlib import Path
 import sys, json, time, shutil, locale, datetime, multiprocessing, threading, platformdirs
 
-import converter
 from helpers import book
-from helpers.UI import Icons, PreferencesForm, AboutForm, ScrollableCTkTable, loading_splash
+from helpers.UI import loading_splash
 from helpers.translation import TT
+
+APPNAME = "EbookTalker"
+APPAUTHOR = "DeXPeriX"
 
 
 # customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
@@ -30,7 +32,10 @@ class App(customtkinter.CTk):
 
     def __init__(self, tr: dict, que: list, proc, cfg, var):
         super().__init__()
-
+        
+        from helpers.UI import Icons, ScrollableCTkTable
+        import converter
+        self.converter = converter
         self.tr = tr
         self.que = que
         self.proc = proc
@@ -145,16 +150,18 @@ class App(customtkinter.CTk):
             new_file = var['queue'] / book.SafeBookFileName(info)
             shutil.copy(book_path, new_file)
 
-            converter.fillQueue(self.que, self.var)
+            self.converter.fillQueue(self.que, self.var)
             self.refresh_queue()
 
 
     def show_preferences(self):
+        from helpers.UI import PreferencesForm
         preferences_form = PreferencesForm.PreferencesForm(self, tr, cfg, var)
         preferences_form.grab_set()  # Make the preferences form modal
 
 
     def show_about(self):
+        from helpers.UI import AboutForm
         about_form = AboutForm.AboutForm(self, tr, cfg, var)
         about_form.grab_set()
 
@@ -212,7 +219,7 @@ class App(customtkinter.CTk):
                 if bookName != prevBookName:
                     # Book got updated - refresh the UI
                     self.inProcessLabel.configure(text=bookName)
-                    converter.fillQueue(self.que, self.var)
+                    self.converter.fillQueue(self.que, self.var)
                     self.refresh_queue()
                     self.load_cover()
                     self.title(f"{self.orig_title} - [ {bookName} ]")
@@ -234,8 +241,9 @@ class App(customtkinter.CTk):
                 self.inProcessLabel.configure(text=tr["emptyBookName"])
                 self.title(self.orig_title)
                 self.progressbar.set(0)
+                self.load_cover()
 
-            time.sleep(1)
+            time.sleep(0.2)
 
 
 def replace_substrings(s: str, replacements) -> str:
@@ -244,28 +252,34 @@ def replace_substrings(s: str, replacements) -> str:
     return s
     
 
-def do_background_initialization(splash, res, appname, appauthor):
+def do_background_initialization(splash, res):
     global tr
     res['status'] = "Init..."
 
     userFolders = {
         '##HOME##': str(Path.home().absolute()),
         '##MUSIC##': platformdirs.user_music_dir(),
-        '##LOGS##': platformdirs.user_log_dir(appname, appauthor),
-        '##CONFIG##': platformdirs.user_config_dir(appname, appauthor),
-        '##APPDATA##': platformdirs.user_data_dir(appname, appauthor, roaming=True), # synchronized
-        '##LOCALAPPDATA##': platformdirs.user_data_dir(appname, appauthor)
+        '##LOGS##': platformdirs.user_log_dir(APPNAME, APPAUTHOR),
+        '##CONFIG##': platformdirs.user_config_dir(APPNAME, APPAUTHOR),
+        '##APPDATA##': platformdirs.user_data_dir(APPNAME, APPAUTHOR, roaming=True), # synchronized
+        '##LOCALAPPDATA##': platformdirs.user_data_dir(APPNAME, APPAUTHOR)
     }
     
     with open("default.cfg", "rt") as f:
         res['cfg'] = dict((lambda l: (l[0].strip(" '\""), replace_substrings(l[2][:-1].strip(" '\""), userFolders)))(line.partition("="))
                     for line in f)
-        
-    var = converter.Init(res['cfg'])
+
+
+    res['status'] = "Initializing defaults"
+    import defaults
+    from helpers import settings
+    var = defaults.GetDefaultVar(res['cfg'])
+    settings.Init(res['cfg'], var)
 
     if splash.is_exit_requested():
         return
     
+    res['status'] = "Loading locale"
     localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
     localeFile = localeFile if not var['settings']['app']['lang'] else var['settings']['app']['lang'] + ".json"
     tr = None
@@ -275,7 +289,13 @@ def do_background_initialization(splash, res, appname, appauthor):
 
     if splash.is_exit_requested():
         return
-
+    
+    res['status'] = TT(tr, "Importing modules", "status")
+    import torch, converter
+    settings.SetTorch(res['cfg'], var)
+    
+    if splash.is_exit_requested():
+        return
     
     res['status'] = TT(tr, "Creating variables", "status")
     res['manager'] = multiprocessing.Manager()
@@ -286,7 +306,7 @@ def do_background_initialization(splash, res, appname, appauthor):
         return
 
     res['status'] = TT(tr, "Initializing neural networks", "status")
-    var = converter.InitModels(res['cfg'], var)
+    converter.InitModels(res['cfg'], var)
     res['var'] = var
 
     if splash.is_exit_requested():
@@ -297,8 +317,6 @@ def do_background_initialization(splash, res, appname, appauthor):
 
 if __name__ == '__main__':
     global que, proc, var, cfg, tr
-    appname = "EbookTalker"
-    appauthor = "DeXPeriX"
     multiprocessing.freeze_support()
 
     try:
@@ -307,12 +325,12 @@ if __name__ == '__main__':
     except:
         pass
 
-    splash = loading_splash.LoadingSplashScreen(app_name=appname, image_path='static/book.png', icon="static/favicon.ico", topmost=True)
+    splash = loading_splash.LoadingSplashScreen(app_name=APPNAME, image_path='static/book.png', icon="static/favicon.ico", topmost=True)
     splash.show()
 
     # Start background work
     res = {'status': '', 'success': False, 'translated': False}
-    init_worker = threading.Thread(target=do_background_initialization, args=(splash, res, appname, appauthor), daemon=True)
+    init_worker = threading.Thread(target=do_background_initialization, args=(splash, res), daemon=True)
     init_worker.start()
 
     while init_worker.is_alive():
@@ -331,14 +349,15 @@ if __name__ == '__main__':
         splash.destroy()
     else:
         if 'var' in res:
+            import converter
             que, proc, var, cfg, tr = res['que'], res['proc'], res['var'], res['cfg'], res['tr']
 
             if sys.platform == "win32":
-                p = threading.Thread(target=converter.ConverterLoop, args=(que, proc, cfg, var))
+                convert_worker = threading.Thread(target=converter.ConverterLoop, args=(que, proc, cfg, var))
             else:
-                p = multiprocessing.Process(target=converter.ConverterLoop, args=(que, proc, cfg, var))
+                convert_worker = multiprocessing.Process(target=converter.ConverterLoop, args=(que, proc, cfg, var))
 
-            p.start()
+            convert_worker.start()
 
             splash.hide()
             splash.destroy()
@@ -348,5 +367,5 @@ if __name__ == '__main__':
         else:
             splash.hide()
             splash.destroy()
-            messagebox.showerror(f"{appname} - Crash", f"Cannot initialize {appname}. Unexpected exit from initialization thread")
+            messagebox.showerror(f"{APPNAME} - Crash", f"Cannot initialize {APPNAME}. Unexpected exit from initialization thread")
 

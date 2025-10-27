@@ -60,6 +60,7 @@
     "SystemInformation": "Информация о системе", 
     "OK": "OK",
     "status": {
+        "Importing modules": "Импорт модулей",
         "Creating variables": "Создание переменных",
         "Initializing neural networks": "Инициализация нейронных сетей"
     },
