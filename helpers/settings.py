@@ -133,7 +133,7 @@ def get_system_info_str(var: dict):
     try:
         import torch
         cuda_available = torch.cuda.is_available()
-        s += f"\nCUDA Available: {cuda_available}\n"
+        s += f"\nCUDA Available: {cuda_available}\n"  
         if cuda_available:
             s += f"CUDA Device Count: {torch.cuda.device_count()}\n"
             s += f"CUDA Current Device: {torch.cuda.current_device()}\n"
@@ -141,6 +141,7 @@ def get_system_info_str(var: dict):
             s += f"CUDA Memory - Total: {torch.cuda.get_device_properties(0).total_memory / (1024**3):.2f} GB\n"
             s += f"CUDA Memory - Allocated: {torch.cuda.memory_allocated() / (1024**2):.2f} MB\n"
             s += f"CUDA Memory - Cached: {torch.cuda.memory_reserved() / (1024**2):.2f} MB\n"
+        s += f"Torch version: {torch.__version__}\n"
 
         if ('cuda' in var['warning']) and var['warning']['cuda']:
             s += "\n" + var['warning']['cuda']

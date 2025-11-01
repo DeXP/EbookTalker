@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys, json, shutil, subprocess, hashlib
+import os, sys, json, shutil, subprocess, hashlib, zipfile, py7zr
 from pathlib import Path
 
 # --- Configuration ---
@@ -32,8 +32,83 @@ EN_PATH = I18N_SRC / 'en.json'
 RU_PATH = I18N_SRC / 'ru.json'
 
 
+TORCH_LIB_SOURCE = DIST_PATH / "_internal" / "torch" / "lib"
+
 
 # === Helper functions ===
+
+# Render a modern Unicode progress bar string
+def _render_progress(count: int, total: int, terminal_width: int = 80):
+    if total <= 0:
+        return ""
+    percent = count / total
+    info_text = f" {int(percent * 100)}% ({count}/{total})"
+    info_width = len(info_text)
+    bar_max_width = max(10, terminal_width - info_width - 2)  # 2 for brackets []
+    bar_length = min(bar_max_width, max(0, terminal_width - info_width - 2))
+    filled = int(bar_length * percent)
+    GREEN, GRAY, RESET = '\033[32m', '\033[90m', '\033[0m' # ANSI color codes
+    bar = GREEN + "█" * filled + GRAY + "░" * (bar_length - filled) + RESET
+    return f"▕{bar}▏{info_text}"
+
+
+# Get terminal width with fallback.
+def _get_terminal_width() -> int:
+    try:
+        return os.get_terminal_size().columns
+    except OSError:
+        return 80
+    
+
+# Zip max compression with progressbar
+def make_zip_with_max_compression(zip_path: Path, source_dir: Path):
+    files = [f for f in source_dir.rglob('*') if f.is_file()]
+    total = len(files)
+    if total == 0:
+        print("No files to archive.")
+        return
+
+    terminal_width = _get_terminal_width()
+    count = 0
+
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+        for file_path in files:
+            arcname = file_path.relative_to(source_dir)
+            zf.write(file_path, arcname)
+
+            count += 1
+            progress_str = _render_progress(count, total, terminal_width)
+            sys.stdout.write(f"\r{progress_str}")
+            sys.stdout.flush()
+
+    sys.stdout.write('\n')
+
+
+# py7zr stdout progressbar
+def write_with_progress(archive, src_root: Path, arc_root: str):
+    files = [f for f in src_root.rglob('*') if f.is_file()]
+    total = len(files)
+    if total == 0:
+        print("No files to archive.")
+        return
+
+    terminal_width = _get_terminal_width()
+    count = 0
+
+    for src_path in files:
+        rel_path = src_path.relative_to(src_root)
+        arc_path = Path(arc_root) / rel_path
+        archive.write(src_path, arc_path.as_posix())
+
+        count += 1
+        progress_str = _render_progress(count, total, terminal_width)
+        sys.stdout.write(f"\r{progress_str}")
+        sys.stdout.flush()
+
+    sys.stdout.write('\n')
+
+
+# === Executable related functions ===
 def generate_rc(en, ru, comma_version, version):
     return f'''# UTF-8
 #
@@ -134,9 +209,9 @@ def create_exe(en: dict, ru: dict, version: str, full_version: str):
         "--distpath", str(DIST_PATH),
         "--icon", str(ICON_PATH),
         "--splash", str(SPLASH_PATH),
-        "--collect-data", "TTS",
-        "--collect-data", "coqui-tts",
-        "--collect-data", "silero_stress",
+        # "--collect-data", "TTS",
+        # "--collect-data", "coqui-tts",
+        "--add-data", "silero_stress:silero_stress",
         "--version-file", str(RC_OUTPUT_PATH)
     ]
 
@@ -174,6 +249,42 @@ def create_exe(en: dict, ru: dict, version: str, full_version: str):
         shutil.rmtree(dist_app_dir)
 
 
+def extract_cuda():
+    print(f"\n📟 Extracting CUDA plugin")
+    import torch
+    torch_version = str(torch.__version__)
+    plugin_name = f"{APP_NAME}-Torch-{torch_version}"
+    PLUGIN_PATH = OUTPUT_DIR / plugin_name
+    PLUGIN_DST = PLUGIN_PATH / "_internal" / "torch" / "lib"
+
+    PLUGIN_DST.mkdir(parents=True, exist_ok=True)
+
+    total_size = 0.0
+    for file in TORCH_LIB_SOURCE.iterdir():
+        size_mb = file.stat().st_size / (1024 * 1024)
+        total_size += size_mb
+        print(f" - {file.name} ({size_mb:.1f} MB)")
+        shutil.copy(file, PLUGIN_DST)
+    print(f"Total size: {total_size/1024:.1f} GB")
+
+    print(f"\n🗜️ Creating CUDA plugin archive")
+    # Makes too big archive (2.1GB), GitHub limit is 2GB
+    # PLUGIN_ZIP = OUTPUT_DIR / f"{plugin_name}.zip"
+    # shutil.make_archive(base_name=PLUGIN_ZIP.with_suffix(''), format='zip', root_dir=PLUGIN_PATH)
+    # make_zip_with_max_compression(zip_path=PLUGIN_ZIP, source_dir=PLUGIN_PATH)
+
+    # Makes perfect ~1.3 GB archive
+    PLUGIN_7Z = OUTPUT_DIR / f"{plugin_name}.7z"
+    PLUGIN_INTERNAL = PLUGIN_PATH / "_internal"
+    with py7zr.SevenZipFile(PLUGIN_7Z, 'w',
+            filters=[{"id": py7zr.FILTER_LZMA2, "preset": 9}]) as archive:
+        # archive.writeall(PLUGIN_PATH / "_internal", "_internal")
+        write_with_progress(archive, PLUGIN_INTERNAL, "_internal")
+
+    size_mb = PLUGIN_7Z.stat().st_size / (1024 * 1024)
+    print(f"✅ Success! {PLUGIN_7Z.name} ({size_mb:.1f} MB) ready.")
+
+
 
 def create_zip(version: str):
     ZIP_PATH = OUTPUT_DIR / f"{APP_NAME}-{version}-Win64-Portable.zip"
@@ -182,7 +293,8 @@ def create_zip(version: str):
         ZIP_PATH.unlink()
 
     print(f"\n🗜️ Creating ZIP archive")
-    shutil.make_archive(base_name=ZIP_PATH.with_suffix(''), format='zip', root_dir=DIST_PATH)
+    # shutil.make_archive(base_name=ZIP_PATH.with_suffix(''), format='zip', root_dir=DIST_PATH)
+    make_zip_with_max_compression(zip_path=ZIP_PATH, source_dir=DIST_PATH)
 
     size_mb = ZIP_PATH.stat().st_size / (1024 * 1024)
     print(f"✅ Success! {ZIP_PATH.name} ({size_mb:.1f} MB) ready.")
@@ -346,6 +458,8 @@ def main():
             mode = str(sys.argv[i]).lower()
             if ('exe' == mode):
                 create_exe(en, ru, version, full_version)
+            elif ('cuda' == mode):
+                extract_cuda()
             elif ('zip' == mode):
                 create_zip(version)
             elif ('installer' == mode):
@@ -354,9 +468,10 @@ def main():
                 generate_winget_manifest(version, OUTPUT_EXE, en, ru)
             elif ('-h' == mode) or ('/?' == mode) or ('h' == mode) or ('help' == mode) or ('--help' == mode):
                 print(f"""
-Call the script without arguments, so all artifacts would be created. Or provide one or multiple of the following:
+Call the script without arguments, so all artifacts (except cuda) would be created. Or provide one or multiple of the following:
   help - Show this help
   exe - Pack python files to executable with PyInstaller
+  cuda - Extract CUDA DLLs from executable and pack it as a plugin
   zip - Archive Portable-version of the app
   installer - Make a Nullsoft installer
   manifest - Generate manifest to submit to WinGet
@@ -364,8 +479,10 @@ Call the script without arguments, so all artifacts would be created. Or provide
 Example:
                       
 {sys.argv[0]} installer manifest
+- this command will not invoke PyInstaller or zip-archiver. Might be useful for installer tweaking.
 
-This command will not invoke PyInstaller or zip-archiver. Might be useful for installer tweaking.
+{sys.argv[0]} exe cuda
+- generate CUDA plugin 7z archive - you usually need it just one per Torch/Cuda version
 """)
 
 

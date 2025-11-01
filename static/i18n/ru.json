@@ -7,6 +7,7 @@
     "appAuthor-line": "Автор программы: Храбров Дмитрий a.k.a. DeXPeriX",
     "appBetaTesters-line": "Бэта-тестеры: e-vred",
     "silero-line": "Движок для озвучивания - нейронные сети от Silero",
+    "Loading:": "Загрузка:",
     "bookInProcess": "Книга в процессе",
     "inProcess:": "В процессе:",
     "chapter:": "Глава:",
@@ -51,7 +52,6 @@
     "nf-short": "Короткий",
     "nf-full": "Полный",
     "Example:": "Пример:",
-    "Threads:": "Вычислительных потоков:",
     "Books": "Книги",
     "Save": "Сохранить",
     "Cancel": "Отменить",
@@ -62,7 +62,8 @@
     "status": {
         "Importing modules": "Импорт модулей",
         "Creating variables": "Создание переменных",
-        "Initializing neural networks": "Инициализация нейронных сетей"
+        "Initializing neural networks": "Инициализация нейронных сетей",
+        "Starting converter worker": "Запуск потока конвертации"
     },
     "error": {
         "noURLforDownload": "Введите ссылку для скачивания",

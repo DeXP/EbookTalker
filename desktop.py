@@ -1,11 +1,12 @@
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
 from PIL import Image
 import customtkinter
 from pathlib import Path
 import sys, json, time, shutil, locale, datetime, multiprocessing, threading, platformdirs
 
-from helpers import book
-from helpers.UI import loading_splash
+import defaults
+
+from helpers import book, settings
 from helpers.translation import TT
 
 APPNAME = "EbookTalker"
@@ -17,28 +18,15 @@ APPAUTHOR = "DeXPeriX"
 
 
 class App(customtkinter.CTk):
-    def GetVersionExt(self):
-        if (sys.platform == "win32") and hasattr(sys, 'frozen'):
-            try:
-                from win32api import GetFileVersionInfo, LOWORD, HIWORD
-                info = GetFileVersionInfo(sys.executable, '\\')
-                ms, ls = info['FileVersionMS'], info['FileVersionLS']
-                major, minor, build = HIWORD(ms), LOWORD(ms), HIWORD(ls)
-                return f"{major}.{minor}.{build}"
-            except:
-                return None
-        return None
-
-
-    def __init__(self, tr: dict, que: list, proc, cfg, var):
+    def __init__(self, tr: dict, cfg, var):
         super().__init__()
         
         from helpers.UI import Icons, ScrollableCTkTable
         import converter
         self.converter = converter
         self.tr = tr
-        self.que = que
-        self.proc = proc
+        self.que = list()
+        self.proc = ''
         self.cfg = cfg
         self.var = var
 
@@ -110,12 +98,29 @@ class App(customtkinter.CTk):
         self.book_table.grid(row=4, column=0, padx=10, pady=0, sticky="nswe", columnspan=3)
 
 
-        self.add_button = customtkinter.CTkButton(self, text=tr["addBookToQueue"], command=self.add_button_callback, border_spacing=10)
+        self.add_button = customtkinter.CTkButton(self, text=tr["addBookToQueue"], command=self.add_button_callback, border_spacing=10, state="disabled")
         self.add_button.grid(row=5, column=0, padx=10, pady=10, sticky="e", columnspan=3)
 
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.update_thread = threading.Thread(target=self.update_UI).start()
+
+        # Start background work
+        init_worker = threading.Thread(target=self.do_background_initialization, args=(tr, cfg, var), daemon=True)
+        init_worker.start()
+
+
+    def GetVersionExt(self):
+        if (sys.platform == "win32") and hasattr(sys, 'frozen'):
+            try:
+                from win32api import GetFileVersionInfo, LOWORD, HIWORD
+                info = GetFileVersionInfo(sys.executable, '\\')
+                ms, ls = info['FileVersionMS'], info['FileVersionLS']
+                major, minor, build = HIWORD(ms), LOWORD(ms), HIWORD(ls)
+                return f"{major}.{minor}.{build}"
+            except:
+                return None
+        return None
 
 
     def get_geometry(self, width: int, height: int):
@@ -243,18 +248,55 @@ class App(customtkinter.CTk):
                 self.progressbar.set(0)
                 self.load_cover()
 
+            if (var["loading"]):
+                self.inProcessLabel.configure(text= TT(tr, "Loading:") + " " + var["loading"])
+
             time.sleep(0.2)
+
+
+    def do_background_initialization(self, tr, cfg, var):
+        var['loading'] = TT(tr, "Creating variables", "status")
+        import multiprocessing
+        self.manager = multiprocessing.Manager()
+        self.que = self.manager.list()
+        self.proc = self.manager.dict()
+
+        var['loading'] = TT(tr, "Importing modules", "status")
+        import torch, converter
+        var['loading'] = str(torch.__version__)
+        
+        var['loading'] = TT(tr, "Initializing neural networks", "status")
+        converter.InitModels(cfg, var)
+
+        var['loading'] = TT(tr, "Starting converter worker", "status")
+        import converter
+        if sys.platform == "win32":
+            self.convert_worker = threading.Thread(target=converter.ConverterLoop, args=(self.que, self.proc, cfg, var), daemon=True)
+        else:
+            import multiprocessing
+            self.convert_worker = multiprocessing.Process(target=converter.ConverterLoop, args=(self.que, self.proc, cfg, var))
+
+        self.convert_worker.start()
+
+        # Schedule UI update on main thread
+        self.after(0, self._enable_ui, var)
+
+
+    def _enable_ui(self, var):
+        # This runs on the main thread — safe to update UI
+        var["loading"] = ''
+        self.add_button.configure(state="normal")
+        self.inProcessLabel.configure(text=tr["emptyBookName"])   
 
 
 def replace_substrings(s: str, replacements) -> str:
     for key, value in replacements.items():
         s = s.replace(key, value)
     return s
-    
 
-def do_background_initialization(splash, res):
-    global tr
-    res['status'] = "Init..."
+
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
 
     userFolders = {
         '##HOME##': str(Path.home().absolute()),
@@ -266,57 +308,17 @@ def do_background_initialization(splash, res):
     }
     
     with open("default.cfg", "rt") as f:
-        res['cfg'] = dict((lambda l: (l[0].strip(" '\""), replace_substrings(l[2][:-1].strip(" '\""), userFolders)))(line.partition("="))
+        cfg = dict((lambda l: (l[0].strip(" '\""), replace_substrings(l[2][:-1].strip(" '\""), userFolders)))(line.partition("="))
                     for line in f)
 
+    var = defaults.GetDefaultVar(cfg)
+    var['settings'] = settings.LoadOrDefault(cfg, var)
 
-    res['status'] = "Initializing defaults"
-    import defaults
-    from helpers import settings
-    var = defaults.GetDefaultVar(res['cfg'])
-    var['settings'] = settings.LoadOrDefault(res['cfg'], var)
-
-    if splash.is_exit_requested():
-        return
-    
-    res['status'] = "Loading locale"
     localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
     localeFile = localeFile if not var['settings']['app']['lang'] else var['settings']['app']['lang'] + ".json"
     tr = None
     with open("static/i18n/" + localeFile, encoding='utf-8') as json_file:
         tr = json.load(json_file)
-    res['tr'] = tr
-
-    if splash.is_exit_requested():
-        return
-    
-    res['status'] = TT(tr, "Importing modules", "status")
-    import torch, converter
-    
-    if splash.is_exit_requested():
-        return
-    
-    res['status'] = TT(tr, "Creating variables", "status")
-    res['manager'] = multiprocessing.Manager()
-    res['que'] = res['manager'].list()
-    res['proc'] = res['manager'].dict()
-
-    if splash.is_exit_requested():
-        return
-
-    res['status'] = TT(tr, "Initializing neural networks", "status")
-    converter.InitModels(res['cfg'], var)
-    res['var'] = var
-
-    if splash.is_exit_requested():
-        return
-
-    res['success'] = True
-
-
-if __name__ == '__main__':
-    global que, proc, var, cfg, tr
-    multiprocessing.freeze_support()
 
     try:
         import pyi_splash
@@ -324,47 +326,5 @@ if __name__ == '__main__':
     except:
         pass
 
-    splash = loading_splash.LoadingSplashScreen(app_name=APPNAME, image_path='static/book.png', icon="static/favicon.ico", topmost=True)
-    splash.show()
-
-    # Start background work
-    res = {'status': '', 'success': False, 'translated': False}
-    init_worker = threading.Thread(target=do_background_initialization, args=(splash, res), daemon=True)
-    init_worker.start()
-
-    while init_worker.is_alive():
-        if res['status']:
-            splash.status(res['status'])
-            res['status'] = ''
-        if ('tr' in res) and not res['translated']:
-            splash.set_title(TT(tr, "appTitle"))
-            res['translated'] = True
-        if splash.is_exit_requested():
-            splash.hide()
-        splash.update()
-        time.sleep(0.05)
-
-    if splash.is_exit_requested():
-        splash.destroy()
-    else:
-        if 'var' in res:
-            import converter
-            que, proc, var, cfg, tr = res['que'], res['proc'], res['var'], res['cfg'], res['tr']
-
-            if sys.platform == "win32":
-                convert_worker = threading.Thread(target=converter.ConverterLoop, args=(que, proc, cfg, var))
-            else:
-                convert_worker = multiprocessing.Process(target=converter.ConverterLoop, args=(que, proc, cfg, var))
-
-            convert_worker.start()
-
-            splash.hide()
-            splash.destroy()
-
-            app = App(tr, que, proc, cfg, var)
-            app.mainloop()
-        else:
-            splash.hide()
-            splash.destroy()
-            messagebox.showerror(f"{APPNAME} - Crash", f"Cannot initialize {APPNAME}. Unexpected exit from initialization thread")
-
+    app = App(tr, cfg, var)
+    app.mainloop()

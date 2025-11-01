@@ -6,6 +6,7 @@ def GetDefaultVar(cfg: dict):
 
     var = {
         'askForExit': False,
+        'loading': '',
         'languages': ['ru', 'uk', 'en'],
         'ru': {
             'type': 'silero',

@@ -1,11 +1,11 @@
+import threading
 import tkinter as tk
 import customtkinter as ctk
-from tkinter import ttk
-from PIL import Image, ImageTk
-from pathlib import Path
+from PIL import Image
 
-from helpers.UI import Icons
+from helpers.translation import TT
 from helpers import settings
+
 
 class AboutForm(ctk.CTkToplevel):
     def __init__(self, parent, tr: dict, cfg:dict, var: dict):
@@ -50,14 +50,39 @@ class AboutForm(ctk.CTkToplevel):
         self.beta_testers_label = ctk.CTkLabel(self, text=tr["appBetaTesters-line"])
         self.beta_testers_label.grid(row=5, column=1, pady=0, sticky="w")
 
-        sysinfo_str = settings.get_system_info_str(var)
         self.sysinfo_text = ctk.CTkTextbox(self, height=120, width=400)
         #self.sysinfo_text.delete("0.0", "end")  # delete all text
-        self.sysinfo_text.insert(tk.END, tr["SystemInformation"] + "\n\n" + sysinfo_str) 
+        self.sysinfo_text.insert(tk.END, TT(tr, "Loading:") + " " + tr["SystemInformation"])
+        self.sysinfo_text.configure(state="disabled")   
         self.sysinfo_text.grid(row=6, column=1, sticky="nswe")
 
         self.ok_button = ctk.CTkButton(self, text=tr['OK'], command=self.on_ok)
         self.ok_button.grid(row=7, column=0, columnspan=2, pady=7, sticky="s")
+
+        # Start background work
+        self.after(10, self._start_background_task)
+
+
+    def _start_background_task(self):
+        # Run the long-running task in a separate thread
+        thread = threading.Thread(target=self._collect_stats, daemon=True)
+        thread.start()
+
+
+    def _collect_stats(self):
+        # Simulate slow operation (e.g., gathering system info)
+        stats = settings.get_system_info_str(self.var)
+
+        # Schedule UI update on main thread
+        self.after(0, self._update_textbox, stats)
+
+
+    def _update_textbox(self, stats):
+        # This runs on the main thread — safe to update UI
+        self.sysinfo_text.configure(state="normal")
+        self.sysinfo_text.delete("0.0", "end")
+        self.sysinfo_text.insert("0.0", self.tr["SystemInformation"] + "\n\n" + stats)
+        self.sysinfo_text.configure(state="disabled")
     
 
     def on_ok(self):

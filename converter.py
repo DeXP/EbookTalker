@@ -65,9 +65,9 @@ def _extract_arch_version(arch_string: str):
 
 def get_cuda_version_warning():
     incompatible_gpu_warn = """
-    Found GPU%d %s which is of cuda capability %d.%d.
-    Minimum and Maximum cuda capability supported by this version of PyTorch is
-    (%d.%d) - (%d.%d)
+Found GPU%d %s which is of cuda capability %d.%d.
+Minimum and Maximum cuda capability supported by this version of PyTorch is
+(%d.%d) - (%d.%d)
     """
 
     import torch
@@ -91,6 +91,7 @@ def get_cuda_version_warning():
             if current_arch < min_arch or current_arch > max_arch:
                 return incompatible_gpu_warn % (
                         d,
+                        name,
                         major,
                         minor,
                         min_arch // 10,
