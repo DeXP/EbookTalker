@@ -32,9 +32,6 @@ EN_PATH = I18N_SRC / 'en.json'
 RU_PATH = I18N_SRC / 'ru.json'
 
 
-TORCH_LIB_SOURCE = DIST_PATH / "_internal" / "torch" / "lib"
-
-
 # === Helper functions ===
 
 # Render a modern Unicode progress bar string
@@ -85,7 +82,7 @@ def make_zip_with_max_compression(zip_path: Path, source_dir: Path):
 
 
 # py7zr stdout progressbar
-def write_with_progress(archive, src_root: Path, arc_root: str):
+def write_with_progress(archive: py7zr.SevenZipFile, src_root: Path, arc_root: str):
     files = [f for f in src_root.rglob('*') if f.is_file()]
     total = len(files)
     if total == 0:
@@ -248,6 +245,14 @@ def create_exe(en: dict, ru: dict, version: str, full_version: str):
     if dist_app_dir.exists():
         shutil.rmtree(dist_app_dir)
 
+    # Make torch CPU to reduce the size
+    CPU_SOURCE = OUTPUT_DIR / f"{APP_NAME}-Torch-2.8.0+cpu"
+    TORCH_FOLDER = DIST_PATH / "_internal" / "torch"
+    if TORCH_FOLDER.exists():
+        shutil.rmtree(TORCH_FOLDER)
+        shutil.copytree(CPU_SOURCE, DIST_PATH)
+
+
 
 def extract_cuda():
     print(f"\n📟 Extracting CUDA plugin")
@@ -255,17 +260,23 @@ def extract_cuda():
     torch_version = str(torch.__version__)
     plugin_name = f"{APP_NAME}-Torch-{torch_version}"
     PLUGIN_PATH = OUTPUT_DIR / plugin_name
-    PLUGIN_DST = PLUGIN_PATH / "_internal" / "torch" / "lib"
+    PLUGIN_TORCH_DST = PLUGIN_PATH / "_internal" / "torch" 
+    TORCH_SOURCE = DIST_PATH / "_internal" / "torch"
 
-    PLUGIN_DST.mkdir(parents=True, exist_ok=True)
+    PLUGIN_TORCH_DST.mkdir(parents=True, exist_ok=True)
 
     total_size = 0.0
-    for file in TORCH_LIB_SOURCE.iterdir():
+    files = [f for f in TORCH_SOURCE.rglob('*') if f.is_file()]
+    for file in files:
         size_mb = file.stat().st_size / (1024 * 1024)
         total_size += size_mb
-        print(f" - {file.name} ({size_mb:.1f} MB)")
-        shutil.copy(file, PLUGIN_DST)
-    print(f"Total size: {total_size/1024:.1f} GB")
+        rel_path = file.relative_to(TORCH_SOURCE)
+        dst_path = PLUGIN_TORCH_DST / rel_path
+        if size_mb > 1:
+            print(f" - {rel_path} ({size_mb:.1f} MB)")
+        dst_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(file, dst_path)
+    print(f"Total files {len(files)}, size: {total_size/1024:.1f} GB")
 
     print(f"\n🗜️ Creating CUDA plugin archive")
     # Makes too big archive (2.1GB), GitHub limit is 2GB
@@ -276,6 +287,7 @@ def extract_cuda():
     # Makes perfect ~1.3 GB archive
     PLUGIN_7Z = OUTPUT_DIR / f"{plugin_name}.7z"
     PLUGIN_INTERNAL = PLUGIN_PATH / "_internal"
+
     with py7zr.SevenZipFile(PLUGIN_7Z, 'w',
             filters=[{"id": py7zr.FILTER_LZMA2, "preset": 9}]) as archive:
         # archive.writeall(PLUGIN_PATH / "_internal", "_internal")

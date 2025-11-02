@@ -1,4 +1,4 @@
-import os, json
+import os, re, sys, json
 from pathlib import Path
 
 
@@ -91,6 +91,20 @@ def deep_compare_and_update(dict1, dict2):
     return dict1
 
 
+def get_torch_version() -> str | None:
+    torch_version_file = Path(sys.argv[0]).parent / "_internal" / "torch" / "version.py"
+    if torch_version_file.exists():
+        content = torch_version_file.read_text(encoding='utf-8')
+        match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", content)
+        if match:
+            return match.group(1)
+    try:
+        import torch 
+        return str(torch.__version__)  
+    except:
+        return None
+
+
 def get_system_info_str(var: dict):
     s = ""
 
@@ -141,7 +155,9 @@ def get_system_info_str(var: dict):
             s += f"CUDA Memory - Total: {torch.cuda.get_device_properties(0).total_memory / (1024**3):.2f} GB\n"
             s += f"CUDA Memory - Allocated: {torch.cuda.memory_allocated() / (1024**2):.2f} MB\n"
             s += f"CUDA Memory - Cached: {torch.cuda.memory_reserved() / (1024**2):.2f} MB\n"
-        s += f"Torch version: {torch.__version__}\n"
+            arches = ", ".join(torch.cuda.get_arch_list())
+            s += f"Supported CUDA architectures: {arches}\n"
+        s += f"Torch version: {get_torch_version()}\n"
 
         if ('cuda' in var['warning']) and var['warning']['cuda']:
             s += "\n" + var['warning']['cuda']
