@@ -10,6 +10,7 @@ def GetDefaultVar(cfg: dict):
     sileroUrl = 'https://github.com/DeXP/EbookTalker/releases/download/silero/'
     torchUrl  = 'https://github.com/DeXP/EbookTalker/releases/download/torch-2.8-cuda/'
     torchPath = str(Path(sys.executable).parent / "_internal")
+    torchPath = r"D:\AI\py\EbookTalker-Win64"
 
     var = {
         'askForExit': False,
@@ -22,6 +23,7 @@ def GetDefaultVar(cfg: dict):
                 url = sileroUrl + "v3_1_ru.pt",
                 sha256 = "cf60b47ec8a9c31046021d2d14b962ea56b8a5bf7061c98accaaaca428522f85",
                 dest = "models",
+                size = 61896251,
                 extra = {
                     'model': None,
                     'female': 'xenia',
@@ -37,6 +39,7 @@ def GetDefaultVar(cfg: dict):
                 url = sileroUrl + "v3_en.pt",
                 sha256 = "02b71034d9f13bc4001195017bac9db1c6bb6115e03fea52983e8abcff13b665",
                 dest = "models",
+                size = 57194546,
                 extra = {
                     'model': None,
                     'female': 'en_0',
@@ -52,6 +55,7 @@ def GetDefaultVar(cfg: dict):
                 url = sileroUrl + "v3_ua.pt",
                 sha256 = "025c53797e730142816c9ce817518977c29d7a75adefece9f3c707a4f4b569cb",
                 dest = "models",
+                size = 57081646, 
                 extra = {
                     'model': None,
                     'female': None,
@@ -67,6 +71,7 @@ def GetDefaultVar(cfg: dict):
                 url = sileroUrl + "v3_fr.pt",
                 sha256 = "02ed062cfff1c7097324929ca05c455a25d4f610fd14d51b89483126e50f15cb",
                 dest = "models",
+                size = 57085158,
                 extra = {
                     'model': None,
                     'female': 'fr_5',
@@ -82,6 +87,7 @@ def GetDefaultVar(cfg: dict):
                 url = sileroUrl + "v3_de.pt",
                 sha256 = "2e22f38619e1d1da96d963bda5fab6d53843e8837438cb5a45dc376882b0354b",
                 dest = "models",
+                size = 57076082,
                 extra = {
                     'model': None,
                     'english': 'Deutsch',
@@ -98,6 +104,7 @@ def GetDefaultVar(cfg: dict):
                 url = sileroUrl + "v3_es.pt",
                 sha256 = "36206add75fb89d0be16d5ce306ba7a896c6fa88bab7e3247403f4f4a520eced",
                 dest = "models",
+                size = 57079302,
                 extra = {
                     'model': None,
                     'female': None,
@@ -112,6 +119,7 @@ def GetDefaultVar(cfg: dict):
                 group = "torch",
                 name = "CUDA 12.9 Runtime (PyTorch 2.8)",
                 url = torchUrl +"EbookTalker-Torch-2.8.0+cu129.7z",
+                size = 1967046142,
                 dest = torchPath,
                 needs_admin = True,
                 description = "For RTX 20xx/30xx/40xx, A100, A40 (fastest)",
@@ -121,6 +129,7 @@ def GetDefaultVar(cfg: dict):
                 group = "torch",
                 name = "CUDA 12.6 Runtime (PyTorch 2.8)",
                 url = torchUrl + "EbookTalker-Torch-2.8.0+cu126.7z",
+                size = 1463471754,
                 dest = torchPath,
                 needs_admin = True,
                 description = "For GTX 10xx, Quadro P series",
@@ -130,6 +139,7 @@ def GetDefaultVar(cfg: dict):
                 group = "torch",
                 name = "CPU-only PyTorch 2.8",
                 url = torchUrl + "EbookTalker-Torch-2.8.0+cpu.7z",
+                size = 56934577,
                 dest = torchPath,
                 needs_admin = True,            
                 sha256 = "ac1243950fb61f850d4c6ad7706b52782b6caa581eec6dbe187d9193e2ff4860",

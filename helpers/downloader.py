@@ -12,7 +12,7 @@ from typing import Optional
 
 from .DownloadItem import DownloadItem
 from .detection import is_process_elevated
-from .translation import T
+
 
 # Elevate robocopy directly (Windows-only)
 def elevate_robocopy(src: Path, dest: Path) -> bool:
@@ -20,8 +20,8 @@ def elevate_robocopy(src: Path, dest: Path) -> bool:
         return False
 
     # Prepare robocopy args
-    # /E = copy subdirs, /MOVE = delete source after, /Z = resumeable, /R:1 /W:1 = fast retry
-    args = f'"{src}" "{dest}" /E /MOVE /Z /R:1 /W:1'
+    # /E = copy subdirs, /MOVE = delete source after - bad, /COPYALL — copy all file info, /Z = resumeable, /R:1 /W:1 = fast retry
+    args = f'"{src}" "{dest}" /E /COPYALL /Z /R:1 /W:1'
 
     SEE_MASK_NOCLOSEPROCESS = 0x00000040
     SW_HIDE = 0
@@ -81,13 +81,12 @@ class DownloaderCore:
         self.status_queue.put(("indeterminate", enable))
 
     def run(self) -> bool:
-        T.Cat("install")
         try:
             item = self.item
-            self._send_status(f"{T.C('Processing:')} {item.name}")
+            self._send_status("Processing")
 
             # 1. Download
-            self._send_status(f"{T.C('Downloading')} {item.name}...")
+            self._send_status("Downloading...")
             self.temp_file = self._download_with_progress(item.url, item.sha256)
             if not self.temp_file:
                 return False
@@ -99,7 +98,7 @@ class DownloaderCore:
             # 2. Extract or prepare
             if item.is_archive:
                 self._send_indeterminate(True)
-                self._send_status(f"{T.C('Extracting')} {item.name}...")
+                self._send_status("Extracting...")
                 self.extracted_dir = Path(tempfile.mkdtemp())
                 if not self._extract_7z(self.temp_file, self.extracted_dir):
                     self._send_indeterminate(False)
@@ -113,13 +112,13 @@ class DownloaderCore:
                 source_path = final_temp
 
             # 3. Copy
-            self._send_status(T.C("Copying files..."))
-            success = self._copy_with_elevation_if_needed(source_path, item.dest)
+            self._send_status("Copying files...")
+            success = self._copy_with_elevation_if_needed(source_path, item)
             self._send_indeterminate(False)
             if not success:
                 return False
 
-            self._send_status(f"{item.name} installed.")
+            self._send_status(f"Installed")
             return True
 
         except Exception as e:
@@ -181,19 +180,19 @@ class DownloaderCore:
         except:
             return False
 
-    def _copy_with_elevation_if_needed(self, src: Path, dest: Path) -> bool:
-        # Use static elevation check
+    def _copy_with_elevation_if_needed(self, src: Path, item: DownloadItem) -> bool:
+        dest = item.dest 
         if sys.platform == "win32" and not is_process_elevated():
             prog_files = Path(os.environ.get("ProgramFiles", "C:\\Program Files"))
-            needs_elev = prog_files.resolve() in dest.resolve().parents
+            needs_elev = item.needs_admin or (prog_files.resolve() in dest.resolve().parents)
         else:
             needs_elev = False
 
         if not needs_elev:
             try:
                 if src.is_dir():
-                    if dest.exists():
-                        shutil.rmtree(dest, ignore_errors=True)
+                    # if dest.exists():
+                    #     shutil.rmtree(dest, ignore_errors=True)
                     shutil.copytree(src, dest)
                 else:
                     dest.parent.mkdir(parents=True, exist_ok=True)

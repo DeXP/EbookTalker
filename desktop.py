@@ -7,7 +7,7 @@ import sys, json, time, shutil, locale, datetime, multiprocessing, threading, pl
 import defaults
 
 from helpers import book, settings
-from helpers.translation import T, TT
+from helpers.translation import T
 
 APPNAME = "EbookTalker"
 APPAUTHOR = "DeXPeriX"
@@ -29,8 +29,6 @@ class App(customtkinter.CTk):
         self.proc = ''
         self.cfg = cfg
         self.var = var
-
-        self.sizeFmt = (tr["byte"], tr["KB"], tr["MB"], tr["GB"], tr["TB"], tr["PB"], "EiB", "ZiB")
         self.icon_font = customtkinter.CTkFont(size=18)
 
         self.version = self.GetVersionExt()
@@ -195,20 +193,12 @@ class App(customtkinter.CTk):
         self.cover_label.configure(image=self.photo)
 
 
-    def sizeof_fmt(self, num):
-        for unit in self.sizeFmt:
-            if abs(num) < 1024.0:
-                return f"{num:3.1f} {unit}"
-            num /= 1024.0
-        return f"{num:.1f}YiB"
-
-
     def refresh_queue(self):
         all_data = list()
         for info in self.que:
             new_row = [ book.AuthorName(info),
                        info['title'] or "",
-                       self.sizeof_fmt(info['size'] or 0), 
+                       T.SizeFormat(info['size'] or 0), 
                        datetime.datetime.fromtimestamp(info['datetime'] or 0).strftime(self.tr["datetimeFormat"])]
             all_data.append(new_row)
 
@@ -249,26 +239,27 @@ class App(customtkinter.CTk):
                 self.load_cover()
 
             if (var["loading"]):
-                self.inProcessLabel.configure(text= TT(tr, "Loading:") + " " + var["loading"])
+                self.inProcessLabel.configure(text= T.T("Loading:") + " " + var["loading"])
 
             time.sleep(0.2)
 
 
     def do_background_initialization(self, tr, cfg, var):
-        var['loading'] = TT(tr, "Creating variables", "status")
+        T.Cat("status")
+        var['loading'] = T.C("Creating variables")
         import multiprocessing
         self.manager = multiprocessing.Manager()
         self.que = self.manager.list()
         self.proc = self.manager.dict()
 
-        var['loading'] = TT(tr, "Importing modules", "status")
+        var['loading'] = T.C("Importing modules")
         import torch, converter
         var['loading'] = str(torch.__version__)
         
-        var['loading'] = TT(tr, "Initializing neural networks", "status")
+        var['loading'] = T.C("Initializing neural networks")
         converter.InitModels(cfg, var)
 
-        var['loading'] = TT(tr, "Starting converter worker", "status")
+        var['loading'] = T.C("Starting converter worker")
         import converter
         if sys.platform == "win32":
             self.convert_worker = threading.Thread(target=converter.ConverterLoop, args=(self.que, self.proc, cfg, var), daemon=True)

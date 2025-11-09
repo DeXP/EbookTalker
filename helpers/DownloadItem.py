@@ -11,6 +11,7 @@ class DownloadItem:
         group: str = "",
         subtitle: Optional[str] = None,
         description: Optional[str] = None,
+        size: Optional[int] = None,
         sha256: Optional[str] = None,
         extra: Optional[dict] = None,
     ):
@@ -22,6 +23,7 @@ class DownloadItem:
         self.group = group
         self.subtitle = subtitle
         self.description = description
+        self.size = size
         self.sha256 = sha256 and sha256.lower()
         self.extra = extra
 
@@ -35,6 +37,7 @@ class DownloadItem:
             "group": self.group,
             "subtitle": self.subtitle,
             "description": self.description,
+            "size": self.size,
             "sha256": self.sha256,
             "extra": self.extra
         }

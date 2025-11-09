@@ -9,10 +9,12 @@ def TT(tr: dict, txt: str, cat: str = None, default: str = None) -> str:
 class T:
     cat = ""
     tr = {}
+    sizeFmtList = ()
 
     @classmethod
     def Init(cls, tr: dict):
         cls.tr = tr
+        cls.sizeFmtList = (tr["byte"], tr["KB"], tr["MB"], tr["GB"], tr["TB"], tr["PB"], "EiB", "ZiB")
 
     @classmethod
     def T(cls, txt: str, cat = None, default: str = None) -> str:
@@ -25,3 +27,11 @@ class T:
     @classmethod
     def C(cls, txt: str, default: str = None) -> str:
         return TT(cls.tr, txt, cls.cat, default)
+    
+    @classmethod
+    def SizeFormat(cls, num) -> str:
+        for unit in cls.sizeFmtList:
+            if abs(num) < 1024.0:
+                return f"{num:3.1f} {unit}"
+            num /= 1024.0
+        return f"{num:.1f}YiB"

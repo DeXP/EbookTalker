@@ -74,7 +74,7 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
                 values=list(self.groups.keys()),
                 variable=self.group_var,
                 command=self.on_group_change,
-                width=320,
+                width=220,
                 state="readonly"
             )
             self.group_combo.pack(side="left")
@@ -121,8 +121,6 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
                 break
 
     def update_group_view(self, group: str):
-        T.Cat("install")
-
         for rb in self.radio_buttons:
             rb.destroy()
         self.radio_buttons.clear()
@@ -132,8 +130,10 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
 
         for item in self.groups.get(group, []):
             title = f"{item.name} - {item.subtitle}" if item.subtitle else item.name
+            if item.size:
+                title = f"{title}   [{T.SizeFormat(item.size)}]"
             rb = ctk.CTkRadioButton(self.item_frame, text=title, variable=self.item_var, value=item.name, command=self.on_item_select)
-            rb.pack(anchor="w", padx=10, pady=5)
+            rb.pack(anchor="w", padx=10, pady=(5, 2))
             self.radio_buttons.append(rb)
             if item.description:
                 desc = ctk.CTkLabel(self.item_frame, text=f"   – {item.description}", text_color="gray", wraplength=500)
@@ -189,14 +189,15 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
         self.status_queue.put(("done", success))
 
     def request_cancel(self):
-        msg = CTkMessagebox(master=self, title="Cancel?", message="Are you sure you want to cancel?", icon="question", option_1="No", option_2="Yes")
+        T.Cat("install")
+        msg = CTkMessagebox(master=self, title=T.C("Cancel?"), message=T.C("Are you sure you want to cancel?"), icon="question", option_1="No", option_2="Yes")
         if msg.get() == "Yes":
             self.request_cancel_nowait()
 
     def request_cancel_nowait(self):
         if self.cancel_event:
             self.cancel_event.set()
-        self.status_label.configure(text="Cancelling… cleaning up.")
+        self.status_label.configure(text=T.T("Cancelling... cleaning up.", "install"))
 
     def setup_remaining_ui(self):
         self.progress = ctk.CTkProgressBar(self, mode="determinate", height=10)
@@ -212,11 +213,12 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
         self.action_btn.pack(side="left", padx=10)
 
     def process_queue(self):
+        T.Cat("install")
         try:
             while True:
                 msg_type, value = self.status_queue.get_nowait()
                 if msg_type == "message":
-                    self.status_label.configure(text=str(value))
+                    self.status_label.configure(text=T.C(str(value)))
                 elif msg_type == "progress":
                     if not self.indeterminate_mode:
                         self.progress.set(float(value) / 100.0)
@@ -233,9 +235,9 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
                 elif msg_type == "done":
                     self.set_installing(False)
                     if value and not (self.cancel_event and self.cancel_event.is_set()):
-                        self.status_label.configure(text="Installation completed successfully!")
+                        self.status_label.configure(text=T.C("Installation completed successfully!"))
                     elif not value and not (self.cancel_event and self.cancel_event.is_set()):
-                        self.status_label.configure(text="Installation failed. See log for details.")
+                        self.status_label.configure(text=T.C("Installation failed. See log for details."))
                     break
         except queue.Empty:
             pass
