@@ -104,29 +104,30 @@ class PreferencesForm(ctk.CTkToplevel):
         self.tts_voice_combos = {}
         self.tts_voice_play_buttons = {}
         for lang, language in var['languages'].items():
-            lang_name = language.name
-            self.tts_tabview.add(lang_name)
-            self.tts_tabview.tab(lang_name).grid_columnconfigure((0,1,2), weight=0)
-            voice_parent = self.tts_tabview.tab(lang_name)
+            if converter.IsModelFileExists(cfg, var, lang):
+                lang_name = language.name
+                self.tts_tabview.add(lang_name)
+                self.tts_tabview.tab(lang_name).grid_columnconfigure((0,1,2), weight=0)
+                voice_parent = self.tts_tabview.tab(lang_name)
 
-            self.tts_voice_labels[lang] = ctk.CTkLabel(voice_parent, text=tr["Voice:"])
-            self.tts_voice_labels[lang].grid(row=0, column=0, padx=10, pady=2, sticky="w")
+                self.tts_voice_labels[lang] = ctk.CTkLabel(voice_parent, text=tr["Voice:"])
+                self.tts_voice_labels[lang].grid(row=0, column=0, padx=10, pady=2, sticky="w")
 
-            self.tts_voice_combos[lang] = ctk.CTkComboBox(voice_parent, state="readonly")
-            self.tts_voice_combos[lang].set(var['settings']['silero'][lang]['voice'])
-            self.tts_voice_combos[lang].grid(row=0, column=1, padx=10, pady=2, sticky="w")
+                self.tts_voice_combos[lang] = ctk.CTkComboBox(voice_parent, state="readonly")
+                self.tts_voice_combos[lang].set(var['settings']['silero'][lang]['voice'])
+                self.tts_voice_combos[lang].grid(row=0, column=1, padx=10, pady=2, sticky="w")
 
-            self.tts_voice_play_buttons[lang] = ctk.CTkButton(
-                voice_parent, width=30,
-                fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"),
-                command=lambda lang=lang: self.on_play('silero', lang),
-                font=parent.icon_font, text=Icons.play
-            )
-            self.tts_voice_play_buttons[lang].grid(row=0, column=2, padx=10, pady=2, sticky="w")
+                self.tts_voice_play_buttons[lang] = ctk.CTkButton(
+                    voice_parent, width=30,
+                    fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"),
+                    command=lambda lang=lang: self.on_play('silero', lang),
+                    font=parent.icon_font, text=Icons.play
+                )
+                self.tts_voice_play_buttons[lang].grid(row=0, column=2, padx=10, pady=2, sticky="w")
 
 
         first_lang = list(var['languages'].keys())[0]
-        self.tts_voice_combos[first_lang].configure(values=converter.GetModel(var, first_lang).speakers)
+        self.tts_voice_combos[first_lang].configure(values=converter.GetModel(cfg, var, first_lang).speakers)
 
 
         self.install_button = ctk.CTkButton(self, text=T.T('Install components and languages'), command=self.on_install)
@@ -195,7 +196,7 @@ class PreferencesForm(ctk.CTkToplevel):
         if ("random" == voice) and wavFile.exists():
             wavFile.unlink()
 
-        if converter.SayText(wavFile, lang, voice, self.var['languages'][lang].extra['phrase'], self.var):
+        if converter.SayText(wavFile, lang, voice, self.var['languages'][lang].extra['phrase'], self.cfg, self.var):
             soundfile = str(wavFile.absolute())
             # if sys.platform == "win32":
             #     import winsound
@@ -230,7 +231,7 @@ class PreferencesForm(ctk.CTkToplevel):
     def on_tab_change(self):
         selected_tab = self.tts_tabview.get()  # Get the currently selected tab name
         lang = self.get_code_by_lang(selected_tab)
-        self.tts_voice_combos[lang].configure(values=converter.GetModel(self.var, lang).speakers)
+        self.tts_voice_combos[lang].configure(values=converter.GetModel(self.cfg, self.var, lang).speakers)
 
 
     def get_lang_by_code(self, value: str):

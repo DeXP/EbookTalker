@@ -23,30 +23,44 @@ def InitModels(cfg: dict, var: dict):
         torch.set_num_threads(os.cpu_count())
     var['device'] = device
 
-    PreloadModel(var, 'ru')
+    PreloadModel(cfg, var, 'ru')
     # PreloadModel(var, 'en')
 
 
-def PreloadModel(var: dict, lang = 'ru'):
+def GetModelPath(cfg: dict, var: dict, lang = 'ru') -> Path:
     if lang in var['languages']:
         urlPath = Path(var['languages'][lang].url)
         modelName = urlPath.name
-        local_file = 'models/' + modelName
 
-        if not os.path.isfile(local_file):
-            torch.hub.download_url_to_file(var['languages'][lang].url, local_file)
-
-        if (".pt" == urlPath.suffix):
-            var['languages'][lang].extra['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
-            var['languages'][lang].extra['model'].to(var['device'])
-
-        symb = var['languages'][lang].extra['model'].symbols
-        var['languages'][lang].extra['symbols'] = re.compile(f"[{symb}]", re.IGNORECASE)
+        localFile = Path('models') / modelName
+        if localFile.exists():
+            return localFile
+        
+        return Path(cfg['MODELS_FOLDER']) / modelName
 
 
-def GetModel(var: dict, lang = 'ru'):
+def IsModelFileExists(cfg: dict, var: dict, lang = 'ru') -> bool:
+    return GetModelPath(cfg, var, lang).exists()
+
+
+def PreloadModel(cfg: dict, var: dict, lang = 'ru'):
+    modelPath = GetModelPath(cfg, var, lang)
+    local_file = str(modelPath)
+
+    if not os.path.isfile(local_file):
+        torch.hub.download_url_to_file(var['languages'][lang].url, local_file)
+
+    if (".pt" == modelPath.suffix):
+        var['languages'][lang].extra['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
+        var['languages'][lang].extra['model'].to(var['device'])
+
+    symb = var['languages'][lang].extra['model'].symbols
+    var['languages'][lang].extra['symbols'] = re.compile(f"[{symb}]", re.IGNORECASE)
+
+
+def GetModel(cfg: dict, var: dict, lang = 'ru'):
     if (lang in var['languages']) and ('model' in var['languages'][lang].extra) and (var['languages'][lang].extra['model'] is None):
-        PreloadModel(var, lang)
+        PreloadModel(cfg, var, lang)
     return var['languages'][lang].extra['model']
 
 
@@ -97,9 +111,9 @@ Minimum and Maximum cuda capability supported by this version of PyTorch is
     return "CUDA disabled or doesn't supports any architectures"
 
 
-def GetSymbols(var: dict, lang = 'ru'):
+def GetSymbols(cfg: dict, var: dict, lang = 'ru'):
     if (lang in var['languages']) and ('model' in var['languages'][lang].extra) and (var['languages'][lang].extra['model'] is None):
-        PreloadModel(var, lang)
+        PreloadModel(cfg, var, lang)
     if (lang in var['languages']) and ('symbols' in var['languages'][lang].extra):
         return var['languages'][lang].extra['symbols']
     return ''
@@ -114,8 +128,8 @@ def GetSupportedAudioFormats(cfg: dict, var: dict):
     return supported
 
 
-def IsCorrectPhrase(var: dict, lang = 'ru', text = ''):
-    symbols = GetSymbols(var, lang)
+def IsCorrectPhrase(cfg: dict, var: dict, lang = 'ru', text = ''):
+    symbols = GetSymbols(cfg, var, lang)
     if symbols:
         if re.search(symbols, text):
             return True
@@ -161,18 +175,18 @@ def GeneratePause(var, timeMs = 300, name = "pause.wav"):
                 audio_path=str(var['genwav'] / name))
 
 
-def ProcessSentence(lang, number, sentence, var):
+def ProcessSentence(lang, number, sentence, cfg, var):
     wavFile = var['genwav'] / f"{number}.wav"
     speaker = var['settings']['silero'][lang]['voice']
-    return SayText(wavFile, lang, speaker, sentence, var)
+    return SayText(wavFile, lang, speaker, sentence, cfg, var)
 
 
-def SayText(wavFile, lang, speaker, text, var):
-    if IsCorrectPhrase(var, lang, text) and (not wavFile.exists()):
+def SayText(wavFile, lang, speaker, text, cfg, var):
+    if IsCorrectPhrase(cfg, var, lang, text) and (not wavFile.exists()):
         # Generate
         # print(text)
         try:
-            GetModel(var, lang).save_wav(text=text,
+            GetModel(cfg, var, lang).save_wav(text=text,
                 speaker = speaker,
                 sample_rate=var['sample_rate'],
                 put_accent=var['put_accent'],
@@ -253,7 +267,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
         proc['sectionTitle'] = sectionTitle
         if sectionTitle:
             sentenceCount += 1
-            if ProcessSentence(lang, sentenceCount, sectionTitle, var):
+            if ProcessSentence(lang, sentenceCount, sectionTitle, cfg, var):
                 sectionWavs.append(f"{sentenceCount}.wav")
                 sectionWavs.append("pause-long.wav")
 
@@ -272,7 +286,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
                 proc['sentenceNumber'] = sentenceCount
                 proc['sentenceText'] = s
                 accentedText = accentor(s) if 'ru' == lang else s
-                if ProcessSentence(lang, sentenceCount, accentedText, var):
+                if ProcessSentence(lang, sentenceCount, accentedText, cfg, var):
                     sectionWavs.append(f"{sentenceCount}.wav")
                     # last senctence in paragraph - long pause
                     pauseName = "pause-long.wav" if lineSentence == (len(p) - 1) else 'pause.wav'

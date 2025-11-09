@@ -3,7 +3,7 @@ from pathlib import Path
 from helpers.DownloadItem import DownloadItem
 
 
-def GetDefaultVar(cfg: dict):
+def GetDefaultVar(cfg: dict) -> dict:
     dataDir = Path(cfg["DATA_FOLDER"])
     jingleDir = Path(cfg["JINGLE_FOLDER"]) if ('JINGLE_FOLDER' in cfg) else 'jingle'
 
@@ -22,7 +22,7 @@ def GetDefaultVar(cfg: dict):
                 subtitle = 'Russian',
                 url = sileroUrl + "v3_1_ru.pt",
                 sha256 = "cf60b47ec8a9c31046021d2d14b962ea56b8a5bf7061c98accaaaca428522f85",
-                dest = "models",
+                dest = "MODELS_FOLDER",
                 size = 61896251,
                 extra = {
                     'model': None,
@@ -38,7 +38,7 @@ def GetDefaultVar(cfg: dict):
                 subtitle = 'English',
                 url = sileroUrl + "v3_en.pt",
                 sha256 = "02b71034d9f13bc4001195017bac9db1c6bb6115e03fea52983e8abcff13b665",
-                dest = "models",
+                dest = "MODELS_FOLDER",
                 size = 57194546,
                 extra = {
                     'model': None,
@@ -54,7 +54,7 @@ def GetDefaultVar(cfg: dict):
                 subtitle = 'Ukrainian',
                 url = sileroUrl + "v3_ua.pt",
                 sha256 = "025c53797e730142816c9ce817518977c29d7a75adefece9f3c707a4f4b569cb",
-                dest = "models",
+                dest = "MODELS_FOLDER",
                 size = 57081646, 
                 extra = {
                     'model': None,
@@ -70,7 +70,7 @@ def GetDefaultVar(cfg: dict):
                 subtitle = 'French',
                 url = sileroUrl + "v3_fr.pt",
                 sha256 = "02ed062cfff1c7097324929ca05c455a25d4f610fd14d51b89483126e50f15cb",
-                dest = "models",
+                dest = "MODELS_FOLDER",
                 size = 57085158,
                 extra = {
                     'model': None,
@@ -86,7 +86,7 @@ def GetDefaultVar(cfg: dict):
                 subtitle = 'Deutsch',
                 url = sileroUrl + "v3_de.pt",
                 sha256 = "2e22f38619e1d1da96d963bda5fab6d53843e8837438cb5a45dc376882b0354b",
-                dest = "models",
+                dest = "MODELS_FOLDER",
                 size = 57076082,
                 extra = {
                     'model': None,
@@ -103,7 +103,7 @@ def GetDefaultVar(cfg: dict):
                 subtitle = 'Spanish',
                 url = sileroUrl + "v3_es.pt",
                 sha256 = "36206add75fb89d0be16d5ce306ba7a896c6fa88bab7e3247403f4f4a520eced",
-                dest = "models",
+                dest = "MODELS_FOLDER",
                 size = 57079302,
                 extra = {
                     'model': None,

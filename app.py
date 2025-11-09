@@ -15,6 +15,11 @@ from helpers import book, settings, dxfs, dxtmpfile
 import defaults, converter
 
 
+APPNAME = "EbookTalker"
+APPAUTHOR = "DeXPeriX"
+
+
+
 def create_app(test_config=None):
     app = flask.Flask(__name__)
     if test_config is None:
@@ -47,12 +52,13 @@ def create_app(test_config=None):
 
     version = Path('static/version.txt').read_text()
 
+    userFolders = settings.GetUserFolders(APPNAME, APPAUTHOR)
     manager = multiprocessing.Manager()
     global que, proc, var
     que = manager.list()
     proc = manager.dict()
     var = defaults.GetDefaultVar(app.config)
-    var['settings'] = settings.LoadOrDefault(app.config, var)
+    var['settings'] = settings.LoadOrDefault(app.config, var, userFolders)
     converter.InitModels(app.config, var)
 
     if sys.platform == "win32":
@@ -107,7 +113,7 @@ def create_app(test_config=None):
         #return ["aidar", "baya", "kseniya", "xenia", "eugene"]
         lang = flask.request.args.get('lang', default = 'ru', type = str)
         if lang in var:
-            model = converter.GetModel(var, lang)
+            model = converter.GetModel(cfg, var, lang)
             return model.speakers
         else:
             return []
@@ -132,7 +138,7 @@ def create_app(test_config=None):
             wavFile = var['tmp'] / f"{tts}-{lang}-{voice}.wav"
             if ("random" == voice) and wavFile.exists():
                 wavFile.unlink()
-            if converter.SayText(wavFile, lang, voice, var['languages'][lang].extra['phrase'], var):
+            if converter.SayText(wavFile, lang, voice, var['languages'][lang].extra['phrase'], app.config, var):
                 return flask.send_file(wavFile, download_name=wavFile.name, as_attachment=False, mimetype='audio/wav')
         else:
             return ''

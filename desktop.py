@@ -280,30 +280,17 @@ class App(customtkinter.CTk):
         self.inProcessLabel.configure(text=tr["emptyBookName"])   
 
 
-def replace_substrings(s: str, replacements) -> str:
-    for key, value in replacements.items():
-        s = s.replace(key, value)
-    return s
-
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
 
-    userFolders = {
-        '##HOME##': str(Path.home().absolute()),
-        '##MUSIC##': platformdirs.user_music_dir(),
-        '##LOGS##': platformdirs.user_log_dir(APPNAME, APPAUTHOR),
-        '##CONFIG##': platformdirs.user_config_dir(APPNAME, APPAUTHOR),
-        '##APPDATA##': platformdirs.user_data_dir(APPNAME, APPAUTHOR, roaming=True), # synchronized
-        '##LOCALAPPDATA##': platformdirs.user_data_dir(APPNAME, APPAUTHOR)
-    }
-    
+    userFolders = settings.GetUserFolders(APPNAME, APPAUTHOR)
     with open("default.cfg", "rt") as f:
-        cfg = dict((lambda l: (l[0].strip(" '\""), replace_substrings(l[2][:-1].strip(" '\""), userFolders)))(line.partition("="))
+        cfg = dict((lambda l: (l[0].strip(" '\""), settings.ReplaceUserFolders(l[2][:-1].strip(" '\""), userFolders)))(line.partition("="))
                     for line in f)
 
     var = defaults.GetDefaultVar(cfg)
-    var['settings'] = settings.LoadOrDefault(cfg, var)
+    var['settings'] = settings.LoadOrDefault(cfg, var, userFolders)
 
     localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
     localeFile = localeFile if not var['settings']['app']['lang'] else var['settings']['app']['lang'] + ".json"

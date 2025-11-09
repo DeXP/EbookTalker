@@ -1,5 +1,24 @@
-import os, re, sys, json
+import os, re, sys, json, platformdirs
 from pathlib import Path
+
+
+def GetUserFolders(APPNAME: str, APPAUTHOR: str) -> dict:
+    return {
+        '##APPNAME##': APPNAME,
+        '##APPAUTHOR##': APPAUTHOR,
+        '##HOME##': str(Path.home().absolute()),
+        '##MUSIC##': platformdirs.user_music_dir(),
+        '##LOGS##': platformdirs.user_log_dir(APPNAME, APPAUTHOR),
+        '##CONFIG##': platformdirs.user_config_dir(APPNAME, APPAUTHOR),
+        '##APPDATA##': platformdirs.user_data_dir(APPNAME, APPAUTHOR, roaming=True), # synchronized
+        '##LOCALAPPDATA##': platformdirs.user_data_dir(APPNAME, APPAUTHOR)
+    }
+
+
+def ReplaceUserFolders(s: str, userFolders: dict) -> str:
+    for key, value in userFolders.items():
+        s = s.replace(key, value)
+    return s
 
 
 def check_sub_dict(d: dict, key: str):
@@ -32,7 +51,7 @@ def set_if_cat_none(d: dict, cat: str, sub: str, key: str, value):
         d[cat][sub][key] = value
 
 
-def LoadOrDefault(cfg: dict, var: dict):
+def LoadOrDefault(cfg: dict, var: dict, userFolder: dict) -> dict:
     s = {}
 
     if 'SETTINGS_FILE' in cfg:
@@ -53,6 +72,7 @@ def LoadOrDefault(cfg: dict, var: dict):
     set_if_none(s, 'app', 'dirs', dirs)
 
     for lang_key, language in var['languages'].items():
+        language.dest = Path(ReplaceUserFolders(str(language.dest), cfg))
         check_sub_cat_dict(s, 'silero', lang_key)
         set_if_cat_none(s, 'silero', lang_key, 'voice', language.extra['default'])
 
