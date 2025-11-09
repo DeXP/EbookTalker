@@ -7,6 +7,9 @@ from pathlib import Path
 import converter
 from helpers import book, settings
 from helpers.UI import Icons
+from helpers.translation import T
+
+from helpers.DownloadItem import DownloadItem
 
 
 class PreferencesForm(ctk.CTkToplevel):
@@ -19,7 +22,7 @@ class PreferencesForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(tr['Preferences'])
-        self.geometry(parent.get_child_geometry(width=500, height=360))
+        self.geometry(parent.get_child_geometry(width=500, height=390))
 
         self.grid_columnconfigure((0,2), weight=0)
         self.grid_columnconfigure(1, weight=1)
@@ -33,8 +36,8 @@ class PreferencesForm(ctk.CTkToplevel):
 
         self.supported_languages = {
             '': tr["Default"], 
-            'ru': var['ru']['name'], 
-            'en': var['en']['name']
+            'ru': var['languages']['ru'].name, 
+            'en': var['languages']['en'].name
         }
         self.lang_combobox = ctk.CTkComboBox(self, values=list(self.supported_languages.values()), state="readonly")
         self.lang_combobox.set(self.get_lang_by_code(var['settings']['app']['lang']))
@@ -100,8 +103,8 @@ class PreferencesForm(ctk.CTkToplevel):
         self.tts_voice_labels = {}
         self.tts_voice_combos = {}
         self.tts_voice_play_buttons = {}
-        for lang in var['languages']:
-            lang_name = var[lang]['name']
+        for lang, language in var['languages'].items():
+            lang_name = language.name
             self.tts_tabview.add(lang_name)
             self.tts_tabview.tab(lang_name).grid_columnconfigure((0,1,2), weight=0)
             voice_parent = self.tts_tabview.tab(lang_name)
@@ -122,19 +125,27 @@ class PreferencesForm(ctk.CTkToplevel):
             self.tts_voice_play_buttons[lang].grid(row=0, column=2, padx=10, pady=2, sticky="w")
 
 
-        first_lang = var['languages'][0]
+        first_lang = list(var['languages'].keys())[0]
         self.tts_voice_combos[first_lang].configure(values=converter.GetModel(var, first_lang).speakers)
 
 
-        self.warning_note = ctk.CTkLabel(self, text=tr['PreferencesSaveNote'])
-        self.warning_note.grid(row=7, column=0, padx=10, pady=2, columnspan=3, sticky="w")
+        self.install_button = ctk.CTkButton(self, text=T.T('Install components and languages'), command=self.on_install)
+        self.install_button.grid(row=7, column=0, padx=10, pady=2, columnspan=3, sticky="e")
+
+
+        self.warning_note = ctk.CTkLabel(self, text=T.T('PreferencesSaveNote'))
+        self.warning_note.grid(row=8, column=0, padx=10, pady=2, columnspan=3, sticky="w")
 
         # Save and Cancel buttons
-        self.save_button = ctk.CTkButton(self, text=tr["Save"], command=self.on_save)
-        self.save_button.grid(row=8, column=0, padx=10, pady=7)
+        self.save_button = ctk.CTkButton(self, text=T.T("Save"), command=self.on_save)
+        self.save_button.grid(row=9, column=0, padx=10, pady=7)
 
-        self.cancel_button = ctk.CTkButton(self, text=tr["Cancel"], command=self.on_cancel)
-        self.cancel_button.grid(row=8, column=1, padx=10, pady=7, columnspan=2, sticky="e")
+        self.cancel_button = ctk.CTkButton(self, text=T.T("Cancel"), command=self.on_cancel)
+        self.cancel_button.grid(row=9, column=1, padx=10, pady=7, columnspan=2, sticky="e")
+
+
+    def get_child_geometry(self, width: int, height: int) -> str:
+        return self.parent.get_child_geometry(width, height)
 
 
     def on_save(self):
@@ -146,7 +157,7 @@ class PreferencesForm(ctk.CTkToplevel):
         s['app']['bitrate'] = int(self.bitrate_combobox.get())
         s['app']['dirs'] = self.get_dir_format_by_translated(self.dirs_combobox.get())
 
-        for lang in self.var['languages']:
+        for lang in self.var['languages'].keys():
             s['silero'][lang]['voice'] = self.tts_voice_combos[lang].get()
 
         settings.Save(self.cfg, s)
@@ -160,13 +171,31 @@ class PreferencesForm(ctk.CTkToplevel):
         self.destroy()
 
 
+    def on_install(self):
+        install_components = list()
+        torch_items = list(self.var['torch'].values())
+        silero_items = list(self.var['languages'].values())
+
+        try:
+            import torch
+            install_components.extend(silero_items)
+            install_components.extend(torch_items)
+        except:
+            install_components.extend(torch_items)
+            install_components.extend(silero_items)     
+
+        from helpers.UI.EbookTalkerInstallerUI import EbookTalkerInstallerUI
+        about_form = EbookTalkerInstallerUI(self, self.var, install_components)
+        about_form.grab_set()
+
+
     def on_play(self, tts, lang):
         voice = self.tts_voice_combos[lang].get()
         wavFile = self.var['tmp'] / f"{tts}-{lang}-{voice}.wav"
         if ("random" == voice) and wavFile.exists():
             wavFile.unlink()
 
-        if converter.SayText(wavFile, lang, voice, self.var[lang]['phrase'], self.var):
+        if converter.SayText(wavFile, lang, voice, self.var['languages'][lang].extra['phrase'], self.var):
             soundfile = str(wavFile.absolute())
             # if sys.platform == "win32":
             #     import winsound
@@ -209,9 +238,9 @@ class PreferencesForm(ctk.CTkToplevel):
     
 
     def get_code_by_lang(self, value: str):
-        for lang in self.var['languages']:
-            if value == self.var[lang]['name']:
-                return lang
+        for key, lang in self.var['languages'].items():
+            if value == lang.name:
+                return key
         return ''
     
 

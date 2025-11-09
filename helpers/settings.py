@@ -52,9 +52,9 @@ def LoadOrDefault(cfg: dict, var: dict):
     set_if_none(s, 'app', 'bitrate', bitrate)
     set_if_none(s, 'app', 'dirs', dirs)
 
-    for lang in var['languages']:
-        check_sub_cat_dict(s, 'silero', lang)
-        set_if_cat_none(s, 'silero', lang, 'voice', var[lang]['default'])
+    for lang_key, language in var['languages'].items():
+        check_sub_cat_dict(s, 'silero', lang_key)
+        set_if_cat_none(s, 'silero', lang_key, 'voice', language.extra['default'])
 
     return s
 

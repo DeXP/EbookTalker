@@ -76,14 +76,14 @@ def create_app(test_config=None):
     @app.route("/")
     def index():
         l = {}
-        for lang in var['languages']:
-            l[lang] = {
-                'type': var[lang]['type'],
-                'name': var[lang]['name']
+        for key, lang in var['languages']:
+            l[key] = {
+                'type': lang.group,
+                'name': lang.name
             }
         return flask.render_template('index.html', 
             version=version, passwordLength=len(str(app.config['WEB_PASSWORD'])), settings=var['settings'], 
-            langList=var['languages'], languages=l, sysinfo=settings.get_system_info_str(var))
+            langList=list(var['languages'].keys()), languages=l, sysinfo=settings.get_system_info_str(var))
 
 
     @app.route("/favicon.ico")
@@ -99,7 +99,7 @@ def create_app(test_config=None):
 
     @app.route("/langs")
     def langList():
-        return [var['languages']]
+        return list(var['languages'].keys())
 
 
     @app.route("/voices")
@@ -132,7 +132,7 @@ def create_app(test_config=None):
             wavFile = var['tmp'] / f"{tts}-{lang}-{voice}.wav"
             if ("random" == voice) and wavFile.exists():
                 wavFile.unlink()
-            if converter.SayText(wavFile, lang, voice, var[lang]['phrase'], var):
+            if converter.SayText(wavFile, lang, voice, var['languages'][lang].extra['phrase'], var):
                 return flask.send_file(wavFile, download_name=wavFile.name, as_attachment=False, mimetype='audio/wav')
         else:
             return ''

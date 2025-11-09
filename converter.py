@@ -28,32 +28,26 @@ def InitModels(cfg: dict, var: dict):
 
 
 def PreloadModel(var: dict, lang = 'ru'):
-    if lang in var:
-        urlPath = Path(var[lang]['url'])
+    if lang in var['languages']:
+        urlPath = Path(var['languages'][lang].url)
         modelName = urlPath.name
         local_file = 'models/' + modelName
 
         if not os.path.isfile(local_file):
-            torch.hub.download_url_to_file(var[lang]['url'], local_file)
+            torch.hub.download_url_to_file(var['languages'][lang].url, local_file)
 
         if (".pt" == urlPath.suffix):
-            var[lang]['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
-            var[lang]['model'].to(var['device'])
-        elif ("jit" in modelName):
-            var[lang]['model'] = torch.jit.load(local_file)
-            var[lang]['model'].eval()
-            torch._C._jit_set_profiling_mode(False) 
-            torch.set_grad_enabled(False)
-            var[lang]['model'].to(var['device'])
+            var['languages'][lang].extra['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
+            var['languages'][lang].extra['model'].to(var['device'])
 
-        symb = var[lang]['model'].symbols
-        var[lang]['symbols'] = re.compile(f"[{symb}]", re.IGNORECASE)
+        symb = var['languages'][lang].extra['model'].symbols
+        var['languages'][lang].extra['symbols'] = re.compile(f"[{symb}]", re.IGNORECASE)
 
 
 def GetModel(var: dict, lang = 'ru'):
-    if (lang in var) and ('model' in var[lang]) and (var[lang]['model'] is None):
+    if (lang in var['languages']) and ('model' in var['languages'][lang].extra) and (var['languages'][lang].extra['model'] is None):
         PreloadModel(var, lang)
-    return var[lang]['model']
+    return var['languages'][lang].extra['model']
 
 
 def _extract_arch_version(arch_string: str):
@@ -104,10 +98,10 @@ Minimum and Maximum cuda capability supported by this version of PyTorch is
 
 
 def GetSymbols(var: dict, lang = 'ru'):
-    if (lang in var) and ('model' in var[lang]) and (var[lang]['model'] is None):
+    if (lang in var['languages']) and ('model' in var['languages'][lang].extra) and (var['languages'][lang].extra['model'] is None):
         PreloadModel(var, lang)
-    if (lang in var) and ('symbols' in var[lang]):
-        return var[lang]['symbols']
+    if (lang in var['languages']) and ('symbols' in var['languages'][lang].extra):
+        return var['languages'][lang].extra['symbols']
     return ''
 
 
@@ -160,8 +154,9 @@ def PreConvertBookForTTS(file: Path, var: dict):
 
 
 def GeneratePause(var, timeMs = 300, name = "pause.wav"):
-    var['ru']['model'].save_wav(ssml_text=f'<speak><break time="{timeMs}ms"/></speak>',
-                speaker=var['ru']['default'],
+    extra = var['languages']['ru'].extra
+    extra['model'].save_wav(ssml_text=f'<speak><break time="{timeMs}ms"/></speak>',
+                speaker=extra['default'],
                 sample_rate=var['sample_rate'],
                 audio_path=str(var['genwav'] / name))
 

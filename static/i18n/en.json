@@ -59,6 +59,14 @@
     "AboutApplication": "About",
     "SystemInformation": "System information", 
     "OK": "OK",
+    "install": {
+        "torch": "PyTorch and CUDA",
+        "torch-text": "Torch (PyTorch) is the core engine for voice generation. CUDA versions use your NVIDIA GPU for up to 10x faster synthesis. After extraction, Windows will prompt for administrator access via Microsoft Robocopy — please click 'Yes' to complete installation.",
+        "torch-icon": "🔥",
+        "silero": "Silero language models",
+        "silero-text": "Voice models for text-to-speech. Each language model is ~100 MB. Download only the languages you need.",
+        "silero-icon": "🗣️"
+    },
     "error": {
         "noURLforDownload": "Enter download link",
         "pleaseChooseAFileToProcess": "Please choose a file to process",

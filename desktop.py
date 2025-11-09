@@ -7,7 +7,7 @@ import sys, json, time, shutil, locale, datetime, multiprocessing, threading, pl
 import defaults
 
 from helpers import book, settings
-from helpers.translation import TT
+from helpers.translation import T, TT
 
 APPNAME = "EbookTalker"
 APPAUTHOR = "DeXPeriX"
@@ -123,7 +123,7 @@ class App(customtkinter.CTk):
         return None
 
 
-    def get_geometry(self, width: int, height: int):
+    def get_geometry(self, width: int, height: int) -> str:
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
         x = int((screen_width / 2) - (width / 2))
@@ -131,7 +131,7 @@ class App(customtkinter.CTk):
         return f"{width}x{height}+{x}+{y}"
     
 
-    def get_child_geometry(self, width: int, height: int):
+    def get_child_geometry(self, width: int, height: int) -> str:
         self.update_idletasks()  # Ensure parent dimensions are current       
         parent_x, parent_y = self.winfo_x(), self.winfo_y()
         parent_width, parent_height = self.winfo_width(), self.winfo_height()
@@ -319,6 +319,7 @@ if __name__ == '__main__':
     tr = None
     with open("static/i18n/" + localeFile, encoding='utf-8') as json_file:
         tr = json.load(json_file)
+    T.Init(tr)
 
     try:
         import pyi_splash
