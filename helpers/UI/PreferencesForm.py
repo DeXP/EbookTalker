@@ -173,20 +173,8 @@ class PreferencesForm(ctk.CTkToplevel):
 
 
     def on_install(self):
-        install_components = list()
-        torch_items = list(self.var['torch'].values())
-        silero_items = list(self.var['languages'].values())
-
-        try:
-            import torch
-            install_components.extend(silero_items)
-            install_components.extend(torch_items)
-        except:
-            install_components.extend(torch_items)
-            install_components.extend(silero_items)     
-
         from helpers.UI.EbookTalkerInstallerUI import EbookTalkerInstallerUI
-        about_form = EbookTalkerInstallerUI(self, self.var, install_components)
+        about_form = EbookTalkerInstallerUI(self, self.var)
         about_form.grab_set()
 
 

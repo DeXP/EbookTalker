@@ -252,25 +252,37 @@ class App(customtkinter.CTk):
         self.que = self.manager.list()
         self.proc = self.manager.dict()
 
+        haveTorch = False
         var['loading'] = T.C("Importing modules")
-        import torch, converter
-        var['loading'] = str(torch.__version__)
-        
-        var['loading'] = T.C("Initializing neural networks")
-        converter.InitModels(cfg, var)
+        try:
+            import torch, converter
+            var['loading'] = str(torch.__version__)
+        except:
+            haveTorch = False
+     
+        if haveTorch:
+            var['loading'] = T.C("Initializing neural networks")
+            converter.InitModels(cfg, var)
 
-        var['loading'] = T.C("Starting converter worker")
-        import converter
-        if sys.platform == "win32":
-            self.convert_worker = threading.Thread(target=converter.ConverterLoop, args=(self.que, self.proc, cfg, var), daemon=True)
+            var['loading'] = T.C("Starting converter worker")
+            import converter
+            if sys.platform == "win32":
+                self.convert_worker = threading.Thread(target=converter.ConverterLoop, args=(self.que, self.proc, cfg, var), daemon=True)
+            else:
+                import multiprocessing
+                self.convert_worker = multiprocessing.Process(target=converter.ConverterLoop, args=(self.que, self.proc, cfg, var))
+
+            self.convert_worker.start()
+
+            # Schedule UI update on main thread
+            self.after(0, self._enable_ui, var)
         else:
-            import multiprocessing
-            self.convert_worker = multiprocessing.Process(target=converter.ConverterLoop, args=(self.que, self.proc, cfg, var))
-
-        self.convert_worker.start()
-
-        # Schedule UI update on main thread
-        self.after(0, self._enable_ui, var)
+            from helpers.UI.EbookTalkerInstallerUI import EbookTalkerInstallerUI
+            about_form = EbookTalkerInstallerUI(self, var, focus_tab='torch')
+            about_form.focus_force()
+            about_form.grab_set()
+            self.wait_window(about_form)
+            self.on_closing()
 
 
     def _enable_ui(self, var):

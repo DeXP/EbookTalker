@@ -12,7 +12,7 @@ from helpers.downloader import DownloaderCore
 from helpers.translation import T
 
 class EbookTalkerInstallerUI(ctk.CTkToplevel):
-    def __init__(self, parent: ctk.CTkToplevel, var: dict, items: list[DownloadItem], preselect_name: str = None):
+    def __init__(self, parent: ctk.CTkToplevel, var: dict, preselect_name: str = None, focus_tab: str = None):
         super().__init__(parent)
         T.Cat("install")
         self.parent = parent
@@ -24,6 +24,18 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
         self.geometry(parent.get_child_geometry(width=680, height=560))
         self.minsize(650, 440)
         self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        items = list() # list[DownloadItem]
+        torch_items = list(self.var['torch'].values())
+        silero_items = list(self.var['languages'].values())
+
+        try:
+            import torch
+            items.extend(silero_items)
+            items.extend(torch_items)
+        except:
+            items.extend(torch_items)
+            items.extend(silero_items)  
 
         # Filter items
         self.items = []
@@ -52,6 +64,8 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
                     self.selected_item = item
                     break
 
+        self.focus_tab = focus_tab
+
         self.setup_ui()
         self.after(50, self.process_queue)
 
@@ -67,7 +81,6 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
             self.selector_frame = ctk.CTkFrame(self, fg_color="transparent")
             self.selector_frame.pack(pady=(15, 10), padx=20, fill="x")
             ctk.CTkLabel(self.selector_frame, text=T.C("Category:")).pack(side="left", padx=(0, 10))
-            # set default group?
             self.group_var = ctk.StringVar()
             self.group_combo = ctk.CTkComboBox(
                 self.selector_frame,
@@ -81,7 +94,7 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
 
         self.desc_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.desc_frame.pack(pady=(0, 15), padx=20, fill="x")
-        self.icon_label = ctk.CTkLabel(self.desc_frame, text="📦", font=("Segoe UI", 24))
+        self.icon_label = ctk.CTkLabel(self.desc_frame, text="📦", font=("Segoe UI", 28))
         self.icon_label.pack(side="left", padx=(0, 15))
         self.desc_text = ctk.CTkLabel(self.desc_frame, text="", wraplength=520, justify="left")
         self.desc_text.pack(side="left", fill="x", expand=True)
@@ -95,6 +108,8 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
         groups = list(self.groups.keys())
         if groups:
             initial_group = groups[0]
+            if self.focus_tab:
+                initial_group = self.focus_tab
             if self.selected_item:
                 initial_group = self.selected_item.group
             if len(self.groups) > 1 and self.selector_frame:

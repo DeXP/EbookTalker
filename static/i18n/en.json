@@ -61,7 +61,7 @@
     "OK": "OK",
     "install": {
         "torch": "PyTorch and CUDA",
-        "torch-text": "Torch (PyTorch) is the core engine for voice generation. CUDA versions use your NVIDIA GPU for up to 10x faster synthesis. After extraction, Windows will prompt for administrator access via Microsoft Robocopy — please click 'Yes' to complete installation.",
+        "torch-text": "Torch (PyTorch) is the core engine for voice generation. CUDA versions use your NVIDIA GPU for up to 10x faster synthesis. After extraction, Windows will prompt for administrator access via Microsoft Robocopy — please click 'Yes' to complete installation. YOu'll need to reload EbookTalker.",
         "torch-icon": "🔥",
         "silero": "Silero language models",
         "silero-text": "Voice models for text-to-speech. Each language model is ~100 MB. Download only the languages you need.",
