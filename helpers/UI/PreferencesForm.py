@@ -103,8 +103,11 @@ class PreferencesForm(ctk.CTkToplevel):
         self.tts_voice_labels = {}
         self.tts_voice_combos = {}
         self.tts_voice_play_buttons = {}
+        first_lang = None
         for lang, language in var['languages'].items():
             if converter.IsModelFileExists(cfg, var, lang):
+                if not first_lang:
+                    first_lang = lang
                 lang_name = language.name
                 self.tts_tabview.add(lang_name)
                 self.tts_tabview.tab(lang_name).grid_columnconfigure((0,1,2), weight=0)
@@ -125,9 +128,8 @@ class PreferencesForm(ctk.CTkToplevel):
                 )
                 self.tts_voice_play_buttons[lang].grid(row=0, column=2, padx=10, pady=2, sticky="w")
 
-
-        first_lang = list(var['languages'].keys())[0]
-        self.tts_voice_combos[first_lang].configure(values=converter.GetModel(cfg, var, first_lang).speakers)
+        if first_lang:
+            self.tts_voice_combos[first_lang].configure(values=converter.GetModel(cfg, var, first_lang).speakers)
 
 
         self.install_button = ctk.CTkButton(self, text=T.T('Install components and languages'), command=self.on_install)
@@ -159,7 +161,8 @@ class PreferencesForm(ctk.CTkToplevel):
         s['app']['dirs'] = self.get_dir_format_by_translated(self.dirs_combobox.get())
 
         for lang in self.var['languages'].keys():
-            s['silero'][lang]['voice'] = self.tts_voice_combos[lang].get()
+            if lang in self.tts_voice_combos:
+                s['silero'][lang]['voice'] = self.tts_voice_combos[lang].get()
 
         settings.Save(self.cfg, s)
         self.var['settings'] = s

@@ -97,7 +97,7 @@ class App(customtkinter.CTk):
         self.book_table.grid(row=4, column=0, padx=10, pady=0, sticky="nswe", columnspan=3)
 
 
-        self.add_button = customtkinter.CTkButton(self, text=tr["addBookToQueue"], command=self.add_button_callback, border_spacing=10, state="disabled")
+        self.add_button = customtkinter.CTkButton(self, text=tr["addBookToQueue"], command=self.on_add_button, border_spacing=10, state="disabled")
         self.add_button.grid(row=5, column=0, padx=10, pady=10, sticky="e", columnspan=3)
 
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -145,7 +145,7 @@ class App(customtkinter.CTk):
         self.destroy()
 
 
-    def add_button_callback(self):
+    def on_add_button(self):
         book_file_list = filedialog.askopenfilenames(filetypes=[(self.tr["Books"], 
             "*.txt *.epub *.fb2 *.fb2.zip *.fb2z *.txt.zip *.zip")])
         for book_file in book_file_list:
@@ -182,7 +182,7 @@ class App(customtkinter.CTk):
     def update_theme(self, theme):
         # Update the theme of the main form
         customtkinter.set_appearance_mode(theme)
-        print(f"Theme updated to: {theme}")
+        # print(f"Theme updated to: {theme}")
 
 
     def load_cover(self):
@@ -314,7 +314,7 @@ if __name__ == '__main__':
                     for line in f)
 
     var = defaults.GetDefaultVar(cfg)
-    var['settings'] = settings.LoadOrDefault(cfg, var, userFolders)
+    var['settings'] = settings.LoadOrDefault(cfg, var)
 
     localeFile = 'ru.json' if ('rus' in locale.getlocale()[0].lower()) else 'en.json'
     localeFile = localeFile if not var['settings']['app']['lang'] else var['settings']['app']['lang'] + ".json"

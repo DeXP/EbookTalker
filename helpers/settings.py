@@ -51,7 +51,7 @@ def set_if_cat_none(d: dict, cat: str, sub: str, key: str, value):
         d[cat][sub][key] = value
 
 
-def LoadOrDefault(cfg: dict, var: dict, userFolder: dict) -> dict:
+def LoadOrDefault(cfg: dict, var: dict) -> dict:
     s = {}
 
     if 'SETTINGS_FILE' in cfg:

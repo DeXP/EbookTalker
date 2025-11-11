@@ -58,7 +58,7 @@ def create_app(test_config=None):
     que = manager.list()
     proc = manager.dict()
     var = defaults.GetDefaultVar(app.config)
-    var['settings'] = settings.LoadOrDefault(app.config, var, userFolders)
+    var['settings'] = settings.LoadOrDefault(app.config, var)
     converter.InitModels(app.config, var)
 
     if sys.platform == "win32":
