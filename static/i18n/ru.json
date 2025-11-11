@@ -37,6 +37,8 @@
     "GB": "ГБ", 
     "TB": "TБ",
     "PB": "ПБ",
+    "Yes": "Да",
+    "No": "Нет",
     "Preferences": "Настройки",
     "PreferencesSaveNote": "Внимание: Настройки применятся сразу после сохранения",
     "ApplicationSettings:": "Опции приложения:",
@@ -62,6 +64,7 @@
     "status": {
         "Importing modules": "Импорт модулей",
         "Creating variables": "Создание переменных",
+        "Torch module not found. Initializing installation": "Модуль Torch не найден. Инициализация установки.",
         "Initializing neural networks": "Инициализация нейронных сетей",
         "Starting converter worker": "Запуск потока конвертации"
     },

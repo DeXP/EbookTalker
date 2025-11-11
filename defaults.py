@@ -10,7 +10,6 @@ def GetDefaultVar(cfg: dict) -> dict:
     sileroUrl = 'https://github.com/DeXP/EbookTalker/releases/download/silero/'
     torchUrl  = 'https://github.com/DeXP/EbookTalker/releases/download/torch-2.8-cuda/'
     torchPath = str(Path(sys.executable).parent / "_internal")
-    torchPath = r"D:\AI\py\EbookTalker-Win64"
 
     var = {
         'askForExit': False,
@@ -159,6 +158,7 @@ def GetDefaultVar(cfg: dict) -> dict:
             'm4b': 'aac',
             'opus':'opus'
         },
+        'torchInternalPath': torchPath, 
         'warning': {
             'cuda': None
         }

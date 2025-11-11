@@ -23,7 +23,7 @@ def InitModels(cfg: dict, var: dict):
         torch.set_num_threads(os.cpu_count())
     var['device'] = device
 
-    PreloadModel(cfg, var, 'ru')
+    # PreloadModel(cfg, var, 'ru')
     # PreloadModel(var, 'en')
 
 
@@ -167,10 +167,10 @@ def PreConvertBookForTTS(file: Path, var: dict):
     return info, cover
 
 
-def GeneratePause(var, timeMs = 300, name = "pause.wav"):
-    extra = var['languages']['ru'].extra
-    extra['model'].save_wav(ssml_text=f'<speak><break time="{timeMs}ms"/></speak>',
-                speaker=extra['default'],
+def GeneratePause(cfg, var, lang, timeMs = 300, name = "pause.wav"):
+    speaker = var['settings']['silero'][lang]['voice']
+    GetModel(cfg, var, lang).save_wav(ssml_text=f'<speak><break time="{timeMs}ms"/></speak>',
+                speaker=speaker,
                 sample_rate=var['sample_rate'],
                 audio_path=str(var['genwav'] / name))
 
@@ -253,8 +253,8 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
     proc['totalLines'] = totalTagsCount
     proc['totalSentences'] = totalSencenceCount
 
-    GeneratePause(var, 300, "pause.wav")
-    GeneratePause(var, 500, "pause-long.wav")
+    GeneratePause(cfg, var, lang, 300, "pause.wav")
+    GeneratePause(cfg, var, lang, 500, "pause-long.wav")
 
     for section in info['sections']:
         sectionCount += 1

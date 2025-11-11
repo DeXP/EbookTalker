@@ -37,6 +37,8 @@
     "GB": "GB", 
     "TB": "TB",
     "PB": "PB",
+    "Yes": "Yes",
+    "No": "No",
     "Preferences": "Preferences",
     "PreferencesSaveNote": "Note: Preferences are applied immediately after you hit Save.",
     "ApplicationSettings:": "Application settings:",

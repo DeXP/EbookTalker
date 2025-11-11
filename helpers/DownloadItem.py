@@ -41,6 +41,9 @@ class DownloadItem:
             "sha256": self.sha256,
             "extra": self.extra
         }
+    
+    def __str__(self):
+     return self.name
 
     @classmethod
     def from_dict(cls, data: dict):

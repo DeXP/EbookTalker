@@ -2,7 +2,8 @@ from tkinter import filedialog
 from PIL import Image
 import customtkinter
 from pathlib import Path
-import sys, json, time, shutil, locale, datetime, multiprocessing, threading, platformdirs
+from CTkMessagebox import CTkMessagebox
+import sys, json, time, shutil, locale, datetime, multiprocessing, threading
 
 import defaults
 
@@ -151,6 +152,15 @@ class App(customtkinter.CTk):
             book_path = Path(book_file)
             info, _ = book.ParseBook(book_path)
             new_file = var['queue'] / book.SafeBookFileName(info)
+
+            if (info['lang'] in self.var['languages']) and not self.converter.IsModelFileExists(self.cfg, self.var, info['lang']):
+                # Show language model downloading UI
+                from helpers.UI.EbookTalkerInstallerUI import EbookTalkerInstallerUI
+                installer_form = EbookTalkerInstallerUI(self, var, focus_tab='silero', preselect_key=info['lang'], automatic=True)
+                installer_form.focus_force()
+                installer_form.grab_set()
+                self.wait_window(installer_form)
+
             shutil.copy(book_path, new_file)
 
             self.converter.fillQueue(self.que, self.var)
@@ -252,11 +262,11 @@ class App(customtkinter.CTk):
         self.que = self.manager.list()
         self.proc = self.manager.dict()
 
-        haveTorch = False
+        haveTorch = True
         var['loading'] = T.C("Importing modules")
         try:
             import torch, converter
-            var['loading'] = str(torch.__version__)
+            var['loading'] = 'Torch ' + str(torch.__version__)
         except:
             haveTorch = False
      
@@ -277,12 +287,14 @@ class App(customtkinter.CTk):
             # Schedule UI update on main thread
             self.after(0, self._enable_ui, var)
         else:
+            var['loading'] = T.C("Torch module not found. Initializing installation")
             from helpers.UI.EbookTalkerInstallerUI import EbookTalkerInstallerUI
-            about_form = EbookTalkerInstallerUI(self, var, focus_tab='torch')
-            about_form.focus_force()
-            about_form.grab_set()
-            self.wait_window(about_form)
+            installer_form = EbookTalkerInstallerUI(self, var, focus_tab='torch')
+            installer_form.focus_force()
+            installer_form.grab_set()
+            self.wait_window(installer_form)
             self.on_closing()
+            msg = CTkMessagebox(master=self, title=T.T("appTitle"), message=T.C("Are you sure you want to cancel?"), icon="info")
 
 
     def _enable_ui(self, var):

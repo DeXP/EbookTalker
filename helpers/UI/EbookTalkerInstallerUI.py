@@ -1,10 +1,10 @@
 # ui/desktop.py
-import os
 import sys
 import queue
 import threading
 import customtkinter as ctk
 from CTkMessagebox import CTkMessagebox
+from pathlib import Path
 
 from helpers import DownloadItem
 from helpers.detection import detect_nvidia_gpu
@@ -12,11 +12,12 @@ from helpers.downloader import DownloaderCore
 from helpers.translation import T
 
 class EbookTalkerInstallerUI(ctk.CTkToplevel):
-    def __init__(self, parent: ctk.CTkToplevel, var: dict, preselect_name: str = None, focus_tab: str = None):
+    def __init__(self, parent: ctk.CTkToplevel, var: dict, focus_tab: str = None, preselect_key: str = None, automatic = False):
         super().__init__(parent)
         T.Cat("install")
         self.parent = parent
         self.var = var
+        self.automatic = automatic
         self.torchGroup = var['torch']['cpu'].group
 
         self.title(T.T("appTitle") + ": " + T.C("Component Installer"))
@@ -26,25 +27,18 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
         items = list() # list[DownloadItem]
-        torch_items = list(self.var['torch'].values())
-        silero_items = list(self.var['languages'].values())
 
         try:
             import torch
-            items.extend(silero_items)
-            items.extend(torch_items)
+            torchImported = True
         except:
-            items.extend(torch_items)
-            items.extend(silero_items)  
+            torchImported = False
 
-        # Filter items
-        self.items = []
-        for item in items:
-            if item.group == self.torchGroup:
-                if self.should_show_torch_group():
-                    self.items.append(item)
-            else:
-                self.items.append(item)
+        if self.should_show_torch_group(var, torchImported):
+            items.extend(self.var['torch'].values())
+        items.extend(self.var['languages'].values())  
+
+        self.items = items
 
         # Group
         self.groups = {}
@@ -58,11 +52,8 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
         self.installing = False
         self.indeterminate_mode = False
 
-        if preselect_name:
-            for item in self.items:
-                if item.name == preselect_name:
-                    self.selected_item = item
-                    break
+        if preselect_key:
+            self.selected_item = self.get_item_by_key(preselect_key)
 
         self.focus_tab = focus_tab
 
@@ -70,8 +61,17 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
         self.after(50, self.process_queue)
 
 
-    def should_show_torch_group(self) -> bool:
-        return sys.platform == "win32"
+    def get_item_by_key(self, key: str) -> DownloadItem.DownloadItem | None:
+        seekIn = ['languages', 'torch']
+        for cat in seekIn:
+            for item_key, item in self.var[cat].items():
+                if key == item_key:
+                    return item
+        return None
+
+
+    def should_show_torch_group(self, var: dict, imported: bool) -> bool:
+        return sys.platform == "win32" and (not imported or Path(var['torchInternalPath']).exists())
 
 
     def setup_ui(self):
@@ -205,8 +205,8 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
 
     def request_cancel(self):
         T.Cat("install")
-        msg = CTkMessagebox(master=self, title=T.C("Cancel?"), message=T.C("Are you sure you want to cancel?"), icon="question", option_1="No", option_2="Yes")
-        if msg.get() == "Yes":
+        msg = CTkMessagebox(master=self, title=T.C("Cancel?"), message=T.C("Are you sure you want to cancel?"), icon="question", option_1=T.T("No"), option_2=T.T("Yes"))
+        if msg.get() == T.T("Yes"):
             self.request_cancel_nowait()
 
     def request_cancel_nowait(self):
@@ -226,6 +226,9 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
         self.install_btn.pack(side="left", padx=10)
         self.action_btn = ctk.CTkButton(button_frame, text=T.C("Exit"), command=self.destroy)
         self.action_btn.pack(side="left", padx=10)
+
+        if self.automatic:
+            self.start_install()
 
     def process_queue(self):
         T.Cat("install")
@@ -251,6 +254,8 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
                     self.set_installing(False)
                     if value and not (self.cancel_event and self.cancel_event.is_set()):
                         self.status_label.configure(text=T.C("Installation completed successfully!"))
+                        if self.automatic:
+                            self.destroy()
                     elif not value and not (self.cancel_event and self.cancel_event.is_set()):
                         self.status_label.configure(text=T.C("Installation failed. See log for details."))
                     break
