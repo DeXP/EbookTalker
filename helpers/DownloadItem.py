@@ -28,6 +28,11 @@ class DownloadItem:
         self.extra = extra
 
     def to_dict(self):
+        extra = {}
+        if self.extra:
+           for key, item in self.extra.items():
+              if not key in ['model', 'symbols']:
+                 extra[key] = item
         return {
             "name": self.name,
             "url": self.url,
@@ -39,7 +44,7 @@ class DownloadItem:
             "description": self.description,
             "size": self.size,
             "sha256": self.sha256,
-            "extra": self.extra
+            "extra": extra
         }
     
     def __str__(self):

@@ -50,8 +50,8 @@ function ShowAboutWindow(id, event) {
             cols: [
               {
                 view: "template",
-                template: "<img src='/static/book.png' style='width:400px; height:400px;'/>",
-                width: 420,
+                template: "<img src='/static/book.png' style='width:200px; height:200px;'/>",
+                width: 220,
                 borderless: true
               },
               {
@@ -159,6 +159,7 @@ function ShowPreferencesWindow() {
           {
             view: "tabview", cells: langCells
           },
+          /*{ view: "button", value: tr["Install components and languages"], label: "", click: ShowInstallerWindow },*/
           { view: "text", type: "password", label: tr["password"], name: "preferencesPassword", id: "preferencesPassword", value: "" },
           {
             margin: 10,
@@ -206,6 +207,281 @@ function ShowPreferencesWindow() {
 }
 
 
+// // Installer // //
+function ShowInstallerWindow(id, event) {
+    let win = $$("installerWindow");
+
+    // If window doesn't exist, create a loading shell first
+    if (!win) {
+        win = webix.ui({
+            view: "window",
+            id: "installerWindow",
+            modal: true,
+            close: true,
+            move: true,
+            position: "center",
+            width: 400,
+            height: 200,
+            head: "Loading...",
+            body: {
+                template: "<div style='text-align:center; padding:40px;'><span class='webix_icon wxi-spinner' style='font-size:24px;'></span><br>Loading components...</div>"
+            }
+        });
+        win.show();
+
+        // 🔹 Fetch items from Flask
+        webix.ajax().get("/api/installer/items").then(response => {
+            const items = response.json();
+            win.close(); // close loader
+            _createInstallerWindow(items); // create real UI
+        }).catch(err => {
+            win.close();
+            webix.message({ type: "error", text: "Failed to load component list." });
+        });
+        return;
+    }
+
+    win.show();
+}
+
+// 🔹 Internal: create real installer window
+function _createInstallerWindow(INSTALL_ITEMS) {
+    // Group items
+    const groups = {};
+    INSTALL_ITEMS.forEach(item => {
+        if (!groups[item.group]) groups[item.group] = [];
+        groups[item.group].push(item);
+    });
+    const groupNames = Object.keys(groups);
+
+    // State
+    let selectedItem = null;
+    let installing = false;
+    let eventSource = null;
+
+    // Helper: update description & items
+    const updateGroupView = (groupName) => {
+        const group = groups[groupName] || [];
+        const descView = $$("installer_desc");
+        const iconView = $$("installer_icon");
+        const itemsView = $$("installer_items");
+
+        if (groupName === "Silero Models") {
+            iconView.setHTML("🗣️");
+            descView.setValue(
+                "Voice models for text-to-speech. Each language model is ~100 MB. " +
+                "Download only the languages you need."
+            );
+        } else {
+            iconView.setHTML("📦");
+            descView.setValue(`Components in "${groupName}" category.`);
+        }
+
+        // Radio items (no descriptions for Silero)
+        const radios = group.map(item => ({
+            template: `<label style="display:flex;align-items:center;margin:6px 0;">
+                <input type="radio" name="installer_item" value="${item.name}" 
+                    style="margin-right:8px;" ${selectedItem === item.name ? 'checked' : ''}>
+                <span>${item.name}</span>
+            </label>`,
+            height: 30,
+            css: "installer-item",
+            click: () => {
+                selectedItem = item.name;
+                group.forEach(other => {
+                    if (other !== item) {
+                        const el = document.querySelector(`input[value="${other.name}"]`);
+                        if (el) el.checked = false;
+                    }
+                });
+            }
+        }));
+
+        itemsView.clearAll();
+        itemsView.parse(radios);
+
+        if (!selectedItem && group.length) {
+            selectedItem = group[0].name;
+            const firstRadio = document.querySelector('input[name="installer_item"]');
+            if (firstRadio) firstRadio.checked = true;
+        }
+    };
+
+    const setInstalling = (state) => {
+        installing = state;
+        $$("installer_install_btn").disable(state);
+        const btn = $$("installer_action_btn");
+        if (state) {
+            btn.setValue("Cancel");
+            btn.attachEvent("onItemClick", cancelInstall);
+        } else {
+            btn.setValue("Close");
+            btn.attachEvent("onItemClick", () => $$("installerWindow")?.close());
+        }
+    };
+
+    const startInstall = () => {
+        if (!selectedItem) {
+            webix.message({ type: "error", text: "Please select a component." });
+            return;
+        }
+
+        setInstalling(true);
+        $$("installer_progress").setValue(0);
+        $$("installer_status").setValue(`Starting: ${selectedItem}...`);
+
+        const item = INSTALL_ITEMS.find(i => i.name === selectedItem);
+        eventSource = new EventSource(`/install/start?item=${encodeURIComponent(item.name)}`);
+
+        // ✅ Enhanced onmessage (indeterminate + cleanup)
+        eventSource.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            const progress = $$("installer_progress");
+            const el = progress.$view.querySelector(".webix_progress_top");
+
+            if (data.type === "progress") {
+                progress.setValue(data.value / 100);
+                if (el) el.style.transition = "width 0.3s";
+            } else if (data.type === "indeterminate") {
+                if (data.value) {
+                    if (el) {
+                        el.style.transition = "none";
+                        let i = 0;
+                        const anim = setInterval(() => {
+                            if (!installing || !eventSource) {
+                                clearInterval(anim);
+                                return;
+                            }
+                            const pos = 20 + 60 * (1 + Math.sin(i++ / 10)) / 2;
+                            el.style.width = pos + "%";
+                        }, 120);
+                        progress._indeterminateAnim = anim;
+                    }
+                } else {
+                    if (progress._indeterminateAnim) {
+                        clearInterval(progress._indeterminateAnim);
+                        delete progress._indeterminateAnim;
+                    }
+                    if (el) {
+                        el.style.transition = "width 0.3s";
+                        el.style.width = "100%";
+                    }
+                    progress.setValue(1);
+                }
+            } else if (data.type === "message") {
+                $$("installer_status").setValue(data.value);
+            } else if (data.type === "done") {
+                if (progress._indeterminateAnim) {
+                    clearInterval(progress._indeterminateAnim);
+                    delete progress._indeterminateAnim;
+                }
+                setInstalling(false);
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                }
+                $$("installer_status").setValue(
+                    data.value ? "✅ Installation completed successfully!" : "❌ Installation failed."
+                );
+                progress.setValue(data.value ? 1 : 0);
+            }
+        };
+
+        eventSource.onerror = () => {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            setInstalling(false);
+            $$("installer_status").setValue("❌ Connection lost.");
+        };
+    };
+
+    const cancelInstall = () => {
+        webix.confirm({
+            text: "Cancel installation?",
+            ok: "Yes", cancel: "No",
+            callback: (r) => {
+                if (r && eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                    fetch("/install/cancel", { method: "POST" });
+                    $$("installer_status").setValue("Cancelling…");
+                }
+            }
+        });
+    };
+
+    // ✅ Create real window
+    const win = webix.ui({
+        view: "window",
+        id: "installerWindow",
+        modal: true,
+        close: true,
+        move: true,
+        position: "center",
+        width: 660,
+        height: 520,
+        head: "EbookTalker – Component Installer",
+        body: {
+            rows: [
+                // Category selector (only if >1 group)
+                ...(groupNames.length > 1 ? [{
+                    view: "toolbar",
+                    cols: [
+                        { template: "Category:", width: 80 },
+                        {
+                            view: "richselect",
+                            id: "installer_group_select",
+                            value: groupNames[0],
+                            options: groupNames,
+                            width: 200,
+                            on: { onChange: (v) => updateGroupView(v) }
+                        },
+                        {}
+                    ]
+                }] : []),
+
+                // Description
+                {
+                    cols: [
+                        { view: "label", id: "installer_icon", width: 30, css: { "font-size": "24px" } },
+                        { view: "label", id: "installer_desc", css: { "line-height": "1.4" } }
+                    ],
+                    height: 60
+                },
+
+                // Items
+                {
+                    view: "scrollview",
+                    id: "installer_items",
+                    body: { view: "list", type: { height: "auto" }, autoheight: false },
+                    height: 260
+                },
+
+                // Progress & status
+                { view: "progress", id: "installer_progress", value: 0, type: "line", height: 10 },
+                { view: "label", id: "installer_status", height: 24, css: { "min-height": "24px" } },
+
+                // Buttons
+                {
+                    view: "toolbar",
+                    cols: [
+                        {},
+                        { view: "button", id: "installer_install_btn", value: "Install Selected", click: startInstall, width: 140 },
+                        { view: "button", id: "installer_action_btn", value: "Close", click: () => win.close(), width: 100 }
+                    ]
+                }
+            ]
+        }
+    });
+
+    const initialGroup = groupNames[0] || "";
+    updateGroupView(initialGroup);
+    win.show();
+}
+
+// // // // // MAIN UI // // // // //
 function ConstructUI(tr) {
   webix.ui({
     rows: [

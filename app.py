@@ -12,6 +12,8 @@ import logging, logging.handlers
 import flask, uuid, multiprocessing, threading, datetime, mimetypes, atexit
 
 from helpers import book, settings, dxfs, dxtmpfile
+from helpers.DownloadItem import DownloadItem
+from helpers.downloader import DownloaderCore
 import defaults, converter
 
 
@@ -82,13 +84,13 @@ def create_app(test_config=None):
     @app.route("/")
     def index():
         l = {}
-        for key, lang in var['languages']:
+        for key, lang in var['languages'].items():
             l[key] = {
                 'type': lang.group,
                 'name': lang.name
             }
         return flask.render_template('index.html', 
-            version=version, passwordLength=len(str(app.config['WEB_PASSWORD'])), settings=var['settings'], 
+            version=version, passwordLength=len(app.config.get('WEB_PASSWORD', '')), settings=var['settings'], 
             langList=list(var['languages'].keys()), languages=l, sysinfo=settings.get_system_info_str(var))
 
 
@@ -112,8 +114,8 @@ def create_app(test_config=None):
     def voices():
         #return ["aidar", "baya", "kseniya", "xenia", "eugene"]
         lang = flask.request.args.get('lang', default = 'ru', type = str)
-        if lang in var:
-            model = converter.GetModel(cfg, var, lang)
+        if lang in var['languages']:
+            model = converter.GetModel(app.config, var, lang)
             return model.speakers
         else:
             return []
@@ -144,6 +146,76 @@ def create_app(test_config=None):
             return ''
 
 
+    ### Installer ###
+    ALL_COMPONENTS = list(var['languages'].values())
+
+    @app.route('/installer')
+    def installer_form():
+        # Group items
+        groups = {}
+        for item in ALL_COMPONENTS:
+            groups.setdefault(item.group, []).append(item.to_dict())
+        
+        gpu_hint = 'cpu'  # or get from session/cache
+        return flask.render_template('ui/web/form.html.j2',
+                            groups_json=flask.json.dumps(groups),
+                            gpu_hint=gpu_hint)
+
+    # SSE endpoint for real-time progress
+    clients = {}
+
+    @app.route('/install/start')
+    def install_start():
+        item_name = flask.request.args.get('item')
+        item = next((i for i in ALL_COMPONENTS if i.name == item_name), None)
+        if not item:
+            return flask.jsonify(error="Item not found"), 404
+
+        q = flask.queue.Queue()
+        cancel_event = threading.Event()
+        client_id = id(q)
+        clients[client_id] = {'queue': q, 'cancel_event': cancel_event}
+
+        def event_stream():
+            yield f" {flask.json.dumps({'type': 'message', 'value': f'Starting: {item.name}...'})}\n\n"
+            downloader = DownloaderCore(item, cancel_event, q)
+            success = downloader.run()
+            yield f" {flask.json.dumps({'type': 'done', 'value': success})}\n\n"
+
+        thread = threading.Thread(target=event_stream)
+        thread.start()
+
+        def generate():
+            try:
+                while True:
+                    try:
+                        msg_type, value = q.get(timeout=1)
+                        yield f" {flask.json.dumps({'type': msg_type, 'value': value})}\n\n"
+                        if msg_type == 'done':
+                            break
+                    except flask.queue.Empty:
+                        continue
+            finally:
+                clients.pop(client_id, None)
+
+        return flask.Response(generate(), mimetype='text/event-stream')
+
+    @app.route('/install/cancel', methods=['POST'])
+    def install_cancel():
+        for client in clients.values():
+            client['cancel_event'].set()
+        return '', 204
+
+    @app.route('/api/installer/items')
+    def get_installer_items():
+        web_items = [
+            item.to_dict() for item in ALL_COMPONENTS
+            # if item.group != "Torch (CUDA)"  # exclude desktop-only
+        ]
+        return flask.jsonify(web_items)
+
+
+    ### Preferences ###
     @app.route('/preferences/get')
     def getPreferences():
         return var['settings']

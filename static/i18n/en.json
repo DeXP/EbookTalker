@@ -61,6 +61,7 @@
     "AboutApplication": "About",
     "SystemInformation": "System information", 
     "OK": "OK",
+    "Install components and languages": "Install components and languages",
     "install": {
         "torch": "PyTorch and CUDA",
         "torch-text": "Torch (PyTorch) is the core engine for voice generation. CUDA versions use your NVIDIA GPU for up to 10x faster synthesis. After extraction, Windows will prompt for administrator access via Microsoft Robocopy — please click 'Yes' to complete installation. YOu'll need to reload EbookTalker.",

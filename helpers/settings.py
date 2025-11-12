@@ -17,7 +17,7 @@ def GetUserFolders(APPNAME: str, APPAUTHOR: str) -> dict:
 
 def ReplaceUserFolders(s: str, userFolders: dict) -> str:
     for key, value in userFolders.items():
-        s = s.replace(key, value)
+        s = s.replace(key, str(value))
     return s
 
 
