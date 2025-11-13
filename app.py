@@ -87,11 +87,12 @@ def create_app(test_config=None):
         for key, lang in var['languages'].items():
             l[key] = {
                 'type': lang.group,
+                'enabled': converter.IsModelFileExists(app.config, var, key),
                 'name': lang.name
             }
         return flask.render_template('index.html', 
             version=version, passwordLength=len(app.config.get('WEB_PASSWORD', '')), settings=var['settings'], 
-            langList=list(var['languages'].keys()), languages=l, sysinfo=settings.get_system_info_str(var))
+            langList=list(var['languages'].keys()), languages=l)
 
 
     @app.route("/favicon.ico")
@@ -108,7 +109,10 @@ def create_app(test_config=None):
     @app.route("/langs")
     def langList():
         return list(var['languages'].keys())
-
+    
+    @app.route("/sysinfo")
+    def sysInfo():
+        return settings.get_system_info_str(var)
 
     @app.route("/voices")
     def voices():

@@ -75,7 +75,7 @@ function ShowAboutWindow(id, event) {
                   { view: "label", label: tr["appAuthor-line"] },
                   { view: "label", label: tr["appBetaTesters-line"] },
                   { view: "button", value: tr["appLink"], click: "window.open('" + tr["appLink"] + "')" },
-                  { view: "textarea", height: 120, value: tr["SystemInformation"] + "\n\n" + SYS_INFO },
+                  { view: "textarea", height: 120,  id: "sysinfo_textarea", value: tr["Loading:"] + " " + tr["SystemInformation"] },
                   { view: "button", value: tr["OK"], css: "webix_primary", click: function () { $$("aboutWindow").close(); } }
                 ]
               }
@@ -87,6 +87,16 @@ function ShowAboutWindow(id, event) {
   }
 
   win.show(); // Show the existing or new window
+
+  webix.ajax().get("/sysinfo").then(function(data) {
+    const sysInfoText = data.text(); // or data.json() if it's JSON
+    const textarea = $$("sysinfo_textarea");
+    if (textarea) {
+      textarea.setValue(tr["SystemInformation"] + "\n\n" + sysInfoText);
+    }
+  }).fail(function(xhr) {
+    webix.message({ type: "error", text: "Failed to load system info." });
+  });
 }
 
 function PlayClick(id, event) {
@@ -118,28 +128,31 @@ function ShowPreferencesWindow() {
       var language = TTS_LANGUAGES[langCode];
       var curId = language.type + "-" + langCode;
       var comboId = curId + "-voice";
-      langCells.push({
-        header: language.name,
-        body: {
-          id: curId,
-          view:"form", 
-          elements:[
-            {cols:[
-                { view: "select", label: tr["Voice:"], 
-                  name: comboId, id: comboId, options: "/voices?lang=" + langCode, 
-                  value: APP_SETTINGS['silero'][langCode]["voice"] },
-                { view: "icon", id: curId + "-play", icon: "mdi mdi-play", click: PlayClick }
-            ]}
-        ]
-        }
-      });
+      if (language.enabled)
+      {
+        langCells.push({
+          header: language.name,
+          body: {
+            id: curId,
+            view:"form", 
+            elements:[
+              {cols:[
+                  { view: "select", label: tr["Voice:"], 
+                    name: comboId, id: comboId, options: "/voices?lang=" + langCode, 
+                    value: APP_SETTINGS['silero'][langCode]["voice"] },
+                  { view: "icon", id: curId + "-play", icon: "mdi mdi-play", click: PlayClick }
+              ]}
+          ]
+          }
+        });
+    }
     });
     
     win = webix.ui({
       view: "window",
       id: "preferencesWindow",
       modal: true, close: true, move: true,
-      position: "center", width: 600, height: 500,
+      position: "center", width: 600, height: 550,
       head: tr['Preferences'],
       body: {
         view: "form",
