@@ -1,6 +1,17 @@
 var userLang = navigator.language || navigator.userLanguage;
 var locale = 'en';
 var tr = {};
+var trCat = NaN;
+
+function TT(txt, cat, def) {
+  if ((cat in tr) && (txt in tr[cat])) {
+    return tr[cat][txt];
+  } 
+  if (txt in tr) {
+    return tr[txt];
+  }
+  return def;
+}
 
 if (userLang.toLowerCase().startsWith('ru')) {
   locale = 'ru';
@@ -159,7 +170,7 @@ function ShowPreferencesWindow() {
           {
             view: "tabview", cells: langCells
           },
-          /*{ view: "button", value: tr["Install components and languages"], label: "", click: ShowInstallerWindow },*/
+          { view: "button", value: tr["Install components and languages"], label: "", click: ShowInstallerWindow },
           { view: "text", type: "password", label: tr["password"], name: "preferencesPassword", id: "preferencesPassword", value: "" },
           {
             margin: 10,
@@ -266,7 +277,7 @@ function _createInstallerWindow(INSTALL_ITEMS) {
         const iconView = $$("installer_icon");
         const itemsView = $$("installer_items");
 
-        if (groupName === "Silero Models") {
+        if (groupName === "silero") {
             iconView.setHTML("🗣️");
             descView.setValue(
                 "Voice models for text-to-speech. Each language model is ~100 MB. " +
@@ -460,7 +471,20 @@ function _createInstallerWindow(INSTALL_ITEMS) {
                 },
 
                 // Progress & status
-                { view: "progress", id: "installer_progress", value: 0, type: "line", height: 10 },
+                {
+                    view: "template",
+                    id: "installer_progress",
+                    css: "installer-progress",
+                    template: "<div class='installer-progress-bar'><div class='installer-progress-fill' style='width:0%'></div></div>",
+                    height: 10,
+                    value: 0,
+                    on: {
+                        onAfterRender: function() {
+                            // Initialize fill reference
+                            this.$view.querySelector(".installer-progress-fill").style.width = "0%";
+                        }
+                    }
+                },
                 { view: "label", id: "installer_status", height: 24, css: { "min-height": "24px" } },
 
                 // Buttons
@@ -480,6 +504,12 @@ function _createInstallerWindow(INSTALL_ITEMS) {
     updateGroupView(initialGroup);
     win.show();
 }
+
+function setProgress(percent) {
+    const el = $$("installer_progress")?.$view?.querySelector(".installer-progress-fill");
+    if (el) el.style.width = (percent * 100) + "%";
+}
+
 
 // // // // // MAIN UI // // // // //
 function ConstructUI(tr) {
