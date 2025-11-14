@@ -9,7 +9,7 @@ sys.path.append(ROOT_DIR)
 
 from pathlib import Path
 import logging, logging.handlers
-import flask, uuid, multiprocessing, threading, datetime, mimetypes, atexit
+import flask, json, queue, multiprocessing, threading, datetime, mimetypes, atexit
 
 from helpers import book, settings, dxfs, dxtmpfile
 from helpers.DownloadItem import DownloadItem
@@ -61,6 +61,7 @@ def create_app(test_config=None):
     proc = manager.dict()
     var = defaults.GetDefaultVar(app.config)
     var['settings'] = settings.LoadOrDefault(app.config, var)
+    ALL_COMPONENTS = list(var['languages'].values())
     converter.InitModels(app.config, var)
 
     if sys.platform == "win32":
@@ -150,8 +151,7 @@ def create_app(test_config=None):
             return ''
 
 
-    ### Installer ###
-    ALL_COMPONENTS = list(var['languages'].values())
+    ### Installer ###  
 
     @app.route('/installer')
     def installer_form():
@@ -175,31 +175,49 @@ def create_app(test_config=None):
         if not item:
             return flask.jsonify(error="Item not found"), 404
 
-        q = flask.queue.Queue()
+        q = queue.Queue()
         cancel_event = threading.Event()
         client_id = id(q)
         clients[client_id] = {'queue': q, 'cancel_event': cancel_event}
 
-        def event_stream():
-            yield f" {flask.json.dumps({'type': 'message', 'value': f'Starting: {item.name}...'})}\n\n"
-            downloader = DownloaderCore(item, cancel_event, q)
-            success = downloader.run()
-            yield f" {flask.json.dumps({'type': 'done', 'value': success})}\n\n"
+        # ✅ Launch downloader in background — but let it feed the queue
+        def run_downloader():
+            try:
+                # First message: ensure immediate feedback
+                q.put(("message", f"Starting: {item.name}..."))
+                downloader = DownloaderCore(item, cancel_event, q)
+                success = downloader.run()
+                q.put(("done", success))
+            except Exception as e:
+                import traceback
+                print("Downloader error:", traceback.format_exc())
+                q.put(("message", f"Error: {str(e)}"))
+                q.put(("done", False))
+            finally:
+                # Clean up after completion
+                clients.pop(client_id, None)
 
-        thread = threading.Thread(target=event_stream)
+        thread = threading.Thread(target=run_downloader, daemon=True)
         thread.start()
 
         def generate():
+            # Use standard 'data:' format
+            init = json.dumps({"type": "message", "value": f"Starting {item.name}..."})
+            yield f"data: {init}\n\n"
+
             try:
                 while True:
                     try:
-                        msg_type, value = q.get(timeout=1)
-                        yield f" {flask.json.dumps({'type': msg_type, 'value': value})}\n\n"
-                        if msg_type == 'done':
+                        msg_type, value = q.get(timeout=30)
+                        payload = json.dumps({"type": msg_type, "value": value})
+                        yield f"data: {payload}\n\n"
+                        if msg_type == "done":
                             break
-                    except flask.queue.Empty:
-                        continue
+                    except queue.Empty:
+                        # Optional: heartbeat
+                        yield "data: {\"type\":\"ping\",\"value\":\"keep-alive\"}\n\n"
             finally:
+                cancel_event.set()
                 clients.pop(client_id, None)
 
         return flask.Response(generate(), mimetype='text/event-stream')
@@ -210,7 +228,7 @@ def create_app(test_config=None):
             client['cancel_event'].set()
         return '', 204
 
-    @app.route('/api/installer/items')
+    @app.route('/install/items')
     def get_installer_items():
         web_items = [
             item.to_dict() for item in ALL_COMPONENTS

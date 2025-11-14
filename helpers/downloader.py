@@ -1,12 +1,5 @@
 # core/downloader.py
-import os
-import sys
-import shutil
-import tempfile
-import threading
-import ctypes
-import hashlib
-import requests
+import os, sys, shutil, tempfile, threading, ctypes, hashlib, requests, queue
 from pathlib import Path
 from typing import Optional
 
@@ -64,7 +57,7 @@ def elevate_robocopy(src: Path, dest: Path) -> bool:
 
 
 class DownloaderCore:
-    def __init__(self, item: DownloadItem, cancel_event: threading.Event, status_queue: "queue.Queue"):
+    def __init__(self, item: DownloadItem, cancel_event: threading.Event, status_queue: queue.Queue):
         self.item = item
         self.cancel_event = cancel_event
         self.status_queue = status_queue

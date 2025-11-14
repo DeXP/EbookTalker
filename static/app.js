@@ -254,7 +254,7 @@ function ShowInstallerWindow(id, event) {
         win.show();
 
         // 🔹 Fetch items from Flask
-        webix.ajax().get("/api/installer/items").then(response => {
+        webix.ajax().get("/install/items").then(response => {
             const items = response.json();
             win.close(); // close loader
             _createInstallerWindow(items); // create real UI
@@ -266,6 +266,15 @@ function ShowInstallerWindow(id, event) {
     }
 
     win.show();
+}
+
+function setProgressValue(percent01) {
+    const prog = $$("installer_progress");
+    if (!prog) return;
+    const el = prog.$view.querySelector(".webix_progress_inner");
+    if (el) {
+        el.style.width = (percent01 * 100) + "%";
+    }
 }
 
 // 🔹 Internal: create real installer window
@@ -288,12 +297,12 @@ function _createInstallerWindow(INSTALL_ITEMS) {
         const group = groups[groupName] || [];
         const descView = $$("installer_desc");
         const iconView = $$("installer_icon");
-        const itemsView = $$("installer_items");
+        const itemsView = $$("installer_items_list");
 
         if (groupName === "silero") {
             iconView.setHTML("🗣️");
             descView.setValue(
-                "Voice models for text-to-speech. Each language model is ~100 MB. " +
+                "Voice models for text-to-speech. ~100 MB. " +
                 "Download only the languages you need."
             );
         } else {
@@ -302,24 +311,18 @@ function _createInstallerWindow(INSTALL_ITEMS) {
         }
 
         // Radio items (no descriptions for Silero)
-        const radios = group.map(item => ({
-            template: `<label style="display:flex;align-items:center;margin:6px 0;">
-                <input type="radio" name="installer_item" value="${item.name}" 
-                    style="margin-right:8px;" ${selectedItem === item.name ? 'checked' : ''}>
-                <span>${item.name}</span>
-            </label>`,
-            height: 30,
-            css: "installer-item",
-            click: () => {
-                selectedItem = item.name;
-                group.forEach(other => {
-                    if (other !== item) {
-                        const el = document.querySelector(`input[value="${other.name}"]`);
-                        if (el) el.checked = false;
-                    }
-                });
-            }
-        }));
+        const radios = group.map(item => {
+            let title = item.name;
+            if (item.subtitle) title += ` - ${item.subtitle}`;
+            if (item.size) title += `   [${readablizeBytes(item.size)}]`;
+
+            return {
+                name: item.name,
+                title: title,
+                description: item.description || "",
+                selected: selectedItem === item.name
+            };
+        });
 
         itemsView.clearAll();
         itemsView.parse(radios);
@@ -351,7 +354,7 @@ function _createInstallerWindow(INSTALL_ITEMS) {
         }
 
         setInstalling(true);
-        $$("installer_progress").setValue(0);
+        setProgressValue(0);
         $$("installer_status").setValue(`Starting: ${selectedItem}...`);
 
         const item = INSTALL_ITEMS.find(i => i.name === selectedItem);
@@ -364,50 +367,41 @@ function _createInstallerWindow(INSTALL_ITEMS) {
             const el = progress.$view.querySelector(".webix_progress_top");
 
             if (data.type === "progress") {
-                progress.setValue(data.value / 100);
-                if (el) el.style.transition = "width 0.3s";
+                setProgressValue(data.value / 100); // assuming data.value is 0–100
             } else if (data.type === "indeterminate") {
-                if (data.value) {
-                    if (el) {
-                        el.style.transition = "none";
-                        let i = 0;
-                        const anim = setInterval(() => {
-                            if (!installing || !eventSource) {
-                                clearInterval(anim);
-                                return;
-                            }
-                            const pos = 20 + 60 * (1 + Math.sin(i++ / 10)) / 2;
+                const el = $$("installer_progress")?.$view?.querySelector(".webix_progress_inner");
+                if (el) {
+                    if (data.value) {
+                        // Start infinite pulse (e.g. 20% → 80% oscillation)
+                        if (el._anim) clearInterval(el._anim);
+                        let pos = 20;
+                        let dir = 1;
+                        el._anim = setInterval(() => {
+                            pos += dir * 2;
+                            if (pos >= 80) dir = -1;
+                            if (pos <= 20) dir = 1;
                             el.style.width = pos + "%";
-                        }, 120);
-                        progress._indeterminateAnim = anim;
-                    }
-                } else {
-                    if (progress._indeterminateAnim) {
-                        clearInterval(progress._indeterminateAnim);
-                        delete progress._indeterminateAnim;
-                    }
-                    if (el) {
-                        el.style.transition = "width 0.3s";
+                        }, 80);
+                    } else {
+                        if (el._anim) clearInterval(el._anim);
+                        delete el._anim;
                         el.style.width = "100%";
                     }
-                    progress.setValue(1);
                 }
             } else if (data.type === "message") {
                 $$("installer_status").setValue(data.value);
             } else if (data.type === "done") {
-                if (progress._indeterminateAnim) {
-                    clearInterval(progress._indeterminateAnim);
-                    delete progress._indeterminateAnim;
-                }
+                // cleanup anim (if you keep custom DOM anim — optional)
+                const el = $$("installer_progress")?.$view?.querySelector(".webix_progress_inner");
+                if (el?._anim) clearInterval(el._anim);
+                setProgressValue(data.value ? 1 : 0);
                 setInstalling(false);
                 if (eventSource) {
-                    eventSource.close();
-                    eventSource = null;
+                    eventSource.close(); eventSource = null;
                 }
                 $$("installer_status").setValue(
                     data.value ? "✅ Installation completed successfully!" : "❌ Installation failed."
                 );
-                progress.setValue(data.value ? 1 : 0);
             }
         };
 
@@ -477,26 +471,47 @@ function _createInstallerWindow(INSTALL_ITEMS) {
 
                 // Items
                 {
-                    view: "scrollview",
-                    id: "installer_items",
-                    body: { view: "list", type: { height: "auto" }, autoheight: false },
-                    height: 260
+                    view: "list",
+                    id: "installer_items_list",
+                    height: 260,
+                    scroll: true,
+                    type: { height: "auto" },
+                    template: webix.template(function(obj) {
+                        let descHtml = "";
+                        if (obj.description) {
+                            descHtml = `<div style="color:#777;font-size:13px;margin-top:2px;line-height:1.4;">– ${obj.description}</div>`;
+                        }
+                        return `
+                            <div style="padding:6px 10px 6px 4px;">
+                                <label style="display:flex;align-items:flex-start;cursor:pointer;">
+                                    <input type="radio" name="installer_item" value="${obj.name}"
+                                        ${obj.selected ? "checked" : ""}
+                                        style="margin:4px 8px 0 0;transform:scale(1.1);cursor:pointer;">
+                                    <div>
+                                        <div style="font-weight:500;font-size:14px;line-height:1.3;">${obj.title}</div>
+                                        ${descHtml}
+                                    </div>
+                                </label>
+                            </div>
+                        `;
+                    }),
+                    on: {
+                        onItemClick: function(id) {
+                            const item = this.getItem(id);
+                            selectedItem = item.name;
+                            this.data.each(obj => obj.selected = (obj.name === selectedItem));
+                            this.refresh();
+                        }
+                    }
                 },
 
                 // Progress & status
                 {
                     view: "template",
                     id: "installer_progress",
-                    css: "installer-progress",
-                    template: "<div class='installer-progress-bar'><div class='installer-progress-fill' style='width:0%'></div></div>",
                     height: 10,
-                    value: 0,
-                    on: {
-                        onAfterRender: function() {
-                            // Initialize fill reference
-                            this.$view.querySelector(".installer-progress-fill").style.width = "0%";
-                        }
-                    }
+                    css: { "padding": "0", "margin": "0 10px" },
+                    template: "<div class='webix_progress_outer'><div class='webix_progress_inner' style='width:0%;'></div></div>"
                 },
                 { view: "label", id: "installer_status", height: 24, css: { "min-height": "24px" } },
 
