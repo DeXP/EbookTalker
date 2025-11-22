@@ -7,12 +7,6 @@ if __name__ == "__main__":
 else:
     from . import book, dxnormalizer, dxsplitter
 
-# from silero_stress import load_accentor
-# accentor = load_accentor()
-
-# import torch
-# torch.set_num_threads(12)
-
 
 def getElem(el: ET.Element, name):
     return el.find(name) if (el is not None) else None
@@ -66,10 +60,6 @@ def getSubTagSentences(subTag: ET.Element, lang: str):
         curText += t
 
     tts = dxnormalizer.normalize(curText, lang)
-
-    # if 'ru' == lang:
-    #     tts = accentor(tts)
-
     sentences = []
     for s in tts.split('\n'):
         sentences += dxsplitter.SplitSentence(s)

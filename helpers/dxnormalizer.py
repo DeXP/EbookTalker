@@ -18,17 +18,19 @@ def unify_lang(lang: str) -> str:
 def detect_language(text, lang = 'ru') -> str:
     if (not text):
         return lang
-    ukraine_chars = re.compile('[ґєї]')
-    english_chars = re.compile('[a-zA-Z]')
-
-    if re.search(ukraine_chars, text):
-        return 'uk'
-    elif re.search(russian_chars, text):
-        return 'ru'
-    elif re.search(english_chars, text):
-        return 'en' 
-    else:
-        return lang
+    charmap = {
+        'ru': russian_chars,
+        'uk': re.compile(r'[ґєї]'),
+        'de': re.compile(r'[äöüÄÖÜß]'),
+        'fr': re.compile(r'[éèêëÉÈÊËàâäÀÂÄôöÔÖùûüÙÛÜçÇœŒæÆ]'),
+        'es': re.compile(r'[áéíóúüñÁÉÍÓÚÜÑ]'),
+        'pl': re.compile(r'[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]'),
+        'cz': re.compile(r'[áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]')
+    }
+    for key, regex in charmap.items():
+        if re.search(regex, text):
+            return key
+    return 'en' 
 
 
 

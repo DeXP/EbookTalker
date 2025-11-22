@@ -10,8 +10,6 @@ def InitModels(cfg: dict, var: dict):
     dxfs.CreateDirectory(var['tmp'], var['queue'])
     dxfs.CreateDirectory(var['tmp'], Path('models'))
 
-    var['accentor'] = load_accentor()
-
     cudaWarning = get_cuda_version_warning()
     useCuda = cudaWarning is None
 
@@ -56,6 +54,15 @@ def PreloadModel(cfg: dict, var: dict, lang = 'ru'):
 
     symb = var['languages'][lang].extra['model'].symbols
     var['languages'][lang].extra['symbols'] = re.compile(f"[{symb}]", re.IGNORECASE)
+
+    var['languages'][lang].extra['accentor'] = None
+    if lang in ['ru', 'uk']:
+        language = 'ukr' if lang == 'uk' else 'ru'
+        accentor = load_accentor(lang=language)
+        accentor.to(device='cuda:0' if var['useCuda'] else 'cpu')
+        var['languages'][lang].extra['accentor'] = accentor
+        if not var['useCuda']:
+            torch.set_num_threads(os.cpu_count())
 
 
 def GetModel(cfg: dict, var: dict, lang = 'ru'):
@@ -210,14 +217,16 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
     bitrate = var['settings']['app']['bitrate']
     encoder = var['formats'][codec]
 
-    accentor = var['accentor']
-
     if info is None:
         info = json.loads(file.read_text(encoding='utf-8'))
         # info, coverBytes = book.ParseBook(file, full = True)
 
     proc['bookName'] = book.BookName(info, includeAuthor=True)
     lang = dxnormalizer.unify_lang(info['lang']) if ('lang' in info) else 'ru'
+
+    accentor = None
+    if (lang in var['languages']) and ('accentor' in var['languages'][lang].extra):
+        accentor = var['languages'][lang].extra['accentor']
 
     if ('error' in info) and info['error']:
         error = info['error']
@@ -261,7 +270,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
         sectionWavs = []    
         rawSectionTitle = section['title']
         sectionTitle = dxnormalizer.normalize(rawSectionTitle, lang)
-        sectionTitle = accentor(sectionTitle) if 'ru' == lang else sectionTitle
+        sectionTitle = accentor(sectionTitle) if accentor else sectionTitle
         # print(f"Section {sectionCount} ({len(section)}): {sectionTitle}")
         proc['rawSectionTitle'] = rawSectionTitle
         proc['sectionTitle'] = sectionTitle
@@ -285,7 +294,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
                 proc['lineSentenceNumber'] = lineSentence
                 proc['sentenceNumber'] = sentenceCount
                 proc['sentenceText'] = s
-                accentedText = accentor(s) if 'ru' == lang else s
+                accentedText = accentor(s) if accentor else s
                 if ProcessSentence(lang, sentenceCount, accentedText, cfg, var):
                     sectionWavs.append(f"{sentenceCount}.wav")
                     # last senctence in paragraph - long pause

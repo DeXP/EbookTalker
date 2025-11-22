@@ -14,7 +14,7 @@ RUN pip3 install torch --no-cache-dir ${TORCH_URL}
 
 # install runtime depenencies
 RUN apt-get update \
-    && apt-get install -y ffmpeg --no-install-recommends \
+    && apt-get install -y ffmpeg --no-install-suggests --no-install-recommends \
 && rm -rf /var/lib/apt/lists/*
 
 # copy project

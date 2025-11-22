@@ -31,7 +31,7 @@ class DownloadItem:
         extra = {}
         if self.extra:
            for key, item in self.extra.items():
-              if not key in ['model', 'symbols']:
+              if not key in ['model', 'symbols', 'accentor']:
                  extra[key] = item
         return {
             "name": self.name,
