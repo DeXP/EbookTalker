@@ -196,3 +196,4 @@ class DownloaderCore:
                 return False
 
         return elevate_robocopy(src, dest)
+

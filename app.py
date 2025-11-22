@@ -65,7 +65,7 @@ def create_app(test_config=None):
     converter.InitModels(app.config, var)
 
     if sys.platform == "win32":
-        convert_worker = threading.Thread(target=converter.ConverterLoop, args=(que, proc, app.config, var))
+        convert_worker = threading.Thread(target=converter.ConverterLoop, args=(que, proc, app.config, var), daemon=True)
     else:
         convert_worker = multiprocessing.Process(target=converter.ConverterLoop, args=(que, proc, app.config, var))
 
@@ -91,9 +91,12 @@ def create_app(test_config=None):
                 'enabled': converter.IsModelFileExists(app.config, var, key),
                 'name': lang.name
             }
+        install = [
+            item.to_dict() for item in ALL_COMPONENTS
+        ]
         return flask.render_template('index.html', 
             version=version, passwordLength=len(app.config.get('WEB_PASSWORD', '')), settings=var['settings'], 
-            langList=list(var['languages'].keys()), languages=l)
+            langList=list(var['languages'].keys()), languages=l, installItems=install)
 
 
     @app.route("/favicon.ico")
@@ -232,7 +235,6 @@ def create_app(test_config=None):
     def get_installer_items():
         web_items = [
             item.to_dict() for item in ALL_COMPONENTS
-            # if item.group != "Torch (CUDA)"  # exclude desktop-only
         ]
         return flask.jsonify(web_items)
 

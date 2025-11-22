@@ -27,6 +27,7 @@ INSTALLER_CONFIG_FILE = CFG_DIR / "installer.cfg"
 DIST_PATH = OUTPUT_DIR / "EbookTalker-Win64"
 DIST_DATA_PATH = DIST_PATH / "data"
 DIST_SETTINGS_PATH = DIST_PATH / "settings.ini"
+DIST_INTERNAL_PATH = DIST_PATH / "_internal"
 
 EN_PATH = I18N_SRC / 'en.json'
 RU_PATH = I18N_SRC / 'ru.json'
@@ -245,38 +246,24 @@ def create_exe(en: dict, ru: dict, version: str, full_version: str):
     if dist_app_dir.exists():
         shutil.rmtree(dist_app_dir)
 
-    # Make torch CPU to reduce the size
-    CPU_SOURCE = OUTPUT_DIR / f"{APP_NAME}-Torch-2.8.0+cpu"
-    TORCH_FOLDER = DIST_PATH / "_internal" / "torch"
-    if TORCH_FOLDER.exists():
-        shutil.rmtree(TORCH_FOLDER)
-        shutil.copytree(CPU_SOURCE, DIST_PATH)
-
 
 
 def extract_cuda():
     print(f"\n📟 Extracting CUDA plugin")
     import torch
     torch_version = str(torch.__version__)
+    print(f"🔥 Torch {torch_version}")
     plugin_name = f"{APP_NAME}-Torch-{torch_version}"
     PLUGIN_PATH = OUTPUT_DIR / plugin_name
-    PLUGIN_TORCH_DST = PLUGIN_PATH / "_internal" / "torch" 
-    TORCH_SOURCE = DIST_PATH / "_internal" / "torch"
+    PLUGIN_TORCH_DST = PLUGIN_PATH / "_internal"
 
     PLUGIN_TORCH_DST.mkdir(parents=True, exist_ok=True)
 
-    total_size = 0.0
-    files = [f for f in TORCH_SOURCE.rglob('*') if f.is_file()]
-    for file in files:
-        size_mb = file.stat().st_size / (1024 * 1024)
-        total_size += size_mb
-        rel_path = file.relative_to(TORCH_SOURCE)
-        dst_path = PLUGIN_TORCH_DST / rel_path
-        if size_mb > 1:
-            print(f" - {rel_path} ({size_mb:.1f} MB)")
-        dst_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(file, dst_path)
-    print(f"Total files {len(files)}, size: {total_size/1024:.1f} GB")
+    for src_folder in DIST_INTERNAL_PATH.glob("torch*"):
+        print(f" - {str(src_folder.name)}")
+        dst_folder = PLUGIN_TORCH_DST / src_folder.name
+        shutil.rmtree(dst_folder, ignore_errors=True)
+        shutil.copytree(src_folder, dst_folder)
 
     print(f"\n🗜️ Creating CUDA plugin archive")
     # Makes too big archive (2.1GB), GitHub limit is 2GB
@@ -290,7 +277,6 @@ def extract_cuda():
 
     with py7zr.SevenZipFile(PLUGIN_7Z, 'w',
             filters=[{"id": py7zr.FILTER_LZMA2, "preset": 9}]) as archive:
-        # archive.writeall(PLUGIN_PATH / "_internal", "_internal")
         write_with_progress(archive, PLUGIN_INTERNAL, "_internal")
 
     size_mb = PLUGIN_7Z.stat().st_size / (1024 * 1024)
@@ -299,8 +285,12 @@ def extract_cuda():
 
 
 def create_zip(version: str):
-    ZIP_PATH = OUTPUT_DIR / f"{APP_NAME}-{version}-Win64-Portable.zip"
+    print(f"\n🚫 Deleting Torch subfolders")
+    for src_folder in DIST_INTERNAL_PATH.glob("torch*"):
+        print(f" - {str(src_folder.name)}")
+        shutil.rmtree(src_folder, ignore_errors=True)
 
+    ZIP_PATH = OUTPUT_DIR / f"{APP_NAME}-{version}-Win64-Portable.zip"
     if ZIP_PATH.exists():
         ZIP_PATH.unlink()
 

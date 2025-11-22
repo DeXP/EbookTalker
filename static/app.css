@@ -1,20 +1,3 @@
-.installer-progress {
-    padding: 0 !important;
-    background: transparent !important;
-}
-.installer-progress-bar {
-    height: 100%;
-    width: 100%;
-    background: #e0e0e0;
-    border-radius: 5px;
-    overflow: hidden;
-}
-.installer-progress-fill {
-    height: 100%;
-    background: #26a69a; /* Webix primary color */
-    transition: width 0.3s;
-}
-
 .webix_progress_outer {
     width: 100%;
     height: 100%;

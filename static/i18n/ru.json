@@ -85,13 +85,17 @@
         "Copying files...": "Копирование файлов...",
         "Installation completed successfully!": "Установка завершена успешно!",
         "Installation failed. See log for details.": "Ошибка установки. Посмотрите лог для подробностей.",
+        "Please select a component to install.": "Пожалуйста, выберите компонент для установки.",
+        "Connection lost.": "Соединени потеряно.",
+        "No Selection": "Не выбрано",
         "Cancel?": "Отменить?",
         "Are you sure you want to cancel?": "Вы уверены, что хотите отменить установку?",
         "Cancelling... cleaning up.": "Отмена... очистка.",
         "Cancel": "Отменить",
-        "Exit": "Выход"
+        "Close": "Закрыть"
     },
     "error": {
+        "Error": "Ошибка", 
         "noURLforDownload": "Введите ссылку для скачивания",
         "pleaseChooseAFileToProcess": "Пожалуйста выберите файл для добавления",
         "uploadFailed.": "Ошибка загрузки файла. ", 
@@ -101,6 +105,7 @@
         "download": "Невозможно скачать файл",
         "empty-title": "Файл кнгиги некорректный - название пустое",
         "charset-decoding": "Невозможно опеределить кодировку",
+        "no-torch": "Модуль Torch не установлен. Перезапустите приложение. Если не поможет - переустановите.",
         "unknown-error": "Внезапная неизвестная ошибка"
     }
 }

@@ -71,6 +71,7 @@
         "silero-icon": "🗣️"
     },
     "error": {
+        "Error": "Error", 
         "noURLforDownload": "Enter download link",
         "pleaseChooseAFileToProcess": "Please choose a file to process",
         "uploadFailed.": "Failed to upload the file. ",
@@ -80,6 +81,7 @@
         "download": "Cannot download file",
         "empty-title": "Book file is not correct - title is empty",
         "charset-decoding": "Charset encoding cannot be figured out",
+        "no-torch": "Torch module not found. Please restart EbookTalker. Reinstall if not helped.",
         "unknown-error": "Unexpected unknown error"
     }
 }

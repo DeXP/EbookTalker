@@ -22,7 +22,7 @@ class PreferencesForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(tr['Preferences'])
-        self.geometry(parent.get_child_geometry(width=500, height=390))
+        self.geometry(parent.get_child_geometry(width=550, height=450))
 
         self.grid_columnconfigure((0,2), weight=0)
         self.grid_columnconfigure(1, weight=1)

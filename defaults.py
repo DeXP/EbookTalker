@@ -118,31 +118,31 @@ def GetDefaultVar(cfg: dict) -> dict:
                 group = "torch",
                 name = "CUDA 12.9 Runtime (PyTorch 2.8)",
                 url = torchUrl +"EbookTalker-Torch-2.8.0+cu129.7z",
-                size = 1967046142,
+                size = 1968960562,
                 dest = torchPath,
                 needs_admin = True,
-                description = "For RTX 20xx/30xx/40xx, A100, A40 (fastest)",
-                sha256 = "1a8c2b7eac585bc439be1d6f17e18a6f1a9fb1969bd3045a9f9957a96cc9e483"
+                description = "RTX 20xx/30xx/40xx, A100, A40 (fastest)",
+                sha256 = "6a393dc49428304a73aa4cdd229dbd3f99144fe5ea15c456201b3af26196e2fd"
             ),
             'cuda126': DownloadItem(
                 group = "torch",
                 name = "CUDA 12.6 Runtime (PyTorch 2.8)",
                 url = torchUrl + "EbookTalker-Torch-2.8.0+cu126.7z",
-                size = 1463471754,
+                size = 1465104447,
                 dest = torchPath,
                 needs_admin = True,
-                description = "For GTX 10xx, Quadro P series",
-                sha256 = "d27eba20953103c9773932facb4b8e84bde7a5c8d03a2b12afa96a08bfe7788d"
+                description = "GTX 10xx, Quadro P series",
+                sha256 = "3fb1b4948c69794297358398aafaf7260c8f69dd4c3ac84437303275e5422825"
             ),
             'cpu': DownloadItem(
                 group = "torch",
                 name = "CPU-only PyTorch 2.8",
                 url = torchUrl + "EbookTalker-Torch-2.8.0+cpu.7z",
-                size = 56934577,
+                size = 57973929,
                 dest = torchPath,
                 needs_admin = True,            
-                sha256 = "ac1243950fb61f850d4c6ad7706b52782b6caa581eec6dbe187d9193e2ff4860",
-                description = "For AMD/Intel GPUs or no NVIDIA (slower)"
+                sha256 = "a67b91651fa9a46e3c5b1c7a76ba7219362db1d70fdc5c0e7af32f9da790e483",
+                description = "AMD/Intel GPUs or no NVIDIA (slower)"
             )
         },
         'sample_rate': 24000,

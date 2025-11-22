@@ -3,7 +3,7 @@ from PIL import Image
 import customtkinter
 from pathlib import Path
 from CTkMessagebox import CTkMessagebox
-import sys, json, time, shutil, locale, datetime, multiprocessing, threading
+import sys, json, time, shutil, locale, datetime, multiprocessing, threading, subprocess
 
 import defaults
 
@@ -23,8 +23,7 @@ class App(customtkinter.CTk):
         super().__init__()
         
         from helpers.UI import Icons, ScrollableCTkTable
-        import converter
-        self.converter = converter
+        self.converter = None
         self.tr = tr
         self.que = list()
         self.proc = ''
@@ -102,11 +101,12 @@ class App(customtkinter.CTk):
 
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        self.update_thread = threading.Thread(target=self.update_UI).start()
+        self.update_thread = threading.Thread(target=self.update_UI, daemon=True)
+        self.update_thread.start()
 
         # Start background work
-        init_worker = threading.Thread(target=self.do_background_initialization, args=(tr, cfg, var), daemon=True)
-        init_worker.start()
+        self.init_worker = threading.Thread(target=self.do_background_initialization, args=(tr, cfg, var), daemon=True)
+        self.init_worker.start()
 
 
     def GetVersionExt(self):
@@ -142,10 +142,14 @@ class App(customtkinter.CTk):
     def on_closing(self):
         #if messagebox.askokcancel("Quit", "Do you want to quit?"):
         self.var['askForExit'] = True
-        self.destroy()
+        time.sleep(1)
+        self.destroy()    
 
 
     def on_add_button(self):
+        if self.converter is None:
+            return
+        
         book_file_list = filedialog.askopenfilenames(filetypes=[(self.tr["Books"], 
             "*.txt *.epub *.fb2 *.fb2.zip *.fb2z *.txt.zip *.zip")])
         for book_file in book_file_list:
@@ -224,7 +228,8 @@ class App(customtkinter.CTk):
                 if bookName != prevBookName:
                     # Book got updated - refresh the UI
                     self.inProcessLabel.configure(text=bookName)
-                    self.converter.fillQueue(self.que, self.var)
+                    if self.converter is not None:
+                        self.converter.fillQueue(self.que, self.var)
                     self.refresh_queue()
                     self.load_cover()
                     self.title(f"{self.orig_title} - [ {bookName} ]")
@@ -261,7 +266,18 @@ class App(customtkinter.CTk):
         self.manager = multiprocessing.Manager()
         self.que = self.manager.list()
         self.proc = self.manager.dict()
-
+      
+        # Windows baked exe, which don't have torch yet - install it
+        app_internal_folder = Path(sys.argv[0]).parent / "_internal"
+        torch_version_file = app_internal_folder / "torch" / "version.py"
+        if (sys.platform == "win32") and hasattr(sys, 'frozen') and app_internal_folder.exists() and (not torch_version_file.exists()):
+            var['loading'] = T.C("Torch module not found. Initializing installation")
+            from helpers.UI.EbookTalkerInstallerUI import EbookTalkerInstallerUI
+            installer_form = EbookTalkerInstallerUI(self, var, focus_tab='torch')
+            installer_form.focus_force()
+            installer_form.grab_set()
+            self.wait_window(installer_form)
+        
         haveTorch = True
         var['loading'] = T.C("Importing modules")
         try:
@@ -276,6 +292,7 @@ class App(customtkinter.CTk):
 
             var['loading'] = T.C("Starting converter worker")
             import converter
+            self.converter = converter
             if sys.platform == "win32":
                 self.convert_worker = threading.Thread(target=converter.ConverterLoop, args=(self.que, self.proc, cfg, var), daemon=True)
             else:
@@ -287,14 +304,9 @@ class App(customtkinter.CTk):
             # Schedule UI update on main thread
             self.after(0, self._enable_ui, var)
         else:
-            var['loading'] = T.C("Torch module not found. Initializing installation")
-            from helpers.UI.EbookTalkerInstallerUI import EbookTalkerInstallerUI
-            installer_form = EbookTalkerInstallerUI(self, var, focus_tab='torch')
-            installer_form.focus_force()
-            installer_form.grab_set()
-            self.wait_window(installer_form)
+            c = 'error'
+            CTkMessagebox(master=self, title=T.T("Error", c), message=T.T("no-torch", c), icon="cancel")
             self.on_closing()
-            msg = CTkMessagebox(master=self, title=T.T("appTitle"), message=T.C("Are you sure you want to cancel?"), icon="info")
 
 
     def _enable_ui(self, var):

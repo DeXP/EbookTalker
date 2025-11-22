@@ -187,11 +187,12 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
         if installing:
             self.action_btn.configure(text=T.C("Cancel"), command=self.request_cancel)
         else:
-            self.action_btn.configure(text=T.C("Exit"), command=self.destroy)
+            self.action_btn.configure(text=T.C("Close"), command=self.destroy)
 
     def start_install(self):
+        c = 'install'
         if not self.selected_item:
-            CTkMessagebox(master=self, title="No Selection", message="Please select a component to install.", icon="warning")
+            CTkMessagebox(master=self, title=T.T("No Selection", c), message=T.T("Please select a component to install.", c), icon="warning")
             return
         self.set_installing(True)
         self.progress.set(0)
@@ -227,7 +228,7 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
         button_frame.pack(pady=(0, 20))
         self.install_btn = ctk.CTkButton(button_frame, text=T.C("Install Selected"), command=self.start_install)
         self.install_btn.pack(side="left", padx=10)
-        self.action_btn = ctk.CTkButton(button_frame, text=T.C("Exit"), command=self.destroy)
+        self.action_btn = ctk.CTkButton(button_frame, text=T.C("Close"), command=self.destroy)
         self.action_btn.pack(side="left", padx=10)
 
         if self.automatic:
