@@ -9,7 +9,7 @@ def GetDefaultVar(cfg: dict) -> dict:
 
     sileroUrl = 'https://github.com/DeXP/EbookTalker/releases/download/silero/'
     torchUrl  = 'https://github.com/DeXP/EbookTalker/releases/download/torch-2.8-cuda/'
-    torchPath = str(Path(sys.executable).parent / "_internal")
+    torchPath = str(Path(sys.executable).parent)
 
     var = {
         'askForExit': False,

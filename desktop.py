@@ -266,18 +266,7 @@ class App(customtkinter.CTk):
         self.manager = multiprocessing.Manager()
         self.que = self.manager.list()
         self.proc = self.manager.dict()
-      
-        # Windows baked exe, which don't have torch yet - install it
-        app_internal_folder = Path(sys.argv[0]).parent / "_internal"
-        torch_version_file = app_internal_folder / "torch" / "version.py"
-        if (sys.platform == "win32") and hasattr(sys, 'frozen') and app_internal_folder.exists() and (not torch_version_file.exists()):
-            var['loading'] = T.C("Torch module not found. Initializing installation")
-            from helpers.UI.EbookTalkerInstallerUI import EbookTalkerInstallerUI
-            installer_form = EbookTalkerInstallerUI(self, var, focus_tab='torch')
-            installer_form.focus_force()
-            installer_form.grab_set()
-            self.wait_window(installer_form)
-        
+             
         haveTorch = True
         var['loading'] = T.C("Importing modules")
         try:
@@ -291,7 +280,6 @@ class App(customtkinter.CTk):
             converter.InitModels(cfg, var)
 
             var['loading'] = T.C("Starting converter worker")
-            import converter
             self.converter = converter
             if sys.platform == "win32":
                 self.convert_worker = threading.Thread(target=converter.ConverterLoop, args=(self.que, self.proc, cfg, var), daemon=True)
@@ -304,8 +292,12 @@ class App(customtkinter.CTk):
             # Schedule UI update on main thread
             self.after(0, self._enable_ui, var)
         else:
-            c = 'error'
-            CTkMessagebox(master=self, title=T.T("Error", c), message=T.T("no-torch", c), icon="cancel")
+            var['loading'] = T.C("Torch module not found. Initializing installation")
+            from helpers.UI.EbookTalkerInstallerUI import EbookTalkerInstallerUI
+            installer_form = EbookTalkerInstallerUI(self, var, focus_tab='torch')
+            installer_form.focus_force()
+            installer_form.grab_set()
+            self.wait_window(installer_form)
             self.on_closing()
 
 
