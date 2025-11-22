@@ -3,7 +3,7 @@ Ebook reader in voice
 
 Converts textual books into audiobooks. The input is a normal book in Epub/FB2/TXT format. Output is a folder with a set of audio-files - audio book. Remember to feed the software with the books you properly own and have a license!
 
-[Silero](https://github.com/snakers4/silero-models) is used as a TTS engine. List of the supported languages: English, Russian and Ukrainian.
+[Silero](https://github.com/snakers4/silero-models) is used as a TTS engine. List of the supported languages: English, Russian, Ukrainian, Deutsch, French, Spanish.
 
 Two UI modes is supported:
 
@@ -16,7 +16,20 @@ Two UI modes is supported:
 
 ### Desktop version
 
-#### Windows
+#### Windows - Installer
+
+`winget` is a preferable way of installing EbookTalker:
+
+```
+winget install DeXPeriX.EbookTalker
+```
+
+So you can get update as easy as `winget update --all`
+
+Or you can download EXE from [Releases](https://github.com/DeXP/EbookTalker/releases/latest)
+
+
+#### Windows - Portable version
 
 1. Download zip-archive from [Releases](https://github.com/DeXP/EbookTalker/releases/latest)
 2. Unzip
@@ -46,6 +59,7 @@ services:
     volumes:
       - /your-output-folder:/ready
       - /your-settings-folder:/settings
+      - /your-models-folder:/models
     ports:
       - 5000:5000
 ```
@@ -83,7 +97,7 @@ Screenshot on Windows 11:
 
 Это программное обеспечение для чтения книг в аудио. На входе - обычная книга в формате FB2/Epub/txt. На выходе - аудиокнига. Помните, вы сами несёте ответственность за легальность ваших книг!
 
-В качестве движка для чтения используется [Silero](https://github.com/snakers4/silero-models). В данный момент поддерживаются русский, украинский и английский языки.
+В качестве движка для чтения используется [Silero](https://github.com/snakers4/silero-models). В данный момент поддерживаются русский, украинский,английский, немецкий, испанский и французский языки.
 
 Поддерживаются два режима интерфейса:
 
@@ -98,7 +112,21 @@ Screenshot on Windows 11:
 
 ### Настольная версия
 
-#### Windows
+
+#### Windows - Установщик
+
+Предпочтительно использовать `winget`:
+
+```
+winget install DeXPeriX.EbookTalker
+```
+
+Тогда обновление приложения будет выполняться автоматически при вызове `winget update --all`.
+
+Или же можно скачать установочный EXE-файл из [Релизов](https://github.com/DeXP/EbookTalker/releases/latest)
+
+
+#### Windows - Портативная версия
 
 1. Скачать zip-архив из [Релизов](https://github.com/DeXP/EbookTalker/releases/latest)
 2. Распаковать
@@ -128,6 +156,7 @@ services:
     volumes:
       - /your-output-folder:/ready
       - /your-settings-folder:/settings
+      - /your-models-folder:/models
     ports:
       - 5000:5000
 ```
