@@ -25,8 +25,9 @@ def InitModels(cfg: dict, var: dict):
         PreloadModel(cfg, var, 'en')
 
 
-def GetModelName(cfg: dict, var: dict, lang = 'ru') -> str:
-    engine = var['settings']['app']['engine']
+def GetModelName(cfg: dict, var: dict, lang = 'ru', engine: str = '') -> str:
+    if not engine:
+        engine = var['settings']['app']['engine']
     if ('silero' == engine) and (lang in var['languages']):
         urlPath = Path(var['languages'][lang].url)
         return urlPath.name
@@ -34,21 +35,24 @@ def GetModelName(cfg: dict, var: dict, lang = 'ru') -> str:
         return engine
 
 
-def GetModelPath(cfg: dict, var: dict, lang = 'ru') -> Path:
-    modelName = GetModelName(cfg, var, lang)
+def GetModelPath(cfg: dict, var: dict, lang: str = 'ru', engine: str = '') -> Path:
+    if not engine:
+        engine = var['settings']['app']['engine']
+    modelName = GetModelName(cfg, var, lang, engine)
     localFile = Path('models') / modelName
     if localFile.exists():
         return localFile
     return Path(cfg['MODELS_FOLDER']) / modelName
 
 
-def IsModelFileExists(cfg: dict, var: dict, lang = 'ru') -> bool:
-    return GetModelPath(cfg, var, lang).exists()
+def IsModelFileExists(cfg: dict, var: dict, lang: str = 'ru', engine: str = '') -> bool:
+    return GetModelPath(cfg, var, lang, engine).exists()
 
 
-def PreloadModel(cfg: dict, var: dict, lang = 'ru'):
-    engine = var['settings']['app']['engine']
-    modelPath = GetModelPath(cfg, var, lang)
+def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
+    if not engine:
+        engine = var['settings']['app']['engine']
+    modelPath = GetModelPath(cfg, var, lang, engine)
     local_file = str(modelPath)
 
     if 'silero' == engine:
@@ -58,9 +62,6 @@ def PreloadModel(cfg: dict, var: dict, lang = 'ru'):
         if (".pt" == modelPath.suffix):
             var['languages'][lang].extra['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
             var['languages'][lang].extra['model'].to(var['device'])
-
-        symb = var['languages'][lang].extra['model'].symbols
-        var['languages'][lang].extra['symbols'] = re.compile(f"[{symb}]", re.IGNORECASE)
 
         var['languages'][lang].extra['accentor'] = None
         if lang in ['ru', 'uk']:
@@ -78,12 +79,19 @@ def PreloadModel(cfg: dict, var: dict, lang = 'ru'):
 
 
 
-def GetModel(cfg: dict, var: dict, lang = 'ru'):
-    engine = var['settings']['app']['engine']
+def GetModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
+    if not engine:
+        engine = var['settings']['app']['engine']
     origin = var['languages'][lang] if 'silero' == engine else var['coqui-ai'][engine]
     if ('model' in origin.extra) and (origin.extra['model'] is None):
-        PreloadModel(cfg, var, lang)
+        PreloadModel(cfg, var, lang, engine)
     return origin.extra['model']
+
+
+def GetSamplerate(cfg: dict, var: dict, engine: str = '') -> int:
+    if not engine:
+        engine = var['settings']['app']['engine']
+    return int(var['sample_rate']) if 'silero' == engine else int(GetModel(cfg, var).synthesizer.output_sample_rate)
 
 
 def _extract_arch_version(arch_string: str):
@@ -133,14 +141,6 @@ Minimum and Maximum cuda capability supported by this version of PyTorch is
     return "CUDA disabled or doesn't supports any architectures"
 
 
-def GetSymbols(cfg: dict, var: dict, lang = 'ru'):
-    if (lang in var['languages']) and ('model' in var['languages'][lang].extra) and (var['languages'][lang].extra['model'] is None):
-        PreloadModel(cfg, var, lang)
-    if (lang in var['languages']) and ('symbols' in var['languages'][lang].extra):
-        return var['languages'][lang].extra['symbols']
-    return ''
-
-
 def GetSupportedAudioFormats(cfg: dict, var: dict):
     all_encoders = dxaudio.get_supported_encoders(cfg)
     supported = []
@@ -150,20 +150,14 @@ def GetSupportedAudioFormats(cfg: dict, var: dict):
     return supported
 
 
-def IsCorrectPhrase(cfg: dict, var: dict, lang = 'ru', text = ''):
-    symbols = GetSymbols(cfg, var, lang)
-    if symbols:
-        if re.search(symbols, text):
-            return True
-    return True
-
-
 def getBooks(var: dict):
     return sorted(var['queue'].glob("*.*"), key=os.path.getmtime)
 
 
-def getJingles(var: dict):
-    return sorted(var['jingle'].glob("*.wav"))
+def getJingles(cfg: dict, var: dict):
+    rate = str(GetSamplerate(cfg, var))
+    folder = var['jingle'] / rate
+    return sorted(folder.glob("*.wav"))
 
 
 def fillQueue(que, var: dict):
@@ -189,17 +183,14 @@ def PreConvertBookForTTS(file: Path, var: dict):
     return info, cover
 
 
-def GeneratePause(cfg, var, lang, timeMs = 300, name = "pause.wav"):
-    speaker = var['settings']['silero'][lang]['voice']
-    GetModel(cfg, var, lang).save_wav(ssml_text=f'<speak><break time="{timeMs}ms"/></speak>',
-                speaker=speaker,
-                sample_rate=var['sample_rate'],
-                audio_path=str(var['genwav'] / name))
+def GeneratePause(cfg: dict, var: dict, durationMs : int = 300, name : str = "pause.wav"):
+    dxaudio.generate_silence_wav(durationMs, var['genwav'] / name, GetSamplerate(cfg, var))
 
 
-def ProcessSentence(lang, number, sentence, cfg, var):
+def ProcessSentence(lang, number, sentence, cfg, var):  
     wavFile = var['genwav'] / f"{number}.wav"
-    speaker = var['settings']['silero'][lang]['voice']
+    engine = var['settings']['app']['engine']
+    speaker = var['settings']['silero'][lang]['voice'] if 'silero' == engine else var['settings'][engine]['voice']
     return SayText(wavFile, lang, speaker, sentence, cfg, var)
 
 
@@ -216,7 +207,7 @@ def SayText(wavFile, lang, speaker, text, cfg, var):
                     audio_path = str(wavFile))
             else:
                 # Coqui TTS
-                GetModel(cfg, var, lang).tts_to_file(text=text,
+                GetModel(cfg, var).tts_to_file(text=text,
                     speaker = speaker,
                     language = lang,
                     file_path = str(wavFile))
@@ -265,7 +256,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
             with open(str(cover.absolute()), 'wb') as f:
                 f.write(coverBytes)
 
-    jingles = getJingles(var)
+    jingles = getJingles(cfg, var)
 
     isSingleOutput = (dirFormat == 'single')
 
@@ -283,8 +274,8 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
     proc['totalLines'] = totalTagsCount
     proc['totalSentences'] = totalSencenceCount
 
-    GeneratePause(cfg, var, lang, 300, "pause.wav")
-    GeneratePause(cfg, var, lang, 500, "pause-long.wav")
+    GeneratePause(cfg, var, int(var['settings']['app']['word-pause']), "pause.wav")
+    GeneratePause(cfg, var, int(var['settings']['app']['paragraph-pause']), "pause-long.wav")
 
     for section in info['sections']:
         sectionCount += 1

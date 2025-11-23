@@ -63,6 +63,8 @@ def LoadOrDefault(cfg: dict, var: dict) -> dict:
     dirs = cfg['DIRECTORIES_FORMAT'] if ('DIRECTORIES_FORMAT' in cfg) else 'single'
     codec = cfg['AUDIO_CODEC'] if ('AUDIO_CODEC' in cfg) else 'mp3'
     bitrate = int(cfg['AUDIO_BITRATE']) if ('AUDIO_BITRATE' in cfg) else 64
+    word_pause = int(cfg['WORD_PAUSE']) if ('WORD_PAUSE' in cfg) else 300
+    paragraph_pause = int(cfg['PARAGRAPH_PAUSE']) if ('PARAGRAPH_PAUSE' in cfg) else 500
     tts_engine = cfg['TTS_ENGINE'] if ('TTS_ENGINE' in cfg) else 'silero'
 
     check_sub_dict(s, 'app')
@@ -71,6 +73,8 @@ def LoadOrDefault(cfg: dict, var: dict) -> dict:
     set_if_none(s, 'app', 'codec', codec)
     set_if_none(s, 'app', 'bitrate', bitrate)
     set_if_none(s, 'app', 'dirs', dirs)
+    set_if_none(s, 'app', 'word-pause', word_pause)
+    set_if_none(s, 'app', 'paragraph-pause', paragraph_pause)
     set_if_none(s, 'app', 'engine', tts_engine)
 
     for lang_key, language in var['languages'].items():

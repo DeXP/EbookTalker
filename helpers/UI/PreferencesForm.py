@@ -118,7 +118,7 @@ class PreferencesForm(ctk.CTkToplevel):
         self.tts_voice_play_buttons = {}
         self.first_silero_lang = None
         for lang, language in var['languages'].items():
-            if converter.IsModelFileExists(cfg, var, lang):
+            if converter.IsModelFileExists(cfg, var, lang, 'silero'):
                 if not self.first_silero_lang:
                     self.first_silero_lang = lang
                 lang_name = language.name
@@ -145,11 +145,11 @@ class PreferencesForm(ctk.CTkToplevel):
         self.coqui_frame = ctk.CTkFrame(master=self, width=300, height=200)
 
         self.coqui_voice_label = ctk.CTkLabel(self.coqui_frame, text=tr["Voice:"])
-        self.coqui_voice_label.grid(row=0, column=0, padx=10, pady=2, sticky="w")
+        self.coqui_voice_label.grid(row=0, column=0, padx=10, pady=7, sticky="w")
 
-        self.coqui_voice_combo = ctk.CTkComboBox(self.coqui_frame, state="readonly")
+        self.coqui_voice_combo = ctk.CTkComboBox(self.coqui_frame, width=300, state="readonly")
         self.coqui_voice_combo.set(var['settings']['xtts_v2']['voice'])
-        self.coqui_voice_combo.grid(row=0, column=1, padx=10, pady=2, sticky="w")
+        self.coqui_voice_combo.grid(row=0, column=1, padx=10, pady=7, sticky="w")
 
         self.coqui_voice_play_button = ctk.CTkButton(
             self.coqui_frame, width=30,
@@ -157,7 +157,7 @@ class PreferencesForm(ctk.CTkToplevel):
             command=lambda: self.on_play('xtts_v2', 'en'),
             font=parent.icon_font, text=Icons.play
         )
-        self.coqui_voice_play_button.grid(row=0, column=2, padx=10, pady=2, sticky="w")
+        self.coqui_voice_play_button.grid(row=0, column=2, padx=10, pady=7, sticky="w")
 
 
         self.install_button = ctk.CTkButton(self, text=T.T('Install components and languages'), command=self.on_install)
@@ -194,6 +194,8 @@ class PreferencesForm(ctk.CTkToplevel):
         for lang in self.var['languages'].keys():
             if lang in self.tts_voice_combos:
                 s['silero'][lang]['voice'] = self.tts_voice_combos[lang].get()
+
+        s['xtts_v2']['voice'] = self.coqui_voice_combo.get()
 
         settings.Save(self.cfg, s)
         self.var['settings'] = s
@@ -243,13 +245,11 @@ class PreferencesForm(ctk.CTkToplevel):
             self.coqui_frame.grid_forget()
             self.tts_tabview.grid(row=7, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
             if self.first_silero_lang:
-                self.tts_voice_combos[self.first_silero_lang].configure(values=converter.GetModel(self.cfg, self.var, self.first_silero_lang).speakers)
+                self.tts_voice_combos[self.first_silero_lang].configure(values=converter.GetModel(self.cfg, self.var, self.first_silero_lang, engine).speakers)
         else:
-            speakers = list(converter.GetModel(self.cfg, self.var, 'en').speakers)
-            speakers.sort()
             self.tts_tabview.grid_forget()
             self.coqui_frame.grid(row=7, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
-            self.coqui_voice_combo.configure(values=speakers)
+            self.coqui_voice_combo.configure(values=sorted(converter.GetModel(self.cfg, self.var, 'en', engine).speakers))
 
 
     def GetNiceTestBookName(self, dir_format: str) -> str:

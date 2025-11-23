@@ -175,7 +175,7 @@ def get_wav_duration(input_wav: Path) -> float:
     with wave.open(str(input_wav.absolute()), 'rb') as wav:
         num_frames = wav.getnframes()
         frame_rate = wav.getframerate()
-        return num_frames / float(frame_rate)  
+        return num_frames / float(frame_rate)
 
 
 def convert_wav_to_compressed(encoder: str, cfg: dict, input_wav: Path, output_file: Path, bitrate = 64,
@@ -237,6 +237,26 @@ def concatenate_wav_files(input_folder: Path, input_files, output_file: Path):
                 if file.exists():
                     with wave.open(str(file.absolute()), 'rb') as wav_file:
                         output_wav.writeframes(wav_file.readframes(wav_file.getnframes()))
+
+
+def generate_silence_wav(durationMs: int, output: Path, sample_rate: int = 24000) -> None:
+    channels = 1           # Mono
+    sampwidth = 2          # 16-bit PCM → 2 bytes per sample
+    n_frames = int(durationMs * sample_rate / 1000)
+
+    # Open WAV file for writing
+    with wave.open(str(output.absolute()), 'w') as wav_file:
+        wav_file.setnchannels(channels)
+        wav_file.setsampwidth(sampwidth)
+        wav_file.setframerate(sample_rate)
+
+        # Generate silence: 16-bit signed zero (0x0000)
+        # Each sample is a signed 16-bit integer (little-endian by default on most systems)
+        # Using struct.pack to avoid dependency on numpy
+        silent_sample = struct.pack('<h', 0)  # '<h' = little-endian signed short
+        silent_chunk = silent_sample * n_frames
+
+        wav_file.writeframes(silent_chunk)
 
 
 if __name__ == "__main__":
