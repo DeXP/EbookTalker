@@ -47,7 +47,8 @@
     "OutputFolder:": "Output folder:",
     "Default": "Default",
     "Codec:": "Codec:",
-    "Bitrate:": "Bitrate:",
+    "Bitrate:": "Bitrate (kbps):",
+    "TTS Engine:": "TTS Engine:",
     "Voice:": "Voice:",
     "NamingFormat:": "Naming format:",
     "nf-single": "Single file",
@@ -68,7 +69,10 @@
         "torch-icon": "🔥",
         "silero": "Silero language models",
         "silero-text": "Voice models for text-to-speech. Download only the languages you need.",
-        "silero-icon": "🗣️"
+        "silero-icon": "🗣️",
+        "coqui-ai": "Coqui TTS",
+        "coqui-ai-text": "Coqui TTS voice models. They usually support multiple languages and are resource-intensive - using CUDA and SSD drive are highly recommended.",
+        "coqui-ai-icon": "🐸"
     },
     "error": {
         "Error": "Error", 

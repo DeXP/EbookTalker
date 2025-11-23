@@ -22,11 +22,11 @@ class PreferencesForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(tr['Preferences'])
-        self.geometry(parent.get_child_geometry(width=550, height=450))
+        self.geometry(parent.get_child_geometry(width=600, height=450))
 
         self.grid_columnconfigure((0,2), weight=0)
         self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(6, weight=1)
+        self.grid_rowconfigure(7, weight=1)
 
 
         self.testBook = book.GetTestBook(tr)
@@ -97,17 +97,30 @@ class PreferencesForm(ctk.CTkToplevel):
         self.dirs_example.grid(row=5, column=1, padx=10, pady=2, sticky="w")
 
 
-        self.tts_tabview = ctk.CTkTabview(self, width=250)
-        self.tts_tabview.grid(row=6, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
+        self.engines = {
+            'silero': 'Silero',
+            'xtts_v2': var['coqui-ai']['xtts_v2'].name
+        }
+        self.engine_label = ctk.CTkLabel(self, text=T.T('TTS Engine:'))
+        self.engine_label.grid(row=6, column=0, padx=10, pady=2, sticky="w")
+
+        current_engine = self.engines.get(var['settings']['app']['engine'], self.engines['silero'])
+        self.engine_combobox = ctk.CTkComboBox(self, values=list(self.engines.values()), state="readonly", command=self.on_engine_changed)
+        self.engine_combobox.set(current_engine)
+        self.engine_combobox.grid(row=6, column=1, padx=10, pady=2, columnspan=2, sticky="w")
+
+
+        self.tts_tabview = ctk.CTkTabview(self)
+        self.tts_tabview.grid(row=7, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
         self.tts_tabview.configure(command=self.on_tab_change)
         self.tts_voice_labels = {}
         self.tts_voice_combos = {}
         self.tts_voice_play_buttons = {}
-        first_lang = None
+        self.first_silero_lang = None
         for lang, language in var['languages'].items():
             if converter.IsModelFileExists(cfg, var, lang):
-                if not first_lang:
-                    first_lang = lang
+                if not self.first_silero_lang:
+                    self.first_silero_lang = lang
                 lang_name = language.name
                 self.tts_tabview.add(lang_name)
                 self.tts_tabview.tab(lang_name).grid_columnconfigure((0,1,2), weight=0)
@@ -128,23 +141,40 @@ class PreferencesForm(ctk.CTkToplevel):
                 )
                 self.tts_voice_play_buttons[lang].grid(row=0, column=2, padx=10, pady=2, sticky="w")
 
-        if first_lang:
-            self.tts_voice_combos[first_lang].configure(values=converter.GetModel(cfg, var, first_lang).speakers)
+        # Coqui
+        self.coqui_frame = ctk.CTkFrame(master=self, width=300, height=200)
+
+        self.coqui_voice_label = ctk.CTkLabel(self.coqui_frame, text=tr["Voice:"])
+        self.coqui_voice_label.grid(row=0, column=0, padx=10, pady=2, sticky="w")
+
+        self.coqui_voice_combo = ctk.CTkComboBox(self.coqui_frame, state="readonly")
+        self.coqui_voice_combo.set(var['settings']['xtts_v2']['voice'])
+        self.coqui_voice_combo.grid(row=0, column=1, padx=10, pady=2, sticky="w")
+
+        self.coqui_voice_play_button = ctk.CTkButton(
+            self.coqui_frame, width=30,
+            fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"),
+            command=lambda: self.on_play('xtts_v2', 'en'),
+            font=parent.icon_font, text=Icons.play
+        )
+        self.coqui_voice_play_button.grid(row=0, column=2, padx=10, pady=2, sticky="w")
 
 
         self.install_button = ctk.CTkButton(self, text=T.T('Install components and languages'), command=self.on_install)
-        self.install_button.grid(row=7, column=0, padx=10, pady=2, columnspan=3, sticky="e")
+        self.install_button.grid(row=8, column=0, padx=10, pady=2, columnspan=3, sticky="e")
 
 
         self.warning_note = ctk.CTkLabel(self, text=T.T('PreferencesSaveNote'))
-        self.warning_note.grid(row=8, column=0, padx=10, pady=2, columnspan=3, sticky="w")
+        self.warning_note.grid(row=9, column=0, padx=10, pady=2, columnspan=3, sticky="w")
 
         # Save and Cancel buttons
         self.save_button = ctk.CTkButton(self, text=T.T("Save"), command=self.on_save)
-        self.save_button.grid(row=9, column=0, padx=10, pady=7)
+        self.save_button.grid(row=10, column=0, padx=10, pady=7)
 
         self.cancel_button = ctk.CTkButton(self, text=T.T("Cancel"), command=self.on_cancel)
-        self.cancel_button.grid(row=9, column=1, padx=10, pady=7, columnspan=2, sticky="e")
+        self.cancel_button.grid(row=10, column=1, padx=10, pady=7, columnspan=2, sticky="e")
+
+        self.on_engine_changed(current_engine)
 
 
     def get_child_geometry(self, width: int, height: int) -> str:
@@ -159,6 +189,7 @@ class PreferencesForm(ctk.CTkToplevel):
         s['app']['codec'] = self.codec_combobox.get()
         s['app']['bitrate'] = int(self.bitrate_combobox.get())
         s['app']['dirs'] = self.get_dir_format_by_translated(self.dirs_combobox.get())
+        s['app']['engine'] = self.get_key_by_value(self.engines, self.engine_combobox.get())
 
         for lang in self.var['languages'].keys():
             if lang in self.tts_voice_combos:
@@ -181,9 +212,11 @@ class PreferencesForm(ctk.CTkToplevel):
         installer_form.grab_set()
 
 
-    def on_play(self, tts, lang):
-        voice = self.tts_voice_combos[lang].get()
-        wavFile = self.var['tmp'] / f"{tts}-{lang}-{voice}.wav"
+    def on_play(self, tts, lang = 'en'):
+        engine = self.var['settings']['app']['engine']
+        voice = self.tts_voice_combos[lang].get() if 'silero' == engine else self.coqui_voice_combo.get()
+        voiceFile = voice.replace(' ', '-')
+        wavFile = self.var['tmp'] / f"{tts}-{lang}-{voiceFile}.wav"
         if ("random" == voice) and wavFile.exists():
             wavFile.unlink()
 
@@ -203,6 +236,22 @@ class PreferencesForm(ctk.CTkToplevel):
         self.dirs_example.configure(text=self.GetNiceTestBookName(dir_format))
 
 
+    def on_engine_changed(self, choice):
+        engine = self.get_key_by_value(self.engines, choice)
+
+        if 'silero' == engine:
+            self.coqui_frame.grid_forget()
+            self.tts_tabview.grid(row=7, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
+            if self.first_silero_lang:
+                self.tts_voice_combos[self.first_silero_lang].configure(values=converter.GetModel(self.cfg, self.var, self.first_silero_lang).speakers)
+        else:
+            speakers = list(converter.GetModel(self.cfg, self.var, 'en').speakers)
+            speakers.sort()
+            self.tts_tabview.grid_forget()
+            self.coqui_frame.grid(row=7, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
+            self.coqui_voice_combo.configure(values=speakers)
+
+
     def GetNiceTestBookName(self, dir_format: str) -> str:
         out_path = book.GetOutputName(Path(self.output_text.get()), self.testBook, dir_format)
         if "full" == dir_format.lower():
@@ -211,6 +260,7 @@ class PreferencesForm(ctk.CTkToplevel):
         # name = name.replace("/", " / ").replace("\\", " \\ ")
         name += "." + self.codec_combobox.get()
         return name
+
 
     def get_output_folder(self):
         folder_path = filedialog.askdirectory()
@@ -236,8 +286,12 @@ class PreferencesForm(ctk.CTkToplevel):
         return ''
     
 
-    def get_dir_format_by_translated(self, value: str):
-        for key in self.dir_formats:
-            if value == self.dir_formats[key]:
+    def get_key_by_value(self, dic: dict, value: str) -> str:
+        for key in dic:
+            if value == dic[key]:
                 return key
         return ''
+
+
+    def get_dir_format_by_translated(self, value: str) -> str:
+        return self.get_key_by_value(self.dir_formats, value)

@@ -19,13 +19,26 @@ def detect_language(text, lang = 'ru') -> str:
     if (not text):
         return lang
     charmap = {
-        'ru': russian_chars,
-        'uk': re.compile(r'[ґєї]'),
-        'de': re.compile(r'[äöüÄÖÜß]'),
-        'fr': re.compile(r'[éèêëÉÈÊËàâäÀÂÄôöÔÖùûüÙÛÜçÇœŒæÆ]'),
-        'es': re.compile(r'[áéíóúüñÁÉÍÓÚÜÑ]'),
-        'pl': re.compile(r'[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]'),
-        'cz': re.compile(r'[áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]')
+        # Non-Latin: unambiguous
+        'ar':  re.compile(r'[\u0600-\u06FF]'),          # Arabic block (covers all letters)
+        'hi':  re.compile(r'[\u0900-\u097F]'),          # Devanagari
+        'ko':  re.compile(r'[\uAC00-\uD7AF]'),          # Hangul
+        'ja':  re.compile(r'[\u3040-\u309F\u30A0-\u30FF]'),  # Kana
+        'zh-cn':  re.compile(r'[\u4E00-\u9FFF]'),          # Han
+
+        # Latin with unique markers (ordered by specificity)
+        'uk':  re.compile(r'[ґєїҐЄЇ]'),
+        'ru':  russian_chars,
+        'de':  re.compile(r'[ß]'),
+        'fr':  re.compile(r'[œŒæÆ]'),
+        'es':  re.compile(r'[ñÑ]'),
+        'pt':  re.compile(r'[ãõÃÕ]'),
+        'it':  re.compile(r'[ÀÈÌÒÙàèìòù]'),
+        'pl':  re.compile(r'[łŁ]'),
+        'cs':  re.compile(r'[ěůĚŮ]'),
+        'hu':  re.compile(r'[őűŐŰ]'),
+        'tr':  re.compile(r'[ıİŞşĞğ]'),
+        'nl':  re.compile(r'[Ĳĳ]'),  # optional — remove if normalization breaks it
     }
     for key, regex in charmap.items():
         if re.search(regex, text):

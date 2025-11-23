@@ -63,6 +63,7 @@ def LoadOrDefault(cfg: dict, var: dict) -> dict:
     dirs = cfg['DIRECTORIES_FORMAT'] if ('DIRECTORIES_FORMAT' in cfg) else 'single'
     codec = cfg['AUDIO_CODEC'] if ('AUDIO_CODEC' in cfg) else 'mp3'
     bitrate = int(cfg['AUDIO_BITRATE']) if ('AUDIO_BITRATE' in cfg) else 64
+    tts_engine = cfg['TTS_ENGINE'] if ('TTS_ENGINE' in cfg) else 'silero'
 
     check_sub_dict(s, 'app')
     set_if_none(s, 'app', 'lang', '')
@@ -70,11 +71,17 @@ def LoadOrDefault(cfg: dict, var: dict) -> dict:
     set_if_none(s, 'app', 'codec', codec)
     set_if_none(s, 'app', 'bitrate', bitrate)
     set_if_none(s, 'app', 'dirs', dirs)
+    set_if_none(s, 'app', 'engine', tts_engine)
 
     for lang_key, language in var['languages'].items():
         language.dest = Path(ReplaceUserFolders(str(language.dest), cfg))
         check_sub_cat_dict(s, 'silero', lang_key)
         set_if_cat_none(s, 'silero', lang_key, 'voice', language.extra['default'])
+
+    for engine_key, tts_engine in var['coqui-ai'].items():
+        tts_engine.dest = Path(ReplaceUserFolders(str(tts_engine.dest), cfg))
+        check_sub_dict(s, engine_key)
+        set_if_none(s, engine_key, 'voice', tts_engine.extra['default'])
 
     return s
 

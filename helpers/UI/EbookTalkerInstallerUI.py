@@ -36,7 +36,8 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
 
         if self.should_show_torch_group(var, torchImported):
             items.extend(self.var['torch'].values())
-        items.extend(self.var['languages'].values())  
+        items.extend(self.var['languages'].values())
+        items.extend(self.var['coqui-ai'].values())
 
         self.items = items
 

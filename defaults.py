@@ -8,6 +8,7 @@ def GetDefaultVar(cfg: dict) -> dict:
     jingleDir = Path(cfg["JINGLE_FOLDER"]) if ('JINGLE_FOLDER' in cfg) else 'jingle'
 
     sileroUrl = 'https://github.com/DeXP/EbookTalker/releases/download/silero/'
+    coquiUrl  = 'https://github.com/DeXP/EbookTalker/releases/download/coqui-ai-tts/'
     torchUrl  = 'https://github.com/DeXP/EbookTalker/releases/download/torch-2.8-cuda/'
     torchPath = str(Path(sys.executable).parent)
 
@@ -113,11 +114,28 @@ def GetDefaultVar(cfg: dict) -> dict:
                 }
             ),
         },
+        'coqui-ai': {
+            'xtts_v2': DownloadItem(
+                group = "coqui-ai",
+                name = "XTTS v2",
+                url = coquiUrl + "xtts_v2.7z",
+                sha256 = "c087ed6c6a5c6834a07a97e44224e28c9b62975ca7ba32098284c5358e955f49",
+                dest = "MODELS_FOLDER",
+                size = 1695868275,
+                description = "en, es, fr, de, it, pt, pl, tr, ru, nl, cs, ar, zh-cn, hu, ko, ja, hi",
+                extra = {
+                    'model': None,
+                    'female': 'Ana Florence',
+                    'male': 'Aaron Dreschner',
+                    'default': 'Ana Florence'
+                }
+            ),
+        },
         'torch' : {
             'cuda129': DownloadItem(
                 group = "torch",
                 name = "CUDA 12.9 Runtime (PyTorch 2.8)",
-                url = torchUrl +"EbookTalker-Torch-2.8.0+cu129.7z",
+                url = torchUrl + "EbookTalker-Torch-2.8.0+cu129.7z",
                 size = 1968960562,
                 dest = torchPath,
                 needs_admin = True,

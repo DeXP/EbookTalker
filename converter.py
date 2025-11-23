@@ -1,7 +1,7 @@
 import os, re, json, torch, time
 from pathlib import Path
 
-from helpers import book, dxfs, dxaudio, dxsplitter, dxnormalizer
+from helpers import book, dxfs, dxaudio, dxnormalizer
 from silero_stress import load_accentor
 
 
@@ -21,20 +21,25 @@ def InitModels(cfg: dict, var: dict):
         torch.set_num_threads(os.cpu_count())
     var['device'] = device
 
-    # PreloadModel(cfg, var, 'ru')
-    # PreloadModel(var, 'en')
+    if 'silero' != var['settings']['app']['engine']:
+        PreloadModel(cfg, var, 'en')
+
+
+def GetModelName(cfg: dict, var: dict, lang = 'ru') -> str:
+    engine = var['settings']['app']['engine']
+    if ('silero' == engine) and (lang in var['languages']):
+        urlPath = Path(var['languages'][lang].url)
+        return urlPath.name
+    else:
+        return engine
 
 
 def GetModelPath(cfg: dict, var: dict, lang = 'ru') -> Path:
-    if lang in var['languages']:
-        urlPath = Path(var['languages'][lang].url)
-        modelName = urlPath.name
-
-        localFile = Path('models') / modelName
-        if localFile.exists():
-            return localFile
-        
-        return Path(cfg['MODELS_FOLDER']) / modelName
+    modelName = GetModelName(cfg, var, lang)
+    localFile = Path('models') / modelName
+    if localFile.exists():
+        return localFile
+    return Path(cfg['MODELS_FOLDER']) / modelName
 
 
 def IsModelFileExists(cfg: dict, var: dict, lang = 'ru') -> bool:
@@ -42,33 +47,43 @@ def IsModelFileExists(cfg: dict, var: dict, lang = 'ru') -> bool:
 
 
 def PreloadModel(cfg: dict, var: dict, lang = 'ru'):
+    engine = var['settings']['app']['engine']
     modelPath = GetModelPath(cfg, var, lang)
     local_file = str(modelPath)
 
-    if not os.path.isfile(local_file):
-        torch.hub.download_url_to_file(var['languages'][lang].url, local_file)
+    if 'silero' == engine:
+        if not os.path.isfile(local_file):
+            torch.hub.download_url_to_file(var['languages'][lang].url, local_file)
 
-    if (".pt" == modelPath.suffix):
-        var['languages'][lang].extra['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
-        var['languages'][lang].extra['model'].to(var['device'])
+        if (".pt" == modelPath.suffix):
+            var['languages'][lang].extra['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
+            var['languages'][lang].extra['model'].to(var['device'])
 
-    symb = var['languages'][lang].extra['model'].symbols
-    var['languages'][lang].extra['symbols'] = re.compile(f"[{symb}]", re.IGNORECASE)
+        symb = var['languages'][lang].extra['model'].symbols
+        var['languages'][lang].extra['symbols'] = re.compile(f"[{symb}]", re.IGNORECASE)
 
-    var['languages'][lang].extra['accentor'] = None
-    if lang in ['ru', 'uk']:
-        language = 'ukr' if lang == 'uk' else 'ru'
-        accentor = load_accentor(lang=language)
-        accentor.to(device='cuda:0' if var['useCuda'] else 'cpu')
-        var['languages'][lang].extra['accentor'] = accentor
-        if not var['useCuda']:
-            torch.set_num_threads(os.cpu_count())
+        var['languages'][lang].extra['accentor'] = None
+        if lang in ['ru', 'uk']:
+            language = 'ukr' if lang == 'uk' else 'ru'
+            accentor = load_accentor(lang=language)
+            accentor.to(device='cuda:0' if var['useCuda'] else 'cpu')
+            var['languages'][lang].extra['accentor'] = accentor
+            if not var['useCuda']:
+                torch.set_num_threads(os.cpu_count())
+    else:
+        # Coqui TTS
+        from TTS.api import TTS
+        var['coqui-ai'][engine].extra['model'] = TTS(model_path=local_file, config_path=str(modelPath / "config.json"), progress_bar=False)
+        var['coqui-ai'][engine].extra['model'].to(var['device'])
+
 
 
 def GetModel(cfg: dict, var: dict, lang = 'ru'):
-    if (lang in var['languages']) and ('model' in var['languages'][lang].extra) and (var['languages'][lang].extra['model'] is None):
+    engine = var['settings']['app']['engine']
+    origin = var['languages'][lang] if 'silero' == engine else var['coqui-ai'][engine]
+    if ('model' in origin.extra) and (origin.extra['model'] is None):
         PreloadModel(cfg, var, lang)
-    return var['languages'][lang].extra['model']
+    return origin.extra['model']
 
 
 def _extract_arch_version(arch_string: str):
@@ -189,16 +204,22 @@ def ProcessSentence(lang, number, sentence, cfg, var):
 
 
 def SayText(wavFile, lang, speaker, text, cfg, var):
-    if IsCorrectPhrase(cfg, var, lang, text) and (not wavFile.exists()):
-        # Generate
-        # print(text)
+    if not wavFile.exists():
+        engine = var['settings']['app']['engine']
         try:
-            GetModel(cfg, var, lang).save_wav(text=text,
-                speaker = speaker,
-                sample_rate=var['sample_rate'],
-                put_accent=var['put_accent'],
-                put_yo=var['put_yo'],
-                audio_path=str(wavFile))
+            if 'silero' == engine:
+                GetModel(cfg, var, lang).save_wav(text=text,
+                    speaker = speaker,
+                    sample_rate = var['sample_rate'],
+                    put_accent = var['put_accent'],
+                    put_yo = var['put_yo'],
+                    audio_path = str(wavFile))
+            else:
+                # Coqui TTS
+                GetModel(cfg, var, lang).tts_to_file(text=text,
+                    speaker = speaker,
+                    language = lang,
+                    file_path = str(wavFile))
         except Exception as error:
             print(f"Cannot save WAV for sentence {wavFile}: '{text}'. Error: {error}")
             return False
