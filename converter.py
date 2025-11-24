@@ -25,12 +25,24 @@ def InitModels(cfg: dict, var: dict):
         PreloadModel(cfg, var, 'en')
 
 
+def GetSileroModel(var: dict, lang: str = 'ru'):
+    if lang in var['languages']:
+        return var['languages'][lang]
+    for language in var['languages'].items():
+        if ('langs' in language.extra) and (lang in language.extra['langs']):
+            return language
+    return None
+
+
 def GetModelName(cfg: dict, var: dict, lang = 'ru', engine: str = '') -> str:
     if not engine:
         engine = var['settings']['app']['engine']
-    if ('silero' == engine) and (lang in var['languages']):
-        urlPath = Path(var['languages'][lang].url)
-        return urlPath.name
+    if ('silero' == engine):
+        model = GetSileroModel(var, lang)
+        if model:
+            urlPath = Path(model.url)
+            return urlPath.name
+        return engine
     else:
         return engine
 
@@ -56,19 +68,20 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
     local_file = str(modelPath)
 
     if 'silero' == engine:
+        model = GetSileroModel(var, lang)
         if not os.path.isfile(local_file):
-            torch.hub.download_url_to_file(var['languages'][lang].url, local_file)
+            torch.hub.download_url_to_file(model.url, local_file)
 
         if (".pt" == modelPath.suffix):
-            var['languages'][lang].extra['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
-            var['languages'][lang].extra['model'].to(var['device'])
+            model.extra['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
+            model.extra['model'].to(var['device'])
 
-        var['languages'][lang].extra['accentor'] = None
+        model.extra['accentor'] = None
         if lang in ['ru', 'uk']:
             language = 'ukr' if lang == 'uk' else 'ru'
             accentor = load_accentor(lang=language)
             accentor.to(device='cuda:0' if var['useCuda'] else 'cpu')
-            var['languages'][lang].extra['accentor'] = accentor
+            model.extra['accentor'] = accentor
             if not var['useCuda']:
                 torch.set_num_threads(os.cpu_count())
     else:
@@ -82,7 +95,7 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
 def GetModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
     if not engine:
         engine = var['settings']['app']['engine']
-    origin = var['languages'][lang] if 'silero' == engine else var['coqui-ai'][engine]
+    origin = GetSileroModel(var, lang) if 'silero' == engine else var['coqui-ai'][engine]
     if ('model' in origin.extra) and (origin.extra['model'] is None):
         PreloadModel(cfg, var, lang, engine)
     return origin.extra['model']
@@ -225,6 +238,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
     dxfs.CreateDirectory(var['tmp'], var['genout'])
     proc['status'] = 'process'
 
+    engine = var['settings']['app']['engine']
     codec = var['settings']['app']['codec']
     bitrate = var['settings']['app']['bitrate']
     encoder = var['formats'][codec]
@@ -237,8 +251,10 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
     lang = dxnormalizer.unify_lang(info['lang']) if ('lang' in info) else 'ru'
 
     accentor = None
-    if (lang in var['languages']) and ('accentor' in var['languages'][lang].extra):
-        accentor = var['languages'][lang].extra['accentor']
+    if 'silero' == engine:
+        sileroModel = GetSileroModel(var, lang)
+        if (sileroModel is not None) and ('accentor' in sileroModel.extra):
+           accentor = sileroModel.extra['accentor']
 
     if ('error' in info) and info['error']:
         error = info['error']
