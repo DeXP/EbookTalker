@@ -3,6 +3,7 @@ from pathlib import Path
 
 from helpers import book, dxfs, dxaudio, dxnormalizer
 from silero_stress import load_accentor
+from silero_stress.simple_accentor import SimpleAccentor
 
 
 def InitModels(cfg: dict, var: dict):
@@ -28,9 +29,18 @@ def InitModels(cfg: dict, var: dict):
 def GetSileroModel(var: dict, lang: str = 'ru'):
     if lang in var['languages']:
         return var['languages'][lang]
-    for language in var['languages'].items():
+    for lang_key, language in var['languages'].items():
         if ('langs' in language.extra) and (lang in language.extra['langs']):
             return language
+    return None
+
+
+def GetSileroVoice(var: dict, lang: str = 'ru'):
+    if lang in var['settings']['silero']:
+        return var['settings']['silero'][lang]['voice']
+    for lang_key, language in var['languages'].items():
+        if ('langs' in language.extra) and (lang in language.extra['langs']):
+            return var['settings']['silero'][lang_key][lang]['voice']
     return None
 
 
@@ -203,7 +213,7 @@ def GeneratePause(cfg: dict, var: dict, durationMs : int = 300, name : str = "pa
 def ProcessSentence(lang, number, sentence, cfg, var):  
     wavFile = var['genwav'] / f"{number}.wav"
     engine = var['settings']['app']['engine']
-    speaker = var['settings']['silero'][lang]['voice'] if 'silero' == engine else var['settings'][engine]['voice']
+    speaker = GetSileroVoice(var, lang) if 'silero' == engine else var['settings'][engine]['voice']
     return SayText(wavFile, lang, speaker, sentence, cfg, var)
 
 
@@ -255,6 +265,10 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
         sileroModel = GetSileroModel(var, lang)
         if (sileroModel is not None) and ('accentor' in sileroModel.extra):
            accentor = sileroModel.extra['accentor']
+        if 'langToNative' in sileroModel.extra:
+            native_lang = sileroModel.extra['langToNative'].get(lang, None)
+            if native_lang:
+                accentor = SimpleAccentor(lang=native_lang)
 
     if ('error' in info) and info['error']:
         error = info['error']

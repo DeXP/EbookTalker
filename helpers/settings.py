@@ -80,7 +80,12 @@ def LoadOrDefault(cfg: dict, var: dict) -> dict:
     for lang_key, language in var['languages'].items():
         language.dest = Path(ReplaceUserFolders(str(language.dest), cfg))
         check_sub_cat_dict(s, 'silero', lang_key)
-        set_if_cat_none(s, 'silero', lang_key, 'voice', language.extra['default'])
+        if ('langs' in language.extra):
+            for sublang_key, sublang_voice in language.extra['langs'].items():
+                check_sub_dict(s['silero'][lang_key], sublang_key)
+                set_if_none(s['silero'][lang_key], sublang_key, 'voice', sublang_voice)
+        else:
+            set_if_cat_none(s, 'silero', lang_key, 'voice', language.extra['default'])
 
     for engine_key, tts_engine in var['coqui-ai'].items():
         tts_engine.dest = Path(ReplaceUserFolders(str(tts_engine.dest), cfg))
