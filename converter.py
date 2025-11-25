@@ -265,10 +265,10 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
         sileroModel = GetSileroModel(var, lang)
         if (sileroModel is not None) and ('accentor' in sileroModel.extra):
            accentor = sileroModel.extra['accentor']
-        if 'langToNative' in sileroModel.extra:
-            native_lang = sileroModel.extra['langToNative'].get(lang, None)
+        if 'langs' in sileroModel.extra:
+            native_lang = sileroModel.extra['langs'].get(lang, None)
             if native_lang:
-                accentor = SimpleAccentor(lang=native_lang)
+                accentor = SimpleAccentor(lang=native_lang['native'])
 
     if ('error' in info) and info['error']:
         error = info['error']
@@ -304,8 +304,8 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
     proc['totalLines'] = totalTagsCount
     proc['totalSentences'] = totalSencenceCount
 
-    GeneratePause(cfg, var, int(var['settings']['app']['word-pause']), "pause.wav")
-    GeneratePause(cfg, var, int(var['settings']['app']['paragraph-pause']), "pause-long.wav")
+    GeneratePause(cfg, var, int(var['settings']['app']['pause-sentence']), "pause.wav")
+    GeneratePause(cfg, var, int(var['settings']['app']['pause-paragraph']), "pause-long.wav")
 
     for section in info['sections']:
         sectionCount += 1

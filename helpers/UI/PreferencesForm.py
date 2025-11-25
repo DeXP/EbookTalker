@@ -22,7 +22,7 @@ class PreferencesForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(tr['Preferences'])
-        self.geometry(parent.get_child_geometry(width=600, height=450))
+        self.geometry(parent.get_child_geometry(width=600, height=500))
 
         self.grid_columnconfigure((0,2), weight=0)
         self.grid_columnconfigure(1, weight=1)
@@ -116,22 +116,38 @@ class PreferencesForm(ctk.CTkToplevel):
         self.tts_voice_labels = {}
         self.tts_voice_combos = {}
         self.tts_voice_play_buttons = {}
+        self.tts_multi_voice_language_labels = {}
+        self.tts_multi_voice_language_combos = {}
         self.first_silero_lang = None
         for lang, language in var['languages'].items():
             if converter.IsModelFileExists(cfg, var, lang, 'silero'):
                 if not self.first_silero_lang:
                     self.first_silero_lang = lang
+    
                 lang_name = language.name
                 self.tts_tabview.add(lang_name)
                 self.tts_tabview.tab(lang_name).grid_columnconfigure((0,1,2), weight=0)
                 voice_parent = self.tts_tabview.tab(lang_name)
+                
+                row_id = 0
+                if 'langs' in language.extra:
+                    self.tts_multi_voice_language_labels[lang] = ctk.CTkLabel(voice_parent, text=T.T("Language:"))
+                    self.tts_multi_voice_language_labels[lang].grid(row=0, column=0, padx=10, pady=2, sticky="w")
 
-                self.tts_voice_labels[lang] = ctk.CTkLabel(voice_parent, text=tr["Voice:"])
-                self.tts_voice_labels[lang].grid(row=0, column=0, padx=10, pady=2, sticky="w")
+                    sub_lang_names = [name_data['name'] for name_data in language.extra['langs'].values()]
+                    self.tts_multi_voice_language_combos[lang] = ctk.CTkComboBox(voice_parent, values=sub_lang_names, state="readonly", command=self.on_sub_lang_changed)
+                    self.tts_multi_voice_language_combos[lang].set(sub_lang_names[0])
+                    self.tts_multi_voice_language_combos[lang].grid(row=0, column=1, padx=10, pady=2, sticky="w")
+                    self.on_sub_lang_changed(sub_lang_names[0])
+                    row_id = 1
 
+                self.tts_voice_labels[lang] = ctk.CTkLabel(voice_parent, text=T.T("Voice:"))
+                self.tts_voice_labels[lang].grid(row=row_id, column=0, padx=10, pady=2, sticky="w")
+
+                lang_voice = '' if ('langs' in language.extra) else var['settings']['silero'][lang]['voice']
                 self.tts_voice_combos[lang] = ctk.CTkComboBox(voice_parent, state="readonly")
-                self.tts_voice_combos[lang].set(var['settings']['silero'][lang]['voice'])
-                self.tts_voice_combos[lang].grid(row=0, column=1, padx=10, pady=2, sticky="w")
+                self.tts_voice_combos[lang].set(lang_voice)
+                self.tts_voice_combos[lang].grid(row=row_id, column=1, padx=10, pady=2, sticky="w")
 
                 self.tts_voice_play_buttons[lang] = ctk.CTkButton(
                     voice_parent, width=30,
@@ -139,7 +155,7 @@ class PreferencesForm(ctk.CTkToplevel):
                     command=lambda lang=lang: self.on_play('silero', lang),
                     font=parent.icon_font, text=Icons.play
                 )
-                self.tts_voice_play_buttons[lang].grid(row=0, column=2, padx=10, pady=2, sticky="w")
+                self.tts_voice_play_buttons[lang].grid(row=row_id, column=2, padx=10, pady=2, sticky="w")
 
         # Coqui
         self.coqui_frame = ctk.CTkFrame(master=self, width=300, height=200)
@@ -222,7 +238,15 @@ class PreferencesForm(ctk.CTkToplevel):
         if ("random" == voice) and wavFile.exists():
             wavFile.unlink()
 
-        if converter.SayText(wavFile, lang, voice, self.var['languages'][lang].extra['phrase'], self.cfg, self.var):
+        language = self.var['languages'][lang]
+        phrase = ''
+        if ('langs' in language.extra):
+            _, sublang = self.get_active_sub_lang_code()
+            phrase =  language.extra['langs'][sublang]['phrase']
+        else:
+            phrase = language.extra['phrase']
+
+        if converter.SayText(wavFile, lang, voice, phrase, self.cfg, self.var):
             soundfile = str(wavFile.absolute())
             # if sys.platform == "win32":
             #     import winsound
@@ -273,7 +297,32 @@ class PreferencesForm(ctk.CTkToplevel):
         selected_tab = self.tts_tabview.get()  # Get the currently selected tab name
         lang = self.get_code_by_lang(selected_tab)
         self.tts_voice_combos[lang].configure(values=converter.GetModel(self.cfg, self.var, lang).speakers)
+        if 'langs' in self.var['languages'][lang].extra:
+            self.on_sub_lang_changed(None)
 
+
+    def on_sub_lang_changed(self, choice):
+        lang, sublang = self.get_active_sub_lang_code()
+        if sublang:
+            native = self.var['languages'][lang].extra['langs'][sublang]['native']
+            model_speakers = converter.GetModel(self.cfg, self.var, lang).speakers
+            speakers = [x for x in model_speakers if x.startswith(native)]
+            if (not speakers) or (len(speakers) < 1):
+                speakers = model_speakers
+            self.tts_voice_combos[lang].configure(values=speakers)
+            self.tts_voice_combos[lang].set(self.var['settings']['silero'][lang][sublang]['voice'])
+
+
+    def get_active_sub_lang_code(self):
+        selected_tab = self.tts_tabview.get()  # Get the currently selected tab name
+        lang = self.get_code_by_lang(selected_tab)
+        if (lang in self.var['languages']) and ('langs' in self.var['languages'][lang].extra):
+            choice = self.tts_multi_voice_language_combos[lang].get()
+            sublang = self.get_sub_lang_code_by_name(choice, self.var['languages'][lang].extra['langs'])
+            if (sublang in self.var['settings']['silero'][lang]):
+                return lang, sublang
+        return lang, None
+    
 
     def get_lang_by_code(self, value: str):
         return self.supported_languages.get(value, self.supported_languages[''])
@@ -295,3 +344,10 @@ class PreferencesForm(ctk.CTkToplevel):
 
     def get_dir_format_by_translated(self, value: str) -> str:
         return self.get_key_by_value(self.dir_formats, value)
+    
+
+    def get_sub_lang_code_by_name(self, lang_name: str, lang_dict: dict) -> str:
+        for code, info in lang_dict.items():
+            if info.get('name') == lang_name:
+                return code
+        return None

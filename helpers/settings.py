@@ -73,17 +73,17 @@ def LoadOrDefault(cfg: dict, var: dict) -> dict:
     set_if_none(s, 'app', 'codec', codec)
     set_if_none(s, 'app', 'bitrate', bitrate)
     set_if_none(s, 'app', 'dirs', dirs)
-    set_if_none(s, 'app', 'word-pause', word_pause)
-    set_if_none(s, 'app', 'paragraph-pause', paragraph_pause)
+    set_if_none(s, 'app', 'pause-sentence', word_pause)
+    set_if_none(s, 'app', 'pause-paragraph', paragraph_pause)
     set_if_none(s, 'app', 'engine', tts_engine)
 
     for lang_key, language in var['languages'].items():
         language.dest = Path(ReplaceUserFolders(str(language.dest), cfg))
         check_sub_cat_dict(s, 'silero', lang_key)
         if ('langs' in language.extra):
-            for sublang_key, sublang_voice in language.extra['langs'].items():
+            for sublang_key, sublang_info in language.extra['langs'].items():
                 check_sub_dict(s['silero'][lang_key], sublang_key)
-                set_if_none(s['silero'][lang_key], sublang_key, 'voice', sublang_voice)
+                set_if_none(s['silero'][lang_key], sublang_key, 'voice', sublang_info['voice'])
         else:
             set_if_cat_none(s, 'silero', lang_key, 'voice', language.extra['default'])
 
