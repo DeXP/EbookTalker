@@ -1,4 +1,4 @@
-import sys, base64, struct, wave, subprocess, mimetypes
+import sys, base64, struct, wave, subprocess, mimetypes, tempfile
 from pathlib import Path
 
 
@@ -223,20 +223,45 @@ def convert_wav_to_compressed(encoder: str, cfg: dict, input_wav: Path, output_f
                 metaFile.unlink()
 
 
-def concatenate_wav_files(input_folder: Path, input_files, output_file: Path):
-    if input_files and len(input_files) > 0:
-        first_file = str((input_folder / input_files[0]).absolute())
-        with wave.open(str(output_file.absolute()), 'wb') as output_wav:
-            with wave.open(first_file, 'rb') as first_wav:
-                output_wav.setparams(first_wav.getparams())
+def concatenate_wav_files(cfg: dict, input_folder: Path, input_files, output_file: Path):
+    if not input_files:
+        return
 
-            for fileName in input_files:
-                file = Path(fileName)
-                if not file.is_absolute():
-                    file = input_folder / fileName
-                if file.exists():
-                    with wave.open(str(file.absolute()), 'rb') as wav_file:
-                        output_wav.writeframes(wav_file.readframes(wav_file.getnframes()))
+    # Resolve absolute paths for all input files
+    abs_input_paths = []
+    for fn in input_files:
+        p = Path(fn)
+        if not p.is_absolute():
+            p = input_folder / fn
+        if p.exists():
+            abs_input_paths.append(p.resolve())
+
+    # Create concat list file (required for stream copy)
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as concat_file:
+        for p in abs_input_paths:
+            # Escape backslashes and single quotes for ffmpeg concat file
+            escaped_path = str(p).replace('\\', '/').replace("'", "'\\''")
+            concat_file.write(f"file '{escaped_path}'\n")
+        concat_list_path = Path(concat_file.name)
+
+    try:
+        # Use stream copy (`-c copy`) — lossless & fast
+        # ffmpeg auto-uses RF64 when output > 4 GB
+        command = [
+            get_ffmpeg_exe(cfg), "-y",
+            "-f", "concat",
+            "-safe", "0",  # allow absolute paths
+            "-i", str(concat_list_path),
+            "-c", "copy",  # PCM copy — no re-encode
+            str(output_file.absolute())
+        ]
+        subprocess.run(command, startupinfo=get_startupinfo(), check=True)
+    finally:
+        # Cleanup temp file
+        try:
+            concat_list_path.unlink()
+        except OSError:
+            pass
 
 
 def generate_silence_wav(durationMs: int, output: Path, sample_rate: int = 24000) -> None:

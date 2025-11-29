@@ -362,7 +362,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
                     curJingle = jingles[jingleNum]
                     sectionWavs.append(curJingle.absolute())
                 
-                dxaudio.concatenate_wav_files(var['genwav'], sectionWavs, sectionWavFile)
+                dxaudio.concatenate_wav_files(cfg, var['genwav'], sectionWavs, sectionWavFile)
             curTitle = rawSectionTitle if rawSectionTitle else proc['bookName']
 
             if not isSingleOutput:
@@ -396,7 +396,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
                 chapterMeta += dxaudio.get_chapter_metadata_str(time, duration, section['title'])
                 time += duration
 
-        dxaudio.concatenate_wav_files(var['genout'], chapterWavs, bookWavFile)
+        dxaudio.concatenate_wav_files(cfg, var['genout'], chapterWavs, bookWavFile)
         dxaudio.convert_wav_to_compressed(encoder, cfg, bookWavFile, bookCompressedFile, bitrate=bitrate,
             title=book.BookName(info, includeAuthor=False), author=book.AuthorName(info), cover=cover, info=info, chapters=chapterMeta)
         
