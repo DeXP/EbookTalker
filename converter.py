@@ -2,8 +2,7 @@ import os, re, json, torch, time
 from pathlib import Path
 
 from helpers import book, dxfs, dxaudio, dxnormalizer
-from silero_stress import load_accentor
-from silero_stress.simple_accentor import SimpleAccentor
+from silero_stress import load_accentor, simple_accentor
 
 
 def InitModels(cfg: dict, var: dict):
@@ -32,6 +31,40 @@ def GetSileroModel(var: dict, lang: str = 'ru'):
     for lang_key, language in var['languages'].items():
         if ('langs' in language.extra) and (lang in language.extra['langs']):
             return language
+    return None
+
+
+def GetSileroAccentor(var: dict, lang: str = 'ru'):
+    model = GetSileroModel(var, lang)
+    if model is None:
+        return None
+    if 'langs' in model.extra:
+        sub_lang = model.extra['langs'].get(lang, None)
+        if sub_lang:
+            if (not 'accentor' in model.extra['langs'][lang]) or (model.extra['langs'][lang]['accentor'] is None):
+                model.extra['langs'][lang]['accentor'] = LoadSileroAccentor(var, sub_lang['native'])
+            return model.extra['langs'][lang]['accentor']
+    else:
+        # Single language model
+        if 'ru' == lang:
+            return None
+        if 'uk' == lang:
+            lang = 'ukr'
+        if (not 'accentor' in model.extra) or (model.extra['accentor'] is None):
+            model.extra['accentor'] = LoadSileroAccentor(var, lang)
+        return model.extra['accentor']
+    return None
+
+
+def LoadSileroAccentor(var: dict, lang: str = 'ru'):
+    if lang in ['ru', 'ukr']:
+        accentor = load_accentor(lang)
+        accentor.to(device='cuda:0' if var['useCuda'] else 'cpu')
+        if not var['useCuda']:
+            torch.set_num_threads(os.cpu_count())
+        return accentor
+    if lang in simple_accentor.supported_langs:
+        return simple_accentor.SimpleAccentor(lang)
     return None
 
 
@@ -86,14 +119,8 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
             model.extra['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
             model.extra['model'].to(var['device'])
 
-        model.extra['accentor'] = None
         if lang in ['ru', 'uk']:
-            language = 'ukr' if lang == 'uk' else 'ru'
-            accentor = load_accentor(lang=language)
-            accentor.to(device='cuda:0' if var['useCuda'] else 'cpu')
-            model.extra['accentor'] = accentor
-            if not var['useCuda']:
-                torch.set_num_threads(os.cpu_count())
+            GetSileroAccentor(var, lang)
     else:
         # Coqui TTS
         from TTS.api import TTS
@@ -210,10 +237,11 @@ def GeneratePause(cfg: dict, var: dict, durationMs : int = 300, name : str = "pa
     dxaudio.generate_silence_wav(durationMs, var['genwav'] / name, GetSamplerate(cfg, var))
 
 
-def ProcessSentence(lang, number, sentence, cfg, var):  
+def ProcessSentence(lang: str, number, sentence: str, cfg: dict, var: dict, engine: str = ''):
+    if not engine:
+        engine = var['settings']['app']['engine']
     wavFile = var['genwav'] / f"{number}.wav"
-    engine = var['settings']['app']['engine']
-    speaker = GetSileroVoice(var, lang) if 'silero' == engine else var['settings'][engine]['voice']
+    speaker = GetSileroVoice(var, lang) if 'silero' == engine else var['settings'][engine][lang]['voice']
     return SayText(wavFile, lang, speaker, sentence, cfg, var)
 
 
@@ -260,16 +288,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
 
     proc['bookName'] = book.BookName(info, includeAuthor=True)
     lang = dxnormalizer.unify_lang(info['lang']) if ('lang' in info) else 'ru'
-
-    accentor = None
-    if 'silero' == engine:
-        sileroModel = GetSileroModel(var, lang)
-        if (sileroModel is not None) and ('accentor' in sileroModel.extra):
-           accentor = sileroModel.extra['accentor']
-        if 'langs' in sileroModel.extra:
-            native_lang = sileroModel.extra['langs'].get(lang, None)
-            if native_lang:
-                accentor = SimpleAccentor(lang=native_lang['native'])
+    accentor = GetSileroAccentor(var, lang) if 'silero' == engine else None
 
     if ('error' in info) and info['error']:
         error = info['error']

@@ -116,11 +116,11 @@ def GetDefaultVar(cfg: dict) -> dict:
                 group = "silero",
                 name = "CIS",
                 subtitle = 'Multilingual',
-                url = sileroUrl + "v5_cis_base.pt",
-                sha256 = "31f88aa278309e37439d21bb3218a6609075e37ed516bc1cc7db699e4f87df78",
+                url = sileroUrl + "v5_cis_base_nostress.pt",
+                sha256 = "3981ab3d72fb3534cf390a1735e346c48c11a58ce86b5cd2412204941c796c98",
                 description = "aze, hye, bak, bel, kat, kbd, kaz, xal, kir, mdf, ru, tgk, tat, udm, uzb, ukr, kjh, chv, erz, sah",
                 dest = "MODELS_FOLDER",
-                size = 91692223,
+                size = 91701321,
                 extra = {
                     'model': None,
                     'langs': {

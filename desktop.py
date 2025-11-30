@@ -142,8 +142,8 @@ class App(customtkinter.CTk):
     def on_closing(self):
         #if messagebox.askokcancel("Quit", "Do you want to quit?"):
         self.var['askForExit'] = True
+        self.destroy()
         time.sleep(1)
-        self.destroy()    
 
 
     def on_add_button(self):

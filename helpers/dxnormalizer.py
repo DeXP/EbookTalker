@@ -10,8 +10,10 @@ def is_russian(text):
 
 def unify_lang(lang: str) -> str:
     lang = lang.lower()
-    if len(lang) > 2:
-        lang = lang[:2]
+    if len(lang) > 3:
+        lang = lang[:3]
+    if 'rus' == lang:
+        return 'ru'
     return lang
 
 
