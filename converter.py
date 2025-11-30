@@ -217,12 +217,13 @@ def ProcessSentence(lang, number, sentence, cfg, var):
     return SayText(wavFile, lang, speaker, sentence, cfg, var)
 
 
-def SayText(wavFile, lang, speaker, text, cfg, var):
+def SayText(wavFile: Path, lang: str, speaker: str, text: str, cfg: dict, var: dict, engine: str = ''):
     if not wavFile.exists():
-        engine = var['settings']['app']['engine']
+        if not engine:
+            engine = var['settings']['app']['engine']
         try:
             if 'silero' == engine:
-                GetModel(cfg, var, lang).save_wav(text=text,
+                GetModel(cfg, var, lang, engine=engine).save_wav(text=text,
                     speaker = speaker,
                     sample_rate = var['sample_rate'],
                     put_accent = var['put_accent'],
@@ -230,7 +231,7 @@ def SayText(wavFile, lang, speaker, text, cfg, var):
                     audio_path = str(wavFile))
             else:
                 # Coqui TTS
-                GetModel(cfg, var).tts_to_file(text=text,
+                GetModel(cfg, var, engine=engine).tts_to_file(text=text,
                     speaker = speaker,
                     language = lang,
                     file_path = str(wavFile))
@@ -362,7 +363,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
                     curJingle = jingles[jingleNum]
                     sectionWavs.append(curJingle.absolute())
                 
-                dxaudio.concatenate_wav_files(cfg, var['genwav'], sectionWavs, sectionWavFile)
+                dxaudio.concatenate_audio_files(cfg, var['genwav'], sectionWavs, sectionWavFile)
             curTitle = rawSectionTitle if rawSectionTitle else proc['bookName']
 
             if not isSingleOutput:
@@ -396,7 +397,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
                 chapterMeta += dxaudio.get_chapter_metadata_str(time, duration, section['title'])
                 time += duration
 
-        dxaudio.concatenate_wav_files(cfg, var['genout'], chapterWavs, bookWavFile)
+        dxaudio.concatenate_audio_files(cfg, var['genout'], chapterWavs, bookWavFile)
         dxaudio.convert_wav_to_compressed(encoder, cfg, bookWavFile, bookCompressedFile, bitrate=bitrate,
             title=book.BookName(info, includeAuthor=False), author=book.AuthorName(info), cover=cover, info=info, chapters=chapterMeta)
         

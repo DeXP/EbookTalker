@@ -158,14 +158,23 @@ class PreferencesForm(ctk.CTkToplevel):
                 self.tts_voice_play_buttons[lang].grid(row=row_id, column=2, padx=10, pady=2, sticky="w")
 
         # Coqui
-        self.coqui_frame = ctk.CTkFrame(master=self, width=300, height=200)
+        language = var['coqui-ai']['xtts_v2']
+        self.coqui_frame = ctk.CTkFrame(master=self)
+
+        self.coqui_language_label = ctk.CTkLabel(self.coqui_frame, text=T.T("Language:"))
+        self.coqui_language_label.grid(row=0, column=0, padx=10, pady=(7,2), sticky="w")
+
+        sub_lang_names = [name_data['name'] for name_data in language.extra['langs'].values()]
+        self.coqui_language_combo = ctk.CTkComboBox(self.coqui_frame, values=sub_lang_names, state="readonly", command=self.on_coqui_lang_changed)
+        self.coqui_language_combo.set(sub_lang_names[0])
+        self.coqui_language_combo.grid(row=0, column=1, padx=10, pady=(7,2), sticky="w")
 
         self.coqui_voice_label = ctk.CTkLabel(self.coqui_frame, text=tr["Voice:"])
-        self.coqui_voice_label.grid(row=0, column=0, padx=10, pady=7, sticky="w")
+        self.coqui_voice_label.grid(row=1, column=0, padx=10, pady=2, sticky="w")
 
         self.coqui_voice_combo = ctk.CTkComboBox(self.coqui_frame, width=300, state="readonly")
-        self.coqui_voice_combo.set(var['settings']['xtts_v2']['voice'])
-        self.coqui_voice_combo.grid(row=0, column=1, padx=10, pady=7, sticky="w")
+        self.coqui_voice_combo.grid(row=1, column=1, padx=10, pady=2, sticky="w")
+        self.on_coqui_lang_changed(sub_lang_names[0])
 
         self.coqui_voice_play_button = ctk.CTkButton(
             self.coqui_frame, width=30,
@@ -173,7 +182,7 @@ class PreferencesForm(ctk.CTkToplevel):
             command=lambda: self.on_play('xtts_v2', 'en'),
             font=parent.icon_font, text=Icons.play
         )
-        self.coqui_voice_play_button.grid(row=0, column=2, padx=10, pady=7, sticky="w")
+        self.coqui_voice_play_button.grid(row=1, column=2, padx=10, pady=2, sticky="w")
 
 
         self.install_button = ctk.CTkButton(self, text=T.T('Install components and languages'), command=self.on_install)
@@ -200,18 +209,24 @@ class PreferencesForm(ctk.CTkToplevel):
     def on_save(self):
         # Save preferences logic
         s = settings.LoadOrDefault(self.cfg, self.var)
+        engine = self.get_selected_engine()
         s['app']['lang'] = self.get_code_by_lang(self.lang_combobox.get())
         s['app']['output'] = self.output_text.get()
         s['app']['codec'] = self.codec_combobox.get()
         s['app']['bitrate'] = int(self.bitrate_combobox.get())
         s['app']['dirs'] = self.get_dir_format_by_translated(self.dirs_combobox.get())
-        s['app']['engine'] = self.get_key_by_value(self.engines, self.engine_combobox.get())
+        s['app']['engine'] = engine
 
-        for lang in self.var['languages'].keys():
+        for lang, language in self.var['languages'].items():
             if lang in self.tts_voice_combos:
-                s['silero'][lang]['voice'] = self.tts_voice_combos[lang].get()
+                if not 'langs' in language.extra:
+                    s['silero'][lang]['voice'] = self.tts_voice_combos[lang].get()
+                else:
+                    _, sublang = self.get_active_sub_lang_code()
+                    if sublang and sublang in s['silero'][lang]:
+                        s['silero'][lang][sublang]['voice'] = self.tts_voice_combos[lang].get()
 
-        s['xtts_v2']['voice'] = self.coqui_voice_combo.get()
+        s[engine]['voice'] = self.coqui_voice_combo.get()
 
         settings.Save(self.cfg, s)
         self.var['settings'] = s
@@ -231,22 +246,25 @@ class PreferencesForm(ctk.CTkToplevel):
 
 
     def on_play(self, tts, lang = 'en'):
-        engine = self.var['settings']['app']['engine']
+        engine = self.get_selected_engine()
         voice = self.tts_voice_combos[lang].get() if 'silero' == engine else self.coqui_voice_combo.get()
+        if 'silero' != engine:
+            lang = self.get_selected_coqui_lang()
+
         voiceFile = voice.replace(' ', '-')
         wavFile = self.var['tmp'] / f"{tts}-{lang}-{voiceFile}.wav"
         if ("random" == voice) and wavFile.exists():
             wavFile.unlink()
 
-        language = self.var['languages'][lang]
+        language = self.var['languages'][lang] if 'silero' == engine else self.var['coqui-ai'][engine]
         phrase = ''
         if ('langs' in language.extra):
-            _, sublang = self.get_active_sub_lang_code()
+            sublang = self.get_just_active_sub_lang() if 'silero' == engine else self.get_selected_coqui_lang()
             phrase =  language.extra['langs'][sublang]['phrase']
         else:
             phrase = language.extra['phrase']
 
-        if converter.SayText(wavFile, lang, voice, phrase, self.cfg, self.var):
+        if converter.SayText(wavFile, lang, voice, phrase, self.cfg, self.var, engine):
             soundfile = str(wavFile.absolute())
             # if sys.platform == "win32":
             #     import winsound
@@ -313,6 +331,26 @@ class PreferencesForm(ctk.CTkToplevel):
             self.tts_voice_combos[lang].set(self.var['settings']['silero'][lang][sublang]['voice'])
 
 
+    def on_coqui_lang_changed(self, choice):
+        engine = self.get_selected_engine()
+        if 'silero' == engine:
+            engine = 'xtts_v2'
+        lang = self.get_selected_coqui_lang(engine)
+        if lang in self.var['settings'][engine]:
+            speaker = self.var['settings'][engine][lang]['voice']
+            self.coqui_voice_combo.set(speaker)
+
+
+    def get_selected_coqui_lang(self, engine: str = ''):
+        if not engine:
+            engine = self.get_selected_engine()
+        return self.get_sub_lang_code_by_name(self.coqui_language_combo.get(), self.var['coqui-ai'][engine].extra['langs'])
+
+
+    def get_selected_engine(self):
+        return self.get_key_by_value(self.engines, self.engine_combobox.get())
+
+
     def get_active_sub_lang_code(self):
         selected_tab = self.tts_tabview.get()  # Get the currently selected tab name
         lang = self.get_code_by_lang(selected_tab)
@@ -322,6 +360,11 @@ class PreferencesForm(ctk.CTkToplevel):
             if (sublang in self.var['settings']['silero'][lang]):
                 return lang, sublang
         return lang, None
+    
+
+    def get_just_active_sub_lang(self):
+        _, sublang = self.get_active_sub_lang_code()
+        return sublang
     
 
     def get_lang_by_code(self, value: str):

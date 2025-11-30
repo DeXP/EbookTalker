@@ -223,11 +223,11 @@ def convert_wav_to_compressed(encoder: str, cfg: dict, input_wav: Path, output_f
                 metaFile.unlink()
 
 
-def concatenate_wav_files(cfg: dict, input_folder: Path, input_files, output_file: Path):
+def concatenate_audio_files(cfg: dict, input_folder: Path, input_files, output_file: Path):
     if not input_files:
         return
 
-    # Resolve absolute paths for all input files
+    # Resolve absolute paths
     abs_input_paths = []
     for fn in input_files:
         p = Path(fn)
@@ -236,30 +236,53 @@ def concatenate_wav_files(cfg: dict, input_folder: Path, input_files, output_fil
         if p.exists():
             abs_input_paths.append(p.resolve())
 
-    # Create concat list file (required for stream copy)
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as concat_file:
+    first_ext = abs_input_paths[0].suffix.lower().lstrip('.')
+    # Normalize common extensions
+    format_map = {
+        'm4b': 'm4a', 'm4a': 'm4a', 'mp4': 'm4a',
+        'oga': 'ogg', 'opus': 'ogg',
+    }
+    fmt = format_map.get(first_ext, first_ext)
+
+    # Build concat list
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
         for p in abs_input_paths:
-            # Escape backslashes and single quotes for ffmpeg concat file
-            escaped_path = str(p).replace('\\', '/').replace("'", "'\\''")
-            concat_file.write(f"file '{escaped_path}'\n")
-        concat_list_path = Path(concat_file.name)
+            escaped = str(p).replace('\\', '/').replace("'", "'\\''")
+            f.write(f"file '{escaped}'\n")
+        concat_list = Path(f.name)
 
     try:
-        # Use stream copy (`-c copy`) — lossless & fast
-        # ffmpeg auto-uses RF64 when output > 4 GB
         command = [
             get_ffmpeg_exe(cfg), "-y",
             "-f", "concat",
-            "-safe", "0",  # allow absolute paths
-            "-i", str(concat_list_path),
-            "-c", "copy",  # PCM copy — no re-encode
-            str(output_file.absolute())
+            "-safe", "0",
+            "-i", str(concat_list),
         ]
+
+        # Format-specific settings
+        if fmt == 'mp3':
+            # Ensure valid MP3 headers & strip mid-stream ID3 tags
+            command += ["-c", "copy", "-fflags", "+bitexact"]
+        elif fmt == 'ogg':
+            # Safe for Vorbis/Opus; let ffmpeg handle granulepos continuity
+            command += ["-c", "copy"]
+        elif fmt == 'm4a':
+            # Required for AAC in MP4/M4B: convert ADTS to ASC if needed
+            command += [
+                "-c", "copy",
+                "-bsf:a", "aac_adtstoasc"
+            ]
+        else:
+            # Default: WAV, FLAC, etc.
+            command += ["-c", "copy"]
+
+        command.append(str(output_file.absolute()))
+
         subprocess.run(command, startupinfo=get_startupinfo(), check=True)
+
     finally:
-        # Cleanup temp file
         try:
-            concat_list_path.unlink()
+            concat_list.unlink()
         except OSError:
             pass
 

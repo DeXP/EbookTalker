@@ -90,7 +90,13 @@ def LoadOrDefault(cfg: dict, var: dict) -> dict:
     for engine_key, tts_engine in var['coqui-ai'].items():
         tts_engine.dest = Path(ReplaceUserFolders(str(tts_engine.dest), cfg))
         check_sub_dict(s, engine_key)
-        set_if_none(s, engine_key, 'voice', tts_engine.extra['default'])
+
+        if ('langs' in tts_engine.extra):
+            for sublang_key, sublang_info in tts_engine.extra['langs'].items():
+                check_sub_dict(s[engine_key], sublang_key)
+                set_if_none(s[engine_key], sublang_key, 'voice', sublang_info['voice'])
+        else:
+            set_if_none(s, engine_key, 'voice', tts_engine.extra['default'])
 
     return s
 

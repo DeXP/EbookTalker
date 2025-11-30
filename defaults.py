@@ -161,7 +161,27 @@ def GetDefaultVar(cfg: dict) -> dict:
                     'model': None,
                     'female': 'Ana Florence',
                     'male': 'Aaron Dreschner',
-                    'default': 'Ana Florence'
+                    'default': 'Ana Florence',
+                    'langs': {
+                        'en': {'voice': 'Claribel Dervla',  'name': 'English'   , 'phrase': 'London is the capital of Great Britain. And New York is the capital of what?' },
+                        'es': {'voice': 'Ana Florence',     'name': 'Spanish'   , 'phrase': 'Habla usted otras lenguas además del español?' },
+                        'fr': {'voice': 'Gitta Nikolina',   'name': 'French'    , 'phrase': "Est-ce que vous pourriez parler plus lentement, s'il vous plaît?" },
+                        'de': {'voice': 'Gracie Wise',      'name': 'German'    , 'phrase': 'Sprechen Sie eine andere Sprache als Deutsch?' },
+                        'it': {'voice': 'Tammie Ema',       'name': 'Italian'   , 'phrase': "Parli un'altra lingua oltre l'italiano?" },
+                        'pt': {'voice': 'Alison Dietlinde', 'name': 'Portuguese', 'phrase': 'O senhor poderia escrever isso para mim, por favor' },
+                        'pl': {'voice': 'Lidiya Szekeres',  'name': 'Polish'    , 'phrase': 'Bóbr zwyczajny – gatunek ziemno-wodnego gryzonia z rodziny bobrowatych' },
+                        'tr': {'voice': 'Tanja Adelina',    'name': 'Turkish'   , 'phrase': "Helva, Balkan ülkelerinde ve pek çok Orta Doğu ülkesinde yaygın bir tatlı" },
+                        'ru': {'voice': 'Vjollca Johnnie',  'name': 'Russian'   , 'phrase': 'В недрах тундры выдры в гетрах тырят в вёдра ядра кедров'  },
+                        'nl': {'voice': 'Gitta Nikolina',   'name': 'Dutch'     , 'phrase': 'Zou u het voor mij willen opschrijven, alstublieft?' },
+                        'cs': {'voice': 'Lidiya Szekeres',  'name': 'Czech'     , 'phrase': 'Šalina je kolejové vozidlo, převážně určené pro provoz v městských ulicích' },
+                        'ar': {'voice': 'Suad Qasim',       'name': 'Arabic'    , 'phrase': 'هل تتكلم اللغة العربية؟' },
+                        'hu': {'voice': 'Lidiya Szekeres',  'name': 'Hungarian' , 'phrase': 'Örülök, hogy megismertelek Örvendek' },
+                        'hi': {'voice': 'Royston Min',      'name': 'Hindi'     , 'phrase': 'कृपया भोजन का आनंद लीजिये!' },
+                        # # Additional modules needs to be installed and configured - would be added later # #
+                        #'ko':{'voice': 'Kazuhiko Atallah', 'name': 'Korean'    , 'phrase': '이병철 창업주가 삼성물산이라는 이름으로 자본금 3만 원에 회사을 창업하여 현재의 삼성그룹으로 발전하였다' },
+                        #'ja':{'voice': 'Kazuhiko Atallah', 'name': 'Japanese'  , 'phrase': '沖縄県 は、日本の九州・沖縄地方に位置する県。県庁所在地は那覇市。旧琉球王国。' },
+                        #'zh-cn':{'voice': 'Kazuhiko Atallah', 'name': 'Chinese (Simplified)', 'phrase': '这个用汉语怎么说？' }
+                    }
                 }
             ),
         },
