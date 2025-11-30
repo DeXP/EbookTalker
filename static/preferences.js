@@ -80,6 +80,13 @@ function ShowPreferencesWindow() {
               { id: "full", value: tr["nf-full"] + "  (output/author/series/book/1.mp3)" }
             ]    
           },
+          {
+            view: "select", label: TT("TTS Engine:"), name: "engine", value: APP_SETTINGS['app']['engine'],
+            options: [
+              { id: 'silero', value: 'Silero' },
+              { id: "xtts_v2", value: 'XTTS v2' }
+            ]
+          },
           ...(langCells.length > 0 ? [{
               view: "tabview", cells: langCells
           }] : []),

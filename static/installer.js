@@ -187,7 +187,6 @@ function ensureInstallerWindow(items) {
                 ...(groupNames.length > 1 ? [{
                     view: "toolbar",
                     cols: [
-                        { template: TT("Category:", c), width: 80 },
                         {
                             view: "richselect",
                             id: "installer_group_select",
@@ -259,7 +258,7 @@ function ensureInstallerWindow(items) {
 
     // Initial setup
     const initialGroup = groupNames[0] || "";
-    updateGroupView(initialGroup);
+    updateGroupView(initialGroup.id);
 
     // Attach Install button (deferred to avoid overwrite)
     webix.delay(() => {

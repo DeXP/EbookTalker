@@ -62,6 +62,7 @@ def create_app(test_config=None):
     var = defaults.GetDefaultVar(app.config)
     var['settings'] = settings.LoadOrDefault(app.config, var)
     ALL_COMPONENTS = list(var['languages'].values())
+    ALL_COMPONENTS.extend(var['coqui-ai'].values())
     converter.InitModels(app.config, var)
 
     if sys.platform == "win32":
@@ -144,29 +145,17 @@ def create_app(test_config=None):
         lang = flask.request.args.get('lang', default = 'ru', type = str)
         voice = flask.request.args.get('voice', default = 'xenia', type = str)
         tts = flask.request.args.get('tts', default = 'silero', type = str)
-        if (lang in var) and voice:
+        if (lang in var['languages']) and voice:
             wavFile = var['tmp'] / f"{tts}-{lang}-{voice}.wav"
             if ("random" == voice) and wavFile.exists():
                 wavFile.unlink()
-            if converter.SayText(wavFile, lang, voice, var['languages'][lang].extra['phrase'], app.config, var):
+            if converter.SayText(wavFile, lang, voice, var['languages'][lang].extra['phrase'], app.config, var, engine=tts):
                 return flask.send_file(wavFile, download_name=wavFile.name, as_attachment=False, mimetype='audio/wav')
         else:
             return ''
 
 
     ### Installer ###  
-
-    @app.route('/installer')
-    def installer_form():
-        # Group items
-        groups = {}
-        for item in ALL_COMPONENTS:
-            groups.setdefault(item.group, []).append(item.to_dict())
-        
-        gpu_hint = 'cpu'  # or get from session/cache
-        return flask.render_template('ui/web/form.html.j2',
-                            groups_json=flask.json.dumps(groups),
-                            gpu_hint=gpu_hint)
 
     # SSE endpoint for real-time progress
     clients = {}
@@ -183,7 +172,7 @@ def create_app(test_config=None):
         client_id = id(q)
         clients[client_id] = {'queue': q, 'cancel_event': cancel_event}
 
-        # ✅ Launch downloader in background — but let it feed the queue
+        # Launch downloader in background — but let it feed the queue
         def run_downloader():
             try:
                 # First message: ensure immediate feedback
@@ -225,11 +214,13 @@ def create_app(test_config=None):
 
         return flask.Response(generate(), mimetype='text/event-stream')
 
+
     @app.route('/install/cancel', methods=['POST'])
     def install_cancel():
         for client in clients.values():
             client['cancel_event'].set()
         return '', 204
+
 
     @app.route('/install/items')
     def get_installer_items():
