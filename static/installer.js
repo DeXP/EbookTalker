@@ -189,7 +189,7 @@ function ensureInstallerWindow(items) {
                     cols: [
                         {
                             view: "richselect",
-                            label: TT("Category:", c),
+                            label: TT("Type:", c),
                             id: "installer_group_select",
                             value: groupNames[0],
                             options: groupNames,

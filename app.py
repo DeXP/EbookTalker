@@ -92,6 +92,9 @@ def create_app(test_config=None):
                 'enabled': converter.IsModelFileExists(app.config, var, key),
                 'name': lang.name
             }
+            if 'langs' in lang.extra:
+                l[key]['langs'] = lang.extra['langs']
+
         install = [
             item.to_dict() for item in ALL_COMPONENTS
         ]
@@ -111,20 +114,26 @@ def create_app(test_config=None):
         return 'Converter loop will be stopped soon'
 
 
+    def get_lang_items(all: dict) -> list:
+        langs = []
+        for key, lang in all.items():
+            langs.append({
+                'id': key,
+                'value': lang['name']
+            })
+        return langs
+
     @app.route("/langs")
     def langList():
         engine = flask.request.args.get('engine', default = 'silero', type = str)
+        lang = flask.request.args.get('lang', default = '', type = str)
         if 'silero' == engine:
-            return list(var['languages'].keys())
-        elif engine in var['coqui-ai']:
-            language = var['coqui-ai'][engine]
-            langs = []
-            for key, lang in language.extra['langs'].items():
-                langs.append({
-                    'id': key,
-                    'value': lang['name']
-                })
-            return langs
+            if lang and ('langs' in var['languages'][lang].extra):
+                return get_lang_items(var['languages'][lang].extra['langs'])
+            else:  
+                return list(var['languages'].keys())
+        elif (engine in var['coqui-ai']) and ('langs' in var['coqui-ai'][engine].extra):
+            return get_lang_items(var['coqui-ai'][engine].extra['langs'])
         else:
             return []
     
@@ -139,8 +148,12 @@ def create_app(test_config=None):
         #return ["aidar", "baya", "kseniya", "xenia", "eugene"]
         lang = flask.request.args.get('lang', default = 'ru', type = str)
         engine = flask.request.args.get('engine', default = 'silero', type = str)
-        if (engine in var['coqui-ai']) or (('silero' == engine) and (lang in var['languages'])):
-            return sorted(converter.GetModel(app.config, var, lang, engine).speakers)
+        start = flask.request.args.get('start', default = '', type = str)
+        if (engine in var['coqui-ai']) or ('silero' == engine):
+            speakers = converter.GetModel(app.config, var, lang, engine).speakers
+            if start:
+                speakers = [x for x in speakers if x.startswith(start)]
+            return sorted(speakers)
         else:
             return []
         
@@ -158,13 +171,24 @@ def create_app(test_config=None):
     @app.route('/example')
     def example():
         lang = flask.request.args.get('lang', default = 'ru', type = str)
+        sublang = flask.request.args.get('sublang', default = '', type = str)
         voice = flask.request.args.get('voice', default = 'xenia', type = str)
         engine = flask.request.args.get('engine', default = 'silero', type = str)
 
-        language = var['languages'][lang] if 'silero' == engine else var['coqui-ai'][engine]
+        language = None
+        if 'silero' == engine:
+            if sublang:
+                language = var['languages'][lang]
+            else:
+                language = var['languages'][lang]
+        else:
+            language = var['coqui-ai'][engine]
+
         phrase = ''
-        if ('langs' in language.extra):
+        if ('langs' in language.extra) and (lang in language.extra['langs']):
             phrase =  language.extra['langs'][lang]['phrase']
+        elif ('langs' in language.extra) and (sublang in language.extra['langs']):
+            phrase =  language.extra['langs'][sublang]['phrase']
         else:
             phrase = language.extra['phrase']
 

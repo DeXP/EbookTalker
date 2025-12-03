@@ -3,11 +3,14 @@ function PlayClick(id, event) {
   const sp = id.split("-");
   const tts = sp[0];
   const lang = sp[1];
-  const comboId = tts + "-" + lang + "-voice"
+  const comboId = tts + "-" + lang + "-voice";
   const voice = $$(comboId).getValue();
+  var sublang = '';
+  const subLangCombo = $$(comboId + "-lang")
+  if (subLangCombo) sublang = subLangCombo.getValue();
 
   this.disable();  // Disable button during playback
-  const audio = new Audio("/example?engine=" + tts + "&lang=" + lang + "&voice=" + voice);
+  const audio = new Audio("/example?engine=" + tts + "&lang=" + lang + "&sublang=" + sublang + "&voice=" + voice);
   
   audio.onended = () => this.enable(); // Re-enable when done
   audio.play().catch(e => {
@@ -20,16 +23,15 @@ function PlayClick(id, event) {
 function PlayCoquiClick(id, event) {
   const coquiVoiceSelect = $$("coqui-voice-select");
   const coquiLanguageSlect = $$("coqui-language-select");
-  if (coquiVoiceSelect && coquiLanguageSlect)
+  const engineSelect = $$("engine");
+  if (coquiVoiceSelect && coquiLanguageSlect && engineSelect)
   {
     const voice = coquiVoiceSelect.getValue();
     const lang = coquiLanguageSlect.getValue();
-
-    console.log(voice)
-    console.log(lang)
+    const engine = engineSelect.getValue();
 
     this.disable();  // Disable button during playback
-    const audio = new Audio("/example?engine=xtts_v2&lang=" + lang + "&voice=" + voice);
+    const audio = new Audio("/example?engine=" + engine + "&lang=" + lang + "&voice=" + voice);
     
     audio.onended = () => this.enable(); // Re-enable when done
     audio.play().catch(e => {
@@ -60,11 +62,27 @@ function ShowPreferencesWindow() {
             id: curId,
             view:"form", 
             elements:[
-              {cols:[
-                  { view: "select", label: tr["Voice:"], 
-                    name: comboId, id: comboId, options: "/voices?lang=" + langCode, 
-                    value: APP_SETTINGS['silero'][langCode]["voice"] },
-                  { view: "icon", id: curId + "-play", icon: "mdi mdi-play", click: PlayClick }
+              {rows: [
+                ...('langs' in language ? [{
+                    view: "select", label: tr["Language:"], 
+                    name: comboId + "-lang", id: comboId + "-lang", options: "/langs?engine=" + language.type + "&lang=" + langCode,
+                    on: {
+                      onChange: function(newv, oldv) {
+                        const voiceCombo = $$(comboId);
+                        if (voiceCombo)
+                        {
+                          voiceCombo.define("options", "/voices?lang=" + langCode + "&start=" + language['langs'][newv]['native']);
+                          voiceCombo.refresh();
+                        }
+                      }
+                    }
+                }] : []),
+                {cols:[
+                    { view: "select", label: tr["Voice:"], 
+                      name: comboId, id: comboId, options: "/voices?lang=" + langCode, 
+                      value: APP_SETTINGS['silero'][langCode]["voice"] },
+                    { view: "icon", id: curId + "-play", icon: "mdi mdi-play", click: PlayClick }
+                ]}
               ]}
           ]
           }
@@ -105,7 +123,7 @@ function ShowPreferencesWindow() {
             ]    
           },
           {
-            view: "select", label: TT("TTS Engine:"), name: "engine", value: APP_SETTINGS['app']['engine'],
+            view: "select", label: TT("TTS Engine:"), name: "engine", id: "engine", value: APP_SETTINGS['app']['engine'],
             options: [
               { id: 'silero', value: 'Silero' },
               { id: "xtts_v2", value: 'XTTS v2' }
@@ -118,7 +136,7 @@ function ShowPreferencesWindow() {
                 const coquiView = $$("coqui-language-form");
                 const coquiSelect = $$("coqui-language-select");
 
-                if (newv === "xtts_v2") {
+                if (newv != "silero") {
                   // Show XTTS-specific fields
                   coquiView?.show();
                   sileroView?.hide();
@@ -188,12 +206,15 @@ function ShowPreferencesWindow() {
                   values['app'] = $$("preferencesWindow").getBody().getValues();
                   TTS_LANG_LIST.forEach(function(langCode) {
                     var language = TTS_LANGUAGES[langCode];
-                    var comboId = language.type + "-" + langCode + "-voice";
-                    if (!(language.type in values)) {
-                      values[language.type] = {};
+                    if (language.enabled)
+                    {
+                      var comboId = language.type + "-" + langCode + "-voice";
+                      if (!(language.type in values)) {
+                        values[language.type] = {};
+                      }
+                      values[language.type][langCode] = {};
+                      values[language.type][langCode]['voice'] = $$(comboId).getValue();
                     }
-                    values[language.type][langCode] = {};
-                    values[language.type][langCode]['voice'] = $$(comboId).getValue();
                   });
 
                   // console.log(JSON.stringify(values));
