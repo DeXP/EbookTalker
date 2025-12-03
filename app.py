@@ -90,7 +90,7 @@ def create_app(test_config=None):
             engine = 'silero' if 'silero' == lang.group else key
             l[key] = {
                 'type': lang.group,
-                'enabled': converter.IsModelFileExists(app.config, var, key, engine),
+                'enabled': converter.IsModelFileExists(app.config, var, key, engine, strict=True),
                 'name': lang.name
             }
             if 'langs' in lang.extra:
@@ -150,7 +150,7 @@ def create_app(test_config=None):
         lang = flask.request.args.get('lang', default = 'ru', type = str)
         engine = flask.request.args.get('engine', default = 'silero', type = str)
         start = flask.request.args.get('start', default = '', type = str)
-        if (engine in var['coqui-ai']) or ('silero' == engine):
+        if ('silero' == engine) or (engine in var['coqui-ai']):
             speakers = converter.GetModel(app.config, var, lang, engine).speakers
             if start:
                 speakers = [x for x in speakers if x.startswith(start)]

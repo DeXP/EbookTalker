@@ -134,7 +134,7 @@ def GetDefaultVar(cfg: dict) -> dict:
                         'xal': {'native': 'xal', 'voice': 'xal_kejilgan', 'name': 'Kalmyk'      , 'phrase': 'Би эцкд сарин җилин дуулҗана хойр седклтә күрәм.' },
                         'ky':  {'native': 'kir', 'voice': 'kir_nurgul',   'name': 'Kyrgyz'      , 'phrase': 'Мен мектепте окуп жүргөндө эң жакшы досум менен тааныштым.' },
                         'mdf': {'native': 'mdf', 'voice': 'mdf_oksana',   'name': 'Moksha'      , 'phrase': 'Монь тяштеть эзда кизонь карьхть сельметь кштинь аф лац.' },
-                        'ru':  {'native': 'ru',  'voice': 'ru_larisa',    'name': 'Russian'     , 'phrase': 'В недрах тундры выдры в г+етрах т+ырят в вёдра +ядра к+едров.' },
+                        'ru':  {'native': 'ru',  'voice': 'ru_oksana',    'name': 'Russian'     , 'phrase': 'В недрах тундры выдры в г+етрах т+ырят в вёдра +ядра к+едров.' },
                         'tg':  {'native': 'tgk', 'voice': 'tgk_safarhuja','name': 'Tajik'       , 'phrase': 'Ман дар бораи хонаи нави худ дар канори дарё хондем.' },
                         'tt':  {'native': 'tat', 'voice': 'tat_albina',   'name': 'Tatar'       , 'phrase': 'Мин ерак түгел урман эчендә чиста һавада йөргәне яратам.' },
                         'udm': {'native': 'udm', 'voice': 'udm_bogdan',   'name': 'Udmurt'      , 'phrase': 'Мон ашалэ тӥлед нуналлы огы быдэсэ кошко учке.' },

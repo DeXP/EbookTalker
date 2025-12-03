@@ -25,17 +25,29 @@ def InitModels(cfg: dict, var: dict):
         PreloadModel(cfg, var, 'en')
 
 
-def GetSileroModel(var: dict, lang: str = 'ru'):
+def GetSileroModelExt(cfg: dict, var: dict, lang: str = 'ru', strict: bool = False, allowUninstalled: bool = True):
     if lang in var['languages']:
-        return var['languages'][lang]
-    for lang_key, language in var['languages'].items():
-        if ('langs' in language.extra) and (lang in language.extra['langs']):
-            return language
+        modelPath = GetModelPathByName(cfg, Path(var['languages'][lang].url).name)
+        if allowUninstalled or modelPath.exists():
+            return var['languages'][lang]
+    if not strict:
+        for lang_key, language in var['languages'].items():
+            if ('langs' in language.extra) and (lang in language.extra['langs']):
+                modelPath = GetModelPathByName(cfg, Path(language.url).name)
+                if allowUninstalled or modelPath.exists():
+                    return language
     return None
 
 
-def GetSileroAccentor(var: dict, lang: str = 'ru'):
-    model = GetSileroModel(var, lang)
+def GetSileroModel(cfg: dict, var: dict, lang: str = 'ru', strict: bool = False):
+    model = GetSileroModelExt(cfg, var, lang, strict, allowUninstalled=False)
+    if model is None:
+        model = GetSileroModelExt(cfg, var, lang, strict, allowUninstalled=True)
+    return model
+
+
+def GetSileroAccentor(cfg: dict, var: dict, lang: str = 'ru'):
+    model = GetSileroModel(cfg, var, lang)
     if model is None:
         return None
     if 'langs' in model.extra:
@@ -68,20 +80,31 @@ def LoadSileroAccentor(var: dict, lang: str = 'ru'):
     return None
 
 
-def GetSileroVoice(var: dict, lang: str = 'ru'):
+def GetSileroVoiceExt(cfg: dict, var: dict, lang: str = 'ru', allowUninstalled: bool = True):
     if lang in var['settings']['silero']:
-        return var['settings']['silero'][lang]['voice']
+        modelPath = GetModelPathByName(cfg, Path(var['languages'][lang].url).name)
+        if allowUninstalled or modelPath.exists():
+            return var['settings']['silero'][lang]['voice']
     for lang_key, language in var['languages'].items():
         if ('langs' in language.extra) and (lang in language.extra['langs']):
-            return var['settings']['silero'][lang_key][lang]['voice']
+            modelPath = GetModelPathByName(cfg, Path(language.url).name)
+            if allowUninstalled or modelPath.exists():
+                return var['settings']['silero'][lang_key][lang]['voice']
     return None
 
 
-def GetModelName(cfg: dict, var: dict, lang = 'ru', engine: str = '') -> str:
+def GetSileroVoice(cfg: dict, var: dict, lang: str = 'ru'):
+    voice = GetSileroVoiceExt(cfg, var, lang, allowUninstalled=False)
+    if voice is None:
+        voice = GetSileroVoiceExt(cfg, var, lang, allowUninstalled=True)
+    return voice
+
+
+def GetModelName(cfg: dict, var: dict, lang = 'ru', engine: str = '', strict: bool = False) -> str:
     if not engine:
         engine = var['settings']['app']['engine']
     if ('silero' == engine):
-        model = GetSileroModel(var, lang)
+        model = GetSileroModel(cfg, var, lang, strict)
         if model:
             urlPath = Path(model.url)
             return urlPath.name
@@ -90,18 +113,22 @@ def GetModelName(cfg: dict, var: dict, lang = 'ru', engine: str = '') -> str:
         return engine
 
 
-def GetModelPath(cfg: dict, var: dict, lang: str = 'ru', engine: str = '') -> Path:
-    if not engine:
-        engine = var['settings']['app']['engine']
-    modelName = GetModelName(cfg, var, lang, engine)
+def GetModelPathByName(cfg: dict, modelName: str) -> Path:
     localFile = Path('models') / modelName
     if localFile.exists():
         return localFile
     return Path(cfg['MODELS_FOLDER']) / modelName
 
 
-def IsModelFileExists(cfg: dict, var: dict, lang: str = 'ru', engine: str = '') -> bool:
-    return GetModelPath(cfg, var, lang, engine).exists()
+def GetModelPath(cfg: dict, var: dict, lang: str = 'ru', engine: str = '', strict: bool = False) -> Path:
+    if not engine:
+        engine = var['settings']['app']['engine']
+    modelName = GetModelName(cfg, var, lang, engine, strict)
+    return GetModelPathByName(cfg, modelName)
+
+
+def IsModelFileExists(cfg: dict, var: dict, lang: str = 'ru', engine: str = '', strict: bool = False) -> bool:
+    return GetModelPath(cfg, var, lang, engine, strict).exists()
 
 
 def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
@@ -111,7 +138,7 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
     local_file = str(modelPath)
 
     if 'silero' == engine:
-        model = GetSileroModel(var, lang)
+        model = GetSileroModel(cfg, var, lang)
         if not os.path.isfile(local_file):
             torch.hub.download_url_to_file(model.url, local_file)
 
@@ -120,7 +147,7 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
             model.extra['model'].to(var['device'])
 
         if lang in ['ru', 'uk']:
-            GetSileroAccentor(var, lang)
+            GetSileroAccentor(cfg, var, lang)
     else:
         # Coqui TTS
         from TTS.api import TTS
@@ -132,7 +159,7 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
 def GetModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
     if not engine:
         engine = var['settings']['app']['engine']
-    origin = GetSileroModel(var, lang) if 'silero' == engine else var['coqui-ai'][engine]
+    origin = GetSileroModel(cfg, var, lang) if 'silero' == engine else var['coqui-ai'][engine]
     if ('model' in origin.extra) and (origin.extra['model'] is None):
         PreloadModel(cfg, var, lang, engine)
     return origin.extra['model']
@@ -241,7 +268,7 @@ def ProcessSentence(lang: str, number, sentence: str, cfg: dict, var: dict, engi
     if not engine:
         engine = var['settings']['app']['engine']
     wavFile = var['genwav'] / f"{number}.wav"
-    speaker = GetSileroVoice(var, lang) if 'silero' == engine else var['settings'][engine][lang]['voice']
+    speaker = GetSileroVoice(cfg, var, lang) if 'silero' == engine else var['settings'][engine][lang]['voice']
     return SayText(wavFile, lang, speaker, sentence, cfg, var)
 
 
@@ -271,7 +298,7 @@ def SayText(wavFile: Path, lang: str, speaker: str, text: str, cfg: dict, var: d
 
 
 
-def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat: str, proc: dict, cfg: dict, var:dict):
+def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat: str, proc: dict, cfg: dict, var: dict):
     dxfs.CreateDirectory(var['tmp'], var['gen'])
     dxfs.CreateDirectory(var['tmp'], var['genwav'])
     dxfs.CreateDirectory(var['tmp'], var['genout'])
@@ -288,7 +315,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
 
     proc['bookName'] = book.BookName(info, includeAuthor=True)
     lang = dxnormalizer.unify_lang(info['lang']) if ('lang' in info) else 'ru'
-    accentor = GetSileroAccentor(var, lang) if 'silero' == engine else None
+    accentor = GetSileroAccentor(cfg, var, lang) if 'silero' == engine else None
 
     if ('error' in info) and info['error']:
         error = info['error']

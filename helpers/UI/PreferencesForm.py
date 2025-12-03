@@ -120,7 +120,7 @@ class PreferencesForm(ctk.CTkToplevel):
         self.tts_multi_voice_language_combos = {}
         self.first_silero_lang = None
         for lang, language in var['languages'].items():
-            if converter.IsModelFileExists(cfg, var, lang, 'silero'):
+            if converter.IsModelFileExists(cfg, var, lang, 'silero', strict=True):
                 if not self.first_silero_lang:
                     self.first_silero_lang = lang
     
@@ -138,7 +138,6 @@ class PreferencesForm(ctk.CTkToplevel):
                     self.tts_multi_voice_language_combos[lang] = ctk.CTkComboBox(voice_parent, values=sub_lang_names, state="readonly", command=self.on_sub_lang_changed)
                     self.tts_multi_voice_language_combos[lang].set(sub_lang_names[0])
                     self.tts_multi_voice_language_combos[lang].grid(row=0, column=1, padx=10, pady=2, sticky="w")
-                    self.on_sub_lang_changed(sub_lang_names[0])
                     row_id = 1
 
                 self.tts_voice_labels[lang] = ctk.CTkLabel(voice_parent, text=T.T("Voice:"))
@@ -200,6 +199,7 @@ class PreferencesForm(ctk.CTkToplevel):
         self.cancel_button.grid(row=10, column=1, padx=10, pady=7, columnspan=2, sticky="e")
 
         self.on_engine_changed(current_engine)
+        self.on_sub_lang_changed('')
 
 
     def get_child_geometry(self, width: int, height: int) -> str:
@@ -327,8 +327,9 @@ class PreferencesForm(ctk.CTkToplevel):
             speakers = [x for x in model_speakers if x.startswith(native)]
             if (not speakers) or (len(speakers) < 1):
                 speakers = model_speakers
-            self.tts_voice_combos[lang].configure(values=speakers)
-            self.tts_voice_combos[lang].set(self.var['settings']['silero'][lang][sublang]['voice'])
+            if lang in self.tts_voice_combos:
+                self.tts_voice_combos[lang].configure(values=speakers)
+                self.tts_voice_combos[lang].set(self.var['settings']['silero'][lang][sublang]['voice'])
 
 
     def on_coqui_lang_changed(self, choice):
