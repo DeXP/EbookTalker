@@ -7,7 +7,7 @@ function PlayClick(id, event) {
   const voice = $$(comboId).getValue();
 
   this.disable();  // Disable button during playback
-  const audio = new Audio("/example?tts=" + tts + "&lang=" + lang + "&voice=" + voice);
+  const audio = new Audio("/example?engine=" + tts + "&lang=" + lang + "&voice=" + voice);
   
   audio.onended = () => this.enable(); // Re-enable when done
   audio.play().catch(e => {
@@ -15,6 +15,30 @@ function PlayClick(id, event) {
     webix.message("Error: " + e.message);
   });
 }
+
+
+function PlayCoquiClick(id, event) {
+  const coquiVoiceSelect = $$("coqui-voice-select");
+  const coquiLanguageSlect = $$("coqui-language-select");
+  if (coquiVoiceSelect && coquiLanguageSlect)
+  {
+    const voice = coquiVoiceSelect.getValue();
+    const lang = coquiLanguageSlect.getValue();
+
+    console.log(voice)
+    console.log(lang)
+
+    this.disable();  // Disable button during playback
+    const audio = new Audio("/example?engine=xtts_v2&lang=" + lang + "&voice=" + voice);
+    
+    audio.onended = () => this.enable(); // Re-enable when done
+    audio.play().catch(e => {
+      this.enable();
+      webix.message("Error: " + e.message);
+    });
+  }
+}
+
 
 
 function ShowPreferencesWindow() {
@@ -85,11 +109,71 @@ function ShowPreferencesWindow() {
             options: [
               { id: 'silero', value: 'Silero' },
               { id: "xtts_v2", value: 'XTTS v2' }
-            ]
+            ],
+            // Key: react to changes
+            on: {
+              onChange: function(newv, oldv) {
+                // Get references to conditional UI elements
+                const sileroView = $$("silero-tab-view");
+                const coquiView = $$("coqui-language-form");
+                const coquiSelect = $$("coqui-language-select");
+
+                if (newv === "xtts_v2") {
+                  // Show XTTS-specific fields
+                  coquiView?.show();
+                  sileroView?.hide();
+                  // Optionally fetch model list only now
+                  if (coquiSelect && !coquiSelect.config._loaded) {
+                    coquiSelect.define("options", "/langs?engine=" + newv);
+                    coquiSelect.refresh();
+                    coquiSelect.config._loaded = true; // prevent reload
+
+                    const coquiVoiceSelect = $$("coqui-voice-select");
+                    if (coquiVoiceSelect && !coquiVoiceSelect.config._loaded) {
+                      coquiVoiceSelect.define("options", "/voices?engine=" + newv);
+                      coquiVoiceSelect.refresh();
+                      coquiVoiceSelect.config._loaded = true; // prevent reload
+                    }
+                  }
+                } else { // silero
+                  sileroView?.show();
+                  coquiView?.hide();
+                }
+              }
+            }
           },
           ...(langCells.length > 0 ? [{
-              view: "tabview", cells: langCells
+              view: "tabview", id: "silero-tab-view", cells: langCells
           }] : []),
+          {
+            id: "coqui-language-form",
+            hidden: true,
+            rows: [
+              { template: TT("TTS Engine:"), type: "section" },
+              {
+                view: "select", label: TT("Language:"), name: "coqui-language-select", id: "coqui-language-select", value: APP_SETTINGS['app']['lang'],
+                options: [
+                  { id: "en", value: TTS_LANGUAGES['en']['name'] }
+                ],
+                on: {
+                  onChange: function(newv, oldv) {
+                    if (newv in APP_SETTINGS['xtts_v2']) {
+                      const coquiVoiceSelect = $$("coqui-voice-select");
+                      if (coquiVoiceSelect) {
+                        coquiVoiceSelect.setValue(APP_SETTINGS['xtts_v2'][newv].voice);
+                      }
+                    }
+                  }
+                }
+              },
+              {cols:[
+                  { view: "select", label: TT("Voice:"), 
+                    name: "coqui-voice-select", id: "coqui-voice-select", options: "/voices?lang=ru", 
+                    value: APP_SETTINGS['xtts_v2']['en'].voice},
+                  { view: "icon", id: "coqui-voice-play", icon: "mdi mdi-play", click: PlayCoquiClick }
+              ]}
+            ]
+          },
           { view: "button", value: tr["Install components and languages"], label: "", click: ShowInstallerWindow },
           ...(PASSWORD_LENGTH > 0 ? [{
               view: "text", type: "password", label: tr["password"], name: "preferencesPassword", id: "preferencesPassword", value: ""

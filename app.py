@@ -113,19 +113,34 @@ def create_app(test_config=None):
 
     @app.route("/langs")
     def langList():
-        return list(var['languages'].keys())
+        engine = flask.request.args.get('engine', default = 'silero', type = str)
+        if 'silero' == engine:
+            return list(var['languages'].keys())
+        elif engine in var['coqui-ai']:
+            language = var['coqui-ai'][engine]
+            langs = []
+            for key, lang in language.extra['langs'].items():
+                langs.append({
+                    'id': key,
+                    'value': lang['name']
+                })
+            return langs
+        else:
+            return []
+    
     
     @app.route("/sysinfo")
     def sysInfo():
         return settings.get_system_info_str(var)
 
+
     @app.route("/voices")
     def voices():
         #return ["aidar", "baya", "kseniya", "xenia", "eugene"]
         lang = flask.request.args.get('lang', default = 'ru', type = str)
-        if lang in var['languages']:
-            model = converter.GetModel(app.config, var, lang)
-            return model.speakers
+        engine = flask.request.args.get('engine', default = 'silero', type = str)
+        if (engine in var['coqui-ai']) or (('silero' == engine) and (lang in var['languages'])):
+            return sorted(converter.GetModel(app.config, var, lang, engine).speakers)
         else:
             return []
         
@@ -144,12 +159,20 @@ def create_app(test_config=None):
     def example():
         lang = flask.request.args.get('lang', default = 'ru', type = str)
         voice = flask.request.args.get('voice', default = 'xenia', type = str)
-        tts = flask.request.args.get('tts', default = 'silero', type = str)
-        if (lang in var['languages']) and voice:
-            wavFile = var['tmp'] / f"{tts}-{lang}-{voice}.wav"
+        engine = flask.request.args.get('engine', default = 'silero', type = str)
+
+        language = var['languages'][lang] if 'silero' == engine else var['coqui-ai'][engine]
+        phrase = ''
+        if ('langs' in language.extra):
+            phrase =  language.extra['langs'][lang]['phrase']
+        else:
+            phrase = language.extra['phrase']
+
+        if phrase:
+            wavFile = var['tmp'] / f"{engine}-{lang}-{voice}.wav"
             if ("random" == voice) and wavFile.exists():
                 wavFile.unlink()
-            if converter.SayText(wavFile, lang, voice, var['languages'][lang].extra['phrase'], app.config, var, engine=tts):
+            if converter.SayText(wavFile, lang, voice, phrase, app.config, var, engine):
                 return flask.send_file(wavFile, download_name=wavFile.name, as_attachment=False, mimetype='audio/wav')
         else:
             return ''
