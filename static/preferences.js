@@ -42,6 +42,37 @@ function PlayCoquiClick(id, event) {
 }
 
 
+function OnEngineChange(newv, oldv) {
+  // Get references to conditional UI elements
+  const sileroView = $$("silero-tab-view");
+  const coquiView = $$("coqui-language-form");
+  const coquiSelect = $$("coqui-language-select");
+
+  if (newv != "silero") {
+    // Show XTTS-specific fields
+    coquiView?.show();
+    sileroView?.hide();
+    // Optionally fetch model list only now
+    if (coquiSelect && !coquiSelect.config._loaded) {
+      coquiSelect.define("options", "/langs?engine=" + newv);
+      coquiSelect.refresh();
+      coquiSelect.config._loaded = true; // prevent reload
+
+      const coquiVoiceSelect = $$("coqui-voice-select");
+      if (coquiVoiceSelect && !coquiVoiceSelect.config._loaded) {
+        coquiVoiceSelect.define("options", "/voices?engine=" + newv);
+        coquiVoiceSelect.refresh();
+        coquiVoiceSelect.config._loaded = true; // prevent reload
+      }
+    }
+  } else { 
+    // Silero
+    sileroView?.show();
+    coquiView?.hide();
+  }
+}
+
+
 
 function ShowPreferencesWindow() {
   let win = $$("preferencesWindow");
@@ -56,6 +87,9 @@ function ShowPreferencesWindow() {
       var comboId = curId + "-voice";
       if (language.enabled)
       {
+        const voiceLinkBase = "?engine=" + language.type + "&lang=" + langCode;
+        const langsLink = "/langs" + voiceLinkBase;
+        const voicesLink = "/voices" + voiceLinkBase;
         langCells.push({
           header: language.name,
           body: {
@@ -65,13 +99,13 @@ function ShowPreferencesWindow() {
               {rows: [
                 ...('langs' in language ? [{
                     view: "select", label: tr["Language:"], 
-                    name: comboId + "-lang", id: comboId + "-lang", options: "/langs?engine=" + language.type + "&lang=" + langCode,
+                    name: comboId + "-lang", id: comboId + "-lang", options: langsLink,
                     on: {
                       onChange: function(newv, oldv) {
                         const voiceCombo = $$(comboId);
                         if (voiceCombo)
                         {
-                          voiceCombo.define("options", "/voices?lang=" + langCode + "&start=" + language['langs'][newv]['native']);
+                          voiceCombo.define("options", voicesLink + "&start=" + language['langs'][newv]['native']);
                           voiceCombo.refresh();
                         }
                       }
@@ -79,7 +113,7 @@ function ShowPreferencesWindow() {
                 }] : []),
                 {cols:[
                     { view: "select", label: tr["Voice:"], 
-                      name: comboId, id: comboId, options: "/voices?lang=" + langCode, 
+                      name: comboId, id: comboId, options: voicesLink, 
                       value: APP_SETTINGS['silero'][langCode]["voice"] },
                     { view: "icon", id: curId + "-play", icon: "mdi mdi-play", click: PlayClick }
                 ]}
@@ -129,43 +163,14 @@ function ShowPreferencesWindow() {
               { id: "xtts_v2", value: 'XTTS v2' }
             ],
             // Key: react to changes
-            on: {
-              onChange: function(newv, oldv) {
-                // Get references to conditional UI elements
-                const sileroView = $$("silero-tab-view");
-                const coquiView = $$("coqui-language-form");
-                const coquiSelect = $$("coqui-language-select");
-
-                if (newv != "silero") {
-                  // Show XTTS-specific fields
-                  coquiView?.show();
-                  sileroView?.hide();
-                  // Optionally fetch model list only now
-                  if (coquiSelect && !coquiSelect.config._loaded) {
-                    coquiSelect.define("options", "/langs?engine=" + newv);
-                    coquiSelect.refresh();
-                    coquiSelect.config._loaded = true; // prevent reload
-
-                    const coquiVoiceSelect = $$("coqui-voice-select");
-                    if (coquiVoiceSelect && !coquiVoiceSelect.config._loaded) {
-                      coquiVoiceSelect.define("options", "/voices?engine=" + newv);
-                      coquiVoiceSelect.refresh();
-                      coquiVoiceSelect.config._loaded = true; // prevent reload
-                    }
-                  }
-                } else { // silero
-                  sileroView?.show();
-                  coquiView?.hide();
-                }
-              }
-            }
+            on: { onChange: OnEngineChange }
           },
           ...(langCells.length > 0 ? [{
-              view: "tabview", id: "silero-tab-view", cells: langCells
+              view: "tabview", id: "silero-tab-view", cells: langCells, hidden: ('silero' != APP_SETTINGS['app']['engine'])
           }] : []),
           {
             id: "coqui-language-form",
-            hidden: true,
+            hidden: ('silero' == APP_SETTINGS['app']['engine']),
             rows: [
               { template: TT("TTS Engine:"), type: "section" },
               {
@@ -186,7 +191,7 @@ function ShowPreferencesWindow() {
               },
               {cols:[
                   { view: "select", label: TT("Voice:"), 
-                    name: "coqui-voice-select", id: "coqui-voice-select", options: "/voices?lang=ru", 
+                    name: "coqui-voice-select", id: "coqui-voice-select", options: [],
                     value: APP_SETTINGS['xtts_v2']['en'].voice},
                   { view: "icon", id: "coqui-voice-play", icon: "mdi mdi-play", click: PlayCoquiClick }
               ]}
@@ -204,18 +209,53 @@ function ShowPreferencesWindow() {
                 click: function () {
                   var values = {};
                   values['app'] = $$("preferencesWindow").getBody().getValues();
+                  APP_SETTINGS['app'] = values['app']
                   TTS_LANG_LIST.forEach(function(langCode) {
                     var language = TTS_LANGUAGES[langCode];
                     if (language.enabled)
                     {
-                      var comboId = language.type + "-" + langCode + "-voice";
+                      const comboId = language.type + "-" + langCode + "-voice";
+                      const comboValue = $$(comboId).getValue();
                       if (!(language.type in values)) {
                         values[language.type] = {};
                       }
                       values[language.type][langCode] = {};
-                      values[language.type][langCode]['voice'] = $$(comboId).getValue();
+
+                      if ('langs' in language) {
+                        sublang = $$(comboId + "-lang").getValue();
+                        if (sublang)
+                        {
+                          values[language.type][langCode][sublang] = {};
+                          values[language.type][langCode][sublang]['voice'] = comboValue;
+                          APP_SETTINGS[language.type][langCode][sublang]['voice'] = comboValue;
+                        }
+                      } else {
+                        values[language.type][langCode]['voice'] = comboValue;
+                        APP_SETTINGS[language.type][langCode]['voice'] = comboValue;
+                      }
                     }
                   });
+
+                  if ('silero' != values['app']['engine'])
+                  {
+                    // Save Coqui
+                    const engine = values['app']['engine'];
+                    const coquiLang = $$("coqui-language-select").getValue();
+                    const coquiVoice = $$("coqui-voice-select").getValue();
+
+                    if (engine && coquiLang && coquiVoice)
+                    {
+                      if (!(engine in values)) {
+                        values[engine] = {};
+                      }
+                      if (!(coquiLang in values[engine])) {
+                        values[engine][coquiLang] = {};
+                      }
+
+                      values[engine][coquiLang]['voice'] = coquiVoice;
+                      APP_SETTINGS[engine][coquiLang]['voice'] = coquiVoice;
+                    }
+                  }
 
                   // console.log(JSON.stringify(values));
                   // webix.message("Preferences saved: " + JSON.stringify(values));
@@ -227,7 +267,7 @@ function ShowPreferencesWindow() {
                       webix.message({ text: composeFailureText(j), type: "error" });
                     }
                     else {
-                      APP_SETTINGS = values;
+                      // APP_SETTINGS = values;
                       $$("preferencesWindow").close();
                     }
                   });
@@ -242,4 +282,5 @@ function ShowPreferencesWindow() {
   }
 
   win.show(); // Show the existing or new window
+  OnEngineChange(APP_SETTINGS['app']['engine']);
 }

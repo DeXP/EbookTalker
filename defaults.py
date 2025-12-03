@@ -19,7 +19,7 @@ def GetDefaultVar(cfg: dict) -> dict:
             'ru': DownloadItem(
                 group = "silero",
                 name = "Русский",
-                subtitle = 'Russian',
+                subtitle = 'v3.1, Russian',
                 url = sileroUrl + "v3_1_ru.pt",
                 sha256 = "cf60b47ec8a9c31046021d2d14b962ea56b8a5bf7061c98accaaaca428522f85",
                 dest = "MODELS_FOLDER",
@@ -35,7 +35,7 @@ def GetDefaultVar(cfg: dict) -> dict:
             'en': DownloadItem(
                 group = "silero",
                 name = "English",
-                subtitle = 'English',
+                subtitle = 'v3, English',
                 url = sileroUrl + "v3_en.pt",
                 sha256 = "02b71034d9f13bc4001195017bac9db1c6bb6115e03fea52983e8abcff13b665",
                 dest = "MODELS_FOLDER",
@@ -51,7 +51,7 @@ def GetDefaultVar(cfg: dict) -> dict:
             'uk': DownloadItem(
                 group = "silero",
                 name = "Українська",
-                subtitle = 'Ukrainian',
+                subtitle = 'v3, Ukrainian',
                 url = sileroUrl + "v3_ua.pt",
                 sha256 = "025c53797e730142816c9ce817518977c29d7a75adefece9f3c707a4f4b569cb",
                 dest = "MODELS_FOLDER",
@@ -67,7 +67,7 @@ def GetDefaultVar(cfg: dict) -> dict:
             'fr': DownloadItem(
                 group = "silero",
                 name = "Français",
-                subtitle = 'French',
+                subtitle = 'v3, French',
                 url = sileroUrl + "v3_fr.pt",
                 sha256 = "02ed062cfff1c7097324929ca05c455a25d4f610fd14d51b89483126e50f15cb",
                 dest = "MODELS_FOLDER",
@@ -83,7 +83,7 @@ def GetDefaultVar(cfg: dict) -> dict:
             'de': DownloadItem(
                 group = "silero",
                 name = "Deutsch",
-                subtitle = 'Deutsch',
+                subtitle = 'v3, Deutsch',
                 url = sileroUrl + "v3_de.pt",
                 sha256 = "2e22f38619e1d1da96d963bda5fab6d53843e8837438cb5a45dc376882b0354b",
                 dest = "MODELS_FOLDER",
@@ -99,7 +99,7 @@ def GetDefaultVar(cfg: dict) -> dict:
             'es': DownloadItem(
                 group = "silero",
                 name = "Español",
-                subtitle = 'Spanish',
+                subtitle = 'v3, Spanish',
                 url = sileroUrl + "v3_es.pt",
                 sha256 = "36206add75fb89d0be16d5ce306ba7a896c6fa88bab7e3247403f4f4a520eced",
                 dest = "MODELS_FOLDER",
@@ -115,7 +115,7 @@ def GetDefaultVar(cfg: dict) -> dict:
             'cis': DownloadItem(
                 group = "silero",
                 name = "CIS",
-                subtitle = 'Multilingual',
+                subtitle = 'v5, Multilingual',
                 url = sileroUrl + "v5_cis_base_nostress.pt",
                 sha256 = "3981ab3d72fb3534cf390a1735e346c48c11a58ce86b5cd2412204941c796c98",
                 description = "aze, hye, bak, bel, kat, kbd, kaz, xal, kir, mdf, ru, tgk, tat, udm, uzb, ukr, kjh, chv, erz, sah",

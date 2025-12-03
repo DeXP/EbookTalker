@@ -6,7 +6,7 @@
     "appDescription": "Application for converting normal books to audio books",
     "appAuthor-line": "Author: Dmitry Hrabrov a.k.a. DeXPeriX",
     "appBetaTesters-line": "Beta-testers: e-vred",
-    "silero-line": "Silero neural networks used as a speech engine",
+    "silero-line": "Silero / Coqui AI / XTTS v2 neural networks used as a speech engine",
     "Loading:": "Loading:",
     "bookInProcess": "Book in progress",
     "inProcess:": "In progress:",

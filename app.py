@@ -87,9 +87,10 @@ def create_app(test_config=None):
     def index():
         l = {}
         for key, lang in var['languages'].items():
+            engine = 'silero' if 'silero' == lang.group else key
             l[key] = {
                 'type': lang.group,
-                'enabled': converter.IsModelFileExists(app.config, var, key),
+                'enabled': converter.IsModelFileExists(app.config, var, key, engine),
                 'name': lang.name
             }
             if 'langs' in lang.extra:
