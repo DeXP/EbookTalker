@@ -82,11 +82,9 @@ def create_app(test_config=None):
     atexit.register(close_running_threads)
 
 
-
-    @app.route("/")
-    def index():
+    def get_langs_array(container: dict) -> dict:
         l = {}
-        for key, lang in var['languages'].items():
+        for key, lang in container.items():
             engine = 'silero' if 'silero' == lang.group else key
             l[key] = {
                 'type': lang.group,
@@ -95,13 +93,18 @@ def create_app(test_config=None):
             }
             if 'langs' in lang.extra:
                 l[key]['langs'] = lang.extra['langs']
+        return l
 
+
+    @app.route("/")
+    def index():
         install = [
             item.to_dict() for item in ALL_COMPONENTS
         ]
         return flask.render_template('index.html', 
             version=version, passwordLength=len(app.config.get('WEB_PASSWORD', '')), settings=var['settings'], 
-            langList=list(var['languages'].keys()), languages=l, installItems=install)
+            langList=list(var['languages'].keys()), languages=get_langs_array(var['languages']),
+            coqui=get_langs_array(var['coqui-ai']), installItems=install)
 
 
     @app.route("/favicon.ico")
@@ -151,10 +154,14 @@ def create_app(test_config=None):
         engine = flask.request.args.get('engine', default = 'silero', type = str)
         start = flask.request.args.get('start', default = '', type = str)
         if ('silero' == engine) or (engine in var['coqui-ai']):
-            speakers = converter.GetModel(app.config, var, lang, engine).speakers
-            if start:
-                speakers = [x for x in speakers if x.startswith(start)]
-            return sorted(speakers)
+            model = converter.GetModel(app.config, var, lang, engine)
+            if model:
+                speakers = model.speakers
+                if start:
+                    speakers = [x for x in speakers if x.startswith(start)]
+                return sorted(speakers)
+            else:
+                return []
         else:
             return []
         

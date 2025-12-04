@@ -150,9 +150,11 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
             GetSileroAccentor(cfg, var, lang)
     else:
         # Coqui TTS
-        from TTS.api import TTS
-        var['coqui-ai'][engine].extra['model'] = TTS(model_path=local_file, config_path=str(modelPath / "config.json"), progress_bar=False)
-        var['coqui-ai'][engine].extra['model'].to(var['device'])
+        configPath = modelPath / "config.json"
+        if configPath.exists():
+            from TTS.api import TTS
+            var['coqui-ai'][engine].extra['model'] = TTS(model_path=local_file, config_path=str(configPath), progress_bar=False)
+            var['coqui-ai'][engine].extra['model'].to(var['device'])
 
 
 

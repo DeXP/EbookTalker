@@ -42,13 +42,18 @@ function PlayCoquiClick(id, event) {
 }
 
 
+function IsItCoqui(engine) {
+  return ('silero' != engine) && (engine in TTS_COQUI) && TTS_COQUI[engine].enabled;
+}
+
+
 function OnEngineChange(newv, oldv) {
   // Get references to conditional UI elements
   const sileroView = $$("silero-tab-view");
   const coquiView = $$("coqui-language-form");
   const coquiSelect = $$("coqui-language-select");
 
-  if (newv != "silero") {
+  if (IsItCoqui(newv)) {
     // Show XTTS-specific fields
     coquiView?.show();
     sileroView?.hide();
@@ -121,8 +126,20 @@ function ShowPreferencesWindow() {
           ]
           }
         });
-    }
+      }
     });
+
+    var availableEngines = [
+      { id: 'silero', value: 'Silero' }
+    ];
+    Object.keys(TTS_COQUI).forEach(function(tts) { 
+      var curEngine = TTS_COQUI[tts];
+      if (curEngine && curEngine.enabled) {
+        availableEngines.push({ id: tts, value: curEngine.name });
+      }
+    });
+
+    const isCoqui = IsItCoqui(APP_SETTINGS['app']['engine']);
     
     win = webix.ui({
       view: "window",
@@ -157,20 +174,16 @@ function ShowPreferencesWindow() {
             ]    
           },
           {
-            view: "select", label: TT("TTS Engine:"), name: "engine", id: "engine", value: APP_SETTINGS['app']['engine'],
-            options: [
-              { id: 'silero', value: 'Silero' },
-              { id: "xtts_v2", value: 'XTTS v2' }
-            ],
+            view: "select", label: TT("TTS Engine:"), name: "engine", id: "engine", value: APP_SETTINGS['app']['engine'], options: availableEngines,
             // Key: react to changes
             on: { onChange: OnEngineChange }
           },
           ...(langCells.length > 0 ? [{
-              view: "tabview", id: "silero-tab-view", cells: langCells, hidden: ('silero' != APP_SETTINGS['app']['engine'])
+              view: "tabview", id: "silero-tab-view", cells: langCells, hidden: isCoqui
           }] : []),
           {
             id: "coqui-language-form",
-            hidden: ('silero' == APP_SETTINGS['app']['engine']),
+            hidden: !isCoqui,
             rows: [
               { template: TT("TTS Engine:"), type: "section" },
               {
@@ -180,10 +193,11 @@ function ShowPreferencesWindow() {
                 ],
                 on: {
                   onChange: function(newv, oldv) {
-                    if (newv in APP_SETTINGS['xtts_v2']) {
+                    const engine = $$("engine").getValue();
+                    if (newv in APP_SETTINGS[engine]) {
                       const coquiVoiceSelect = $$("coqui-voice-select");
                       if (coquiVoiceSelect) {
-                        coquiVoiceSelect.setValue(APP_SETTINGS['xtts_v2'][newv].voice);
+                        coquiVoiceSelect.setValue(APP_SETTINGS[engine][newv].voice);
                       }
                     }
                   }
@@ -192,7 +206,7 @@ function ShowPreferencesWindow() {
               {cols:[
                   { view: "select", label: TT("Voice:"), 
                     name: "coqui-voice-select", id: "coqui-voice-select", options: [],
-                    value: APP_SETTINGS['xtts_v2']['en'].voice},
+                    value: APP_SETTINGS[Object.keys(TTS_COQUI)[0]]['en'].voice}, // Object.keys(TTS_COQUI)[0] -> xtts
                   { view: "icon", id: "coqui-voice-play", icon: "mdi mdi-play", click: PlayCoquiClick }
               ]}
             ]

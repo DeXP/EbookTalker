@@ -98,9 +98,12 @@ class PreferencesForm(ctk.CTkToplevel):
 
 
         self.engines = {
-            'silero': 'Silero',
-            'xtts_v2': var['coqui-ai']['xtts_v2'].name
+            'silero': 'Silero'
         }
+        for coqui_key, coqui_item in var['coqui-ai'].items():
+            if converter.IsModelFileExists(cfg, var, engine=coqui_key, strict=True):
+                self.engines[coqui_key] = coqui_item.name
+
         self.engine_label = ctk.CTkLabel(self, text=T.T('TTS Engine:'))
         self.engine_label.grid(row=6, column=0, padx=10, pady=2, sticky="w")
 
@@ -151,13 +154,13 @@ class PreferencesForm(ctk.CTkToplevel):
                 self.tts_voice_play_buttons[lang] = ctk.CTkButton(
                     voice_parent, width=30,
                     fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"),
-                    command=lambda lang=lang: self.on_play('silero', lang),
+                    command=lambda lang=lang: self.on_play(lang),
                     font=parent.icon_font, text=Icons.play
                 )
                 self.tts_voice_play_buttons[lang].grid(row=row_id, column=2, padx=10, pady=2, sticky="w")
 
         # Coqui
-        language = var['coqui-ai']['xtts_v2']
+        language = next(iter(var['coqui-ai'].values())) # list(var['coqui-ai'].values())[0] # xtts
         self.coqui_frame = ctk.CTkFrame(master=self)
 
         self.coqui_language_label = ctk.CTkLabel(self.coqui_frame, text=T.T("Language:"))
@@ -178,7 +181,7 @@ class PreferencesForm(ctk.CTkToplevel):
         self.coqui_voice_play_button = ctk.CTkButton(
             self.coqui_frame, width=30,
             fg_color="transparent", hover_color=("gray80", "gray30"), text_color=("gray40", "gray60"),
-            command=lambda: self.on_play('xtts_v2', 'en'),
+            command=lambda: self.on_play(),
             font=parent.icon_font, text=Icons.play
         )
         self.coqui_voice_play_button.grid(row=1, column=2, padx=10, pady=2, sticky="w")
@@ -245,14 +248,14 @@ class PreferencesForm(ctk.CTkToplevel):
         installer_form.grab_set()
 
 
-    def on_play(self, tts, lang = 'en'):
+    def on_play(self, lang = 'en'):
         engine = self.get_selected_engine()
         voice = self.tts_voice_combos[lang].get() if 'silero' == engine else self.coqui_voice_combo.get()
         if 'silero' != engine:
             lang = self.get_selected_coqui_lang()
 
         voiceFile = voice.replace(' ', '-')
-        wavFile = self.var['tmp'] / f"{tts}-{lang}-{voiceFile}.wav"
+        wavFile = self.var['tmp'] / f"{engine}-{lang}-{voiceFile}.wav"
         if ("random" == voice) and wavFile.exists():
             wavFile.unlink()
 
@@ -335,7 +338,7 @@ class PreferencesForm(ctk.CTkToplevel):
     def on_coqui_lang_changed(self, choice):
         engine = self.get_selected_engine()
         if 'silero' == engine:
-            engine = 'xtts_v2'
+            engine = next(iter(self.var['coqui-ai'])) # first key in 'coqui-ai' - xtts
         lang = self.get_selected_coqui_lang(engine)
         if lang in self.var['settings'][engine]:
             speaker = self.var['settings'][engine][lang]['voice']
