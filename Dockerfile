@@ -11,6 +11,7 @@ WORKDIR /usr/src/app/
 COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 RUN pip3 install torch --no-cache-dir ${TORCH_URL}
+RUN pip3 install coqui-tts --no-cache-dir
 
 # install runtime depenencies
 RUN apt-get update \

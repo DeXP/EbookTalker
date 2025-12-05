@@ -3,7 +3,14 @@ Ebook reader in voice
 
 Converts textual books into audiobooks. The input is a normal book in Epub/FB2/TXT format. Output is a folder with a set of audio-files - audio book. Remember to feed the software with the books you properly own and have a license!
 
-[Silero](https://github.com/snakers4/silero-models) is used as a TTS engine. List of the supported languages: English, Russian, Ukrainian, Deutsch, French, Spanish.
+[Silero](https://github.com/snakers4/silero-models) is used as main TTS engine. List of the supported single-language Silero models: 
+- English, Russian, Ukrainian, Deutsch, French, Spanish.
+
+Silero CIS Multilanguage model:
+- Azerbaijani, Armenian, Bashkir, Belarus, Georgian, Kab.-Cherkes, Kazakh, Kalmyk, Kyrgyz, Moksha, Russian, Tajik, Tatar, Udmurt, Uzbek, Ukrainian, Khakas, Chuvash, Erzya, Yakut.
+
+Languages available via XTTS v2:
+- English, Spanish, French, German, Italian, Portuguese, Polish, Turkish, Russian, Dutch, Czech, Arabic, Hungarian, Hindi.
 
 Two UI modes is supported:
 
@@ -97,7 +104,16 @@ Screenshot on Windows 11:
 
 Это программное обеспечение для чтения книг в аудио. На входе - обычная книга в формате FB2/Epub/txt. На выходе - аудиокнига. Помните, вы сами несёте ответственность за легальность ваших книг!
 
-В качестве движка для чтения используется [Silero](https://github.com/snakers4/silero-models). В данный момент поддерживаются русский, украинский,английский, немецкий, испанский и французский языки.
+В качестве движка для чтения используется [Silero](https://github.com/snakers4/silero-models). В данный момент поддерживаются модели Silero для языков:
+- русский, украинский,английский, немецкий, испанский и французский.
+
+Через мультиязыковую модель Silero CIS также поддрживаются:
+- азербайджанский, армянский, башкирский, белорусский, грузинский, каб.-черкесский, казахский, калмыцкий, киргизский, мокшанский, русский, таджикский, татарский, удмуртский, узбекский, украинский, хакасский, чувашский, эрзянский, якутский.
+
+И средствами XTTS v2 доступны:
+
+- английский, испанский, французский, немецкий, итальянский, португальский, польский, турецкий, русский, голландский, чешский, арабский, венгерский, хинди.
+
 
 Поддерживаются два режима интерфейса:
 
