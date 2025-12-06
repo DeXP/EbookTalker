@@ -308,6 +308,14 @@ class App(customtkinter.CTk):
         self.inProcessLabel.configure(text=tr["emptyBookName"])   
 
 
+def uninstall_cleanup(cfg: dict, var: dict, userFolders: dict):
+    downloadedItems = list()
+    downloadedItems.extend(var['languages'].values())
+    downloadedItems.extend(var['coqui-ai'].values())
+
+    for item in downloadedItems:
+        print(item.name)
+
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
@@ -333,5 +341,12 @@ if __name__ == '__main__':
     except:
         pass
 
-    app = App(tr, cfg, var)
-    app.mainloop()
+    if (len(sys.argv) > 0) and ('--uninstall' in sys.argv):
+        fakeRoot = customtkinter.CTk()
+        msg = CTkMessagebox(master=fakeRoot, title=T.T("Uninstall EbookTalker"), message=T.T("Do you want do delete saved preferences, cache, downloaded models?"), icon="question", option_1=T.T("No"), option_2=T.T("Yes"))
+        if msg.get() == T.T("Yes"):
+            uninstall_cleanup(cfg, var, userFolders)
+    else:
+        # Normal app run
+        app = App(tr, cfg, var)
+        app.mainloop()

@@ -70,6 +70,8 @@
         "Starting converter worker": "Запуск потока конвертации"
     },
     "Install components and languages": "Установить компоненты и языки",
+    "Uninstall EbookTalker": "Удаление EbookTalker",
+    "Do you want do delete saved preferences, cache, downloaded models?": "Вы хотите удалить сохранённые настройки, кэш, скачанные модели?",
     "install": {
         "torch": "PyTorch и CUDA",
         "torch-text": "Torch (PyTorch) — это основной движок для генерации голоса. Версии CUDA используют вашу графическую карту NVIDIA для синтеза, который работает до 10 раз быстрее. После распаковки Windows запросит права администратора для Microsoft Robocopy — нажмите «Да», чтобы завершить установку. Для получения результата нужно перезагрузить приложение.",
