@@ -2,6 +2,8 @@ data
 logs
 ready
 build
+models
+AudioBooks
 __pycache__/
 EbookTalker.spec
 settings.json
