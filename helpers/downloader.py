@@ -188,7 +188,9 @@ class DownloaderCore:
                     #     shutil.rmtree(dest, ignore_errors=True)
                     shutil.copytree(src, dest)
                 else:
-                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    if dest.is_file():
+                        dest.unlink()
+                    dest.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(src, dest)
                 return True
             except Exception as e:
