@@ -2,7 +2,7 @@ from tkinter import filedialog
 from PIL import Image
 import customtkinter
 from pathlib import Path
-from CTkMessagebox import CTkMessagebox
+from tkinter.messagebox import askyesno
 import sys, json, time, shutil, locale, datetime, multiprocessing, threading, subprocess
 
 import defaults
@@ -308,13 +308,18 @@ class App(customtkinter.CTk):
         self.inProcessLabel.configure(text=tr["emptyBookName"])   
 
 
-def uninstall_cleanup(cfg: dict, var: dict, userFolders: dict):
-    downloadedItems = list()
-    downloadedItems.extend(var['languages'].values())
-    downloadedItems.extend(var['coqui-ai'].values())
 
-    for item in downloadedItems:
-        print(item.name)
+def uninstall_cleanup(cfg: dict):
+    remove = ['MODELS_FOLDER', 'DATA_FOLDER', 'LOGGING_FOLDER', 'SETTINGS_FILE']
+    for key in remove:
+        if key in cfg:
+            dest = Path(cfg[key])
+            if dest.exists():
+                if dest.is_file():
+                    dest.unlink()
+                if dest.is_dir():
+                    shutil.rmtree(dest, ignore_errors=True)
+    
 
 
 if __name__ == '__main__':
@@ -341,11 +346,9 @@ if __name__ == '__main__':
     except:
         pass
 
-    if (len(sys.argv) > 0) and ('--uninstall' in sys.argv):
-        fakeRoot = customtkinter.CTk()
-        msg = CTkMessagebox(master=fakeRoot, title=T.T("Uninstall EbookTalker"), message=T.T("Do you want do delete saved preferences, cache, downloaded models?"), icon="question", option_1=T.T("No"), option_2=T.T("Yes"))
-        if msg.get() == T.T("Yes"):
-            uninstall_cleanup(cfg, var, userFolders)
+    if '--uninstall' in sys.argv:
+        if askyesno(title=T.T("Uninstall EbookTalker"), message=T.T("Do you want do delete saved preferences, cache, downloaded models?")):
+            uninstall_cleanup(cfg)
     else:
         # Normal app run
         app = App(tr, cfg, var)
