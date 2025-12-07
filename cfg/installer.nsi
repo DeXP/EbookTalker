@@ -138,9 +138,37 @@ SectionEnd
 ; === Uninstaller ===
 Section "Uninstall"
   SetRegView 64
+
+  ; === Step 1: Run app cleanup (if executable exists) ===
+  IfFileExists "$INSTDIR\EbookTalker.exe" 0 +6
+
+    ; Check if uninstaller is running silently
+    IfSilent 0 +3
+      ; Silent mode: use --quiet
+      DetailPrint "Running app cleanup (silent): EbookTalker.exe --uninstall --quiet"
+      ExecWait '"$INSTDIR\EbookTalker.exe" --uninstall --quiet' $0
+      goto +2
+
+    ; Normal mode: show UI if your app supports it
+    DetailPrint "Running app cleanup: EbookTalker.exe --uninstall"
+    ExecWait '"$INSTDIR\EbookTalker.exe" --uninstall' $0
+
+    ; Optional: log failure (but don't abort uninstall)
+    ${If} $0 != 0
+      DetailPrint "Warning: App cleanup exited with code $0"
+    ${EndIf}
+
+  ; === Step 2: Remove shortcuts ===
   Delete "$DESKTOP\EbookTalker.lnk"
   Delete "$SMPrograms\EbookTalker.lnk"
+
+  ; === Step 3: Remove files and folders ===
   RMDir /r "$INSTDIR"
+
+  ; === Step 4: Clean registry ===
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PACKAGE_ID}"
   DeleteRegKey HKCU "Software\${COMPANY}\EbookTalker"
+
+  ; Notify Windows
+  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
 SectionEnd
