@@ -347,7 +347,8 @@ if __name__ == '__main__':
         pass
 
     if '--uninstall' in sys.argv:
-        if askyesno(title=T.T("Uninstall EbookTalker"), message=T.T("Do you want do delete saved preferences, cache, downloaded models?")):
+        if ('--quiet' in sys.argv) or askyesno(title=T.T("Uninstall EbookTalker"),
+                    message=T.T("Do you want do delete saved preferences, cache, downloaded models?")):
             uninstall_cleanup(cfg)
     else:
         # Normal app run
