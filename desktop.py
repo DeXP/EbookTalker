@@ -319,6 +319,12 @@ def uninstall_cleanup(cfg: dict):
                     dest.unlink()
                 if dest.is_dir():
                     shutil.rmtree(dest, ignore_errors=True)
+
+                    parent = dest.parent
+                    while not any(parent.iterdir()):
+                        # Empty parent dir
+                        parent.unlink()
+                        parent = parent.parent                                                      
     
 
 
