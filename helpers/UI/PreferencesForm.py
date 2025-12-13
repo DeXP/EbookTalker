@@ -6,7 +6,7 @@ from pathlib import Path
 
 import converter
 from helpers import book, settings
-from helpers.UI import Icons
+from helpers.UI import Icons, Spinbox
 from helpers.translation import T
 
 from helpers.DownloadItem import DownloadItem
@@ -22,11 +22,12 @@ class PreferencesForm(ctk.CTkToplevel):
         self.var = var
 
         self.title(tr['Preferences'])
-        self.geometry(parent.get_child_geometry(width=600, height=500))
+        self.geometry(parent.get_child_geometry(width=600, height=570))
 
+        self.FlexibleRowIndex = 9
         self.grid_columnconfigure((0,2), weight=0)
         self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(7, weight=1)
+        self.grid_rowconfigure(self.FlexibleRowIndex, weight=1)
 
 
         self.testBook = book.GetTestBook(tr)
@@ -68,7 +69,7 @@ class PreferencesForm(ctk.CTkToplevel):
         self.codec_combobox.grid(row=2, column=1, columnspan=2, padx=10, pady=2, sticky="w")
 
 
-        self.bitrate_label = ctk.CTkLabel(self, text=tr['Bitrate:'])
+        self.bitrate_label = ctk.CTkLabel(self, text=T.T('Bitrate:'))
         self.bitrate_label.grid(row=3, column=0, padx=10, pady=2, sticky="w")
 
         self.available_bitrate = ['32', '64', '128', '192', '320']
@@ -77,24 +78,40 @@ class PreferencesForm(ctk.CTkToplevel):
         self.bitrate_combobox.grid(row=3, column=1, columnspan=2, padx=10, pady=2, sticky="w")
 
 
+        self.short_pause_label = ctk.CTkLabel(self, text=T.T('Sentence pause (ms):'))
+        self.short_pause_label.grid(row=4, column=0, padx=10, pady=2, sticky="w")
+
+        self.short_pause_slider = Spinbox.IntSpinbox(self, step_size=50, width=140)
+        self.short_pause_slider.set(var['settings']['app']['pause-sentence'])
+        self.short_pause_slider.grid(row=4, column=1, columnspan=2, padx=10, pady=2, sticky="w")
+
+
+        self.long_pause_label = ctk.CTkLabel(self, text=T.T('Paragraph pause (ms):'))
+        self.long_pause_label.grid(row=5, column=0, padx=10, pady=2, sticky="w")
+
+        self.long_pause_slider = Spinbox.IntSpinbox(self, step_size=50, width=140)
+        self.long_pause_slider.set(var['settings']['app']['pause-paragraph'])
+        self.long_pause_slider.grid(row=5, column=1, columnspan=2, padx=10, pady=2, sticky="w")
+
+
         self.dir_formats = {
             'single': tr["nf-single"],
             'short': tr["nf-short"],
             'full': tr["nf-full"]
         }
-        self.dirs_label = ctk.CTkLabel(self, text=tr['NamingFormat:'])
-        self.dirs_label.grid(row=4, column=0, padx=10, pady=2, sticky="w")
+        self.dirs_label = ctk.CTkLabel(self, text=T.T('NamingFormat:'))
+        self.dirs_label.grid(row=6, column=0, padx=10, pady=2, sticky="w")
 
         self.dirs_combobox = ctk.CTkComboBox(self, values=list(self.dir_formats.values()), state="readonly", command=self.on_dirs_changed)
         self.dirs_combobox.set(self.dir_formats.get(var['settings']['app']['dirs'], tr["nf-short"]))
-        self.dirs_combobox.grid(row=4, column=1, padx=10, pady=2, columnspan=2, sticky="w")
+        self.dirs_combobox.grid(row=6, column=1, padx=10, pady=2, columnspan=2, sticky="w")
 
 
         self.dirs_example_label = ctk.CTkLabel(self, text=tr['Example:'])
-        self.dirs_example_label.grid(row=5, column=0, padx=10, pady=2, sticky="w")
+        self.dirs_example_label.grid(row=7, column=0, padx=10, pady=2, sticky="w")
 
         self.dirs_example = ctk.CTkLabel(self, text=self.GetNiceTestBookName(var['settings']['app']['dirs']))
-        self.dirs_example.grid(row=5, column=1, padx=10, pady=2, sticky="w")
+        self.dirs_example.grid(row=7, column=1, padx=10, pady=2, sticky="w")
 
 
         self.engines = {
@@ -105,16 +122,16 @@ class PreferencesForm(ctk.CTkToplevel):
                 self.engines[coqui_key] = coqui_item.name
 
         self.engine_label = ctk.CTkLabel(self, text=T.T('TTS Engine:'))
-        self.engine_label.grid(row=6, column=0, padx=10, pady=2, sticky="w")
+        self.engine_label.grid(row=8, column=0, padx=10, pady=2, sticky="w")
 
         current_engine = self.engines.get(var['settings']['app']['engine'], self.engines['silero'])
         self.engine_combobox = ctk.CTkComboBox(self, values=list(self.engines.values()), state="readonly", command=self.on_engine_changed)
         self.engine_combobox.set(current_engine)
-        self.engine_combobox.grid(row=6, column=1, padx=10, pady=2, columnspan=2, sticky="w")
+        self.engine_combobox.grid(row=8, column=1, padx=10, pady=2, columnspan=2, sticky="w")
 
 
         self.tts_tabview = ctk.CTkTabview(self)
-        self.tts_tabview.grid(row=7, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
+        self.tts_tabview.grid(row=self.FlexibleRowIndex, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
         self.tts_tabview.configure(command=self.on_tab_change)
         self.tts_voice_labels = {}
         self.tts_voice_combos = {}
@@ -188,18 +205,18 @@ class PreferencesForm(ctk.CTkToplevel):
 
 
         self.install_button = ctk.CTkButton(self, text=T.T('Install components and languages'), command=self.on_install)
-        self.install_button.grid(row=8, column=0, padx=10, pady=2, columnspan=3, sticky="e")
+        self.install_button.grid(row=10, column=0, padx=10, pady=2, columnspan=3, sticky="e")
 
 
         self.warning_note = ctk.CTkLabel(self, text=T.T('PreferencesSaveNote'))
-        self.warning_note.grid(row=9, column=0, padx=10, pady=2, columnspan=3, sticky="w")
+        self.warning_note.grid(row=11, column=0, padx=10, pady=2, columnspan=3, sticky="w")
 
         # Save and Cancel buttons
         self.save_button = ctk.CTkButton(self, text=T.T("Save"), command=self.on_save)
-        self.save_button.grid(row=10, column=0, padx=10, pady=7)
+        self.save_button.grid(row=12, column=0, padx=10, pady=7)
 
         self.cancel_button = ctk.CTkButton(self, text=T.T("Cancel"), command=self.on_cancel)
-        self.cancel_button.grid(row=10, column=1, padx=10, pady=7, columnspan=2, sticky="e")
+        self.cancel_button.grid(row=12, column=1, padx=10, pady=7, columnspan=2, sticky="e")
 
         self.on_engine_changed(current_engine)
         self.on_sub_lang_changed('')
@@ -288,12 +305,12 @@ class PreferencesForm(ctk.CTkToplevel):
 
         if 'silero' == engine:
             self.coqui_frame.grid_forget()
-            self.tts_tabview.grid(row=7, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
+            self.tts_tabview.grid(row=self.FlexibleRowIndex, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
             if self.first_silero_lang:
                 self.tts_voice_combos[self.first_silero_lang].configure(values=converter.GetModel(self.cfg, self.var, self.first_silero_lang, engine).speakers)
         else:
             self.tts_tabview.grid_forget()
-            self.coqui_frame.grid(row=7, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
+            self.coqui_frame.grid(row=self.FlexibleRowIndex, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
             self.coqui_voice_combo.configure(values=sorted(converter.GetModel(self.cfg, self.var, 'en', engine).speakers))
 
 

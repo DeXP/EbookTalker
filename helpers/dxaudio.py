@@ -305,6 +305,8 @@ def generate_silence_wav(durationMs: int, output: Path, sample_rate: int = 24000
         silent_chunk = silent_sample * n_frames
 
         wav_file.writeframes(silent_chunk)
+    
+    return n_frames / float(sample_rate)
 
 
 if __name__ == "__main__":

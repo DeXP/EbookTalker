@@ -234,8 +234,8 @@ def getBooks(var: dict):
 
 
 def getJingles(cfg: dict, var: dict):
-    rate = str(GetSamplerate(cfg, var))
-    folder = var['jingle'] / rate
+    rate = GetSamplerate(cfg, var)
+    folder = var['jingle'] / str(rate)
     return sorted(folder.glob("*.wav"))
 
 
@@ -263,7 +263,7 @@ def PreConvertBookForTTS(file: Path, var: dict):
 
 
 def GeneratePause(cfg: dict, var: dict, durationMs : int = 300, name : str = "pause.wav"):
-    dxaudio.generate_silence_wav(durationMs, var['genwav'] / name, GetSamplerate(cfg, var))
+    return dxaudio.generate_silence_wav(durationMs, var['genwav'] / name, GetSamplerate(cfg, var))
 
 
 def ProcessSentence(lang: str, number, sentence: str, cfg: dict, var: dict, engine: str = ''):
@@ -353,8 +353,8 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
     proc['totalLines'] = totalTagsCount
     proc['totalSentences'] = totalSencenceCount
 
-    GeneratePause(cfg, var, int(var['settings']['app']['pause-sentence']), "pause.wav")
-    GeneratePause(cfg, var, int(var['settings']['app']['pause-paragraph']), "pause-long.wav")
+    shortPauseDuration = GeneratePause(cfg, var, int(var['settings']['app']['pause-sentence']), "pause.wav")
+    longPauseDuration = GeneratePause(cfg, var, int(var['settings']['app']['pause-paragraph']), "pause-long.wav")
 
     for section in info['sections']:
         sectionCount += 1
