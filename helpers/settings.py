@@ -66,6 +66,8 @@ def LoadOrDefault(cfg: dict, var: dict) -> dict:
     word_pause = int(cfg['WORD_PAUSE']) if ('WORD_PAUSE' in cfg) else 300
     paragraph_pause = int(cfg['PARAGRAPH_PAUSE']) if ('PARAGRAPH_PAUSE' in cfg) else 500
     tts_engine = cfg['TTS_ENGINE'] if ('TTS_ENGINE' in cfg) else 'silero'
+    default_model = cfg['DEFAULT_MODEL'] if ('DEFAULT_MODEL' in cfg) else ''
+    default_sublang = cfg['DEFAULT_SUBLANG'] if ('DEFAULT_SUBLANG' in cfg) else ''
 
     check_sub_dict(s, 'app')
     set_if_none(s, 'app', 'lang', '')
@@ -76,6 +78,8 @@ def LoadOrDefault(cfg: dict, var: dict) -> dict:
     set_if_none(s, 'app', 'pause-sentence', word_pause)
     set_if_none(s, 'app', 'pause-paragraph', paragraph_pause)
     set_if_none(s, 'app', 'engine', tts_engine)
+    set_if_none(s, 'app', 'default-model', default_model)
+    set_if_none(s, 'app', 'default-sublang', default_sublang)
 
     for lang_key, language in var['languages'].items():
         language.dest = Path(ReplaceUserFolders(str(language.dest), cfg))

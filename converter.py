@@ -26,6 +26,21 @@ def InitModels(cfg: dict, var: dict):
 
 
 def GetSileroModelExt(cfg: dict, var: dict, lang: str = 'ru', strict: bool = False, allowUninstalled: bool = True):
+    if var['settings']['app']['default-model']:
+        defaultModelID = var['settings']['app']['default-model']
+        if defaultModelID:
+            if lang == defaultModelID:
+                modelPath = GetModelPathByName(cfg, Path(var['languages'][lang].url).name)
+                if allowUninstalled or modelPath.exists():
+                    return var['languages'][lang]
+                
+            if not strict:
+                language = var['languages'][defaultModelID]
+                if ('langs' in language.extra) and (lang in language.extra['langs']):
+                    modelPath = GetModelPathByName(cfg, Path(language.url).name)
+                    if allowUninstalled or modelPath.exists():
+                        return language
+
     if lang in var['languages']:
         modelPath = GetModelPathByName(cfg, Path(var['languages'][lang].url).name)
         if allowUninstalled or modelPath.exists():
@@ -81,6 +96,20 @@ def LoadSileroAccentor(var: dict, lang: str = 'ru'):
 
 
 def GetSileroVoiceExt(cfg: dict, var: dict, lang: str = 'ru', allowUninstalled: bool = True):
+    if var['settings']['app']['default-model']:
+        defaultModelID = var['settings']['app']['default-model']
+        if defaultModelID:
+            if lang == defaultModelID:
+                modelPath = GetModelPathByName(cfg, Path(var['languages'][lang].url).name)
+                if allowUninstalled or modelPath.exists():
+                    return var['settings']['silero'][lang]['voice']
+                
+            language = var['languages'][defaultModelID]
+            if ('langs' in language.extra) and (lang in language.extra['langs']):
+                modelPath = GetModelPathByName(cfg, Path(language.url).name)
+                if allowUninstalled or modelPath.exists():
+                    return var['settings']['silero'][defaultModelID][lang]['voice']
+                    
     if lang in var['settings']['silero']:
         modelPath = GetModelPathByName(cfg, Path(var['languages'][lang].url).name)
         if allowUninstalled or modelPath.exists():
