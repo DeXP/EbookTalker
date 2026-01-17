@@ -9,7 +9,7 @@ def GetDefaultVar(cfg: dict) -> dict:
 
     sileroUrl = 'https://github.com/DeXP/EbookTalker/releases/download/silero/'
     coquiUrl  = 'https://github.com/DeXP/EbookTalker/releases/download/coqui-ai-tts/'
-    torchUrl  = 'https://github.com/DeXP/EbookTalker/releases/download/torch-2.8-cuda/'
+    torchUrl  = 'https://github.com/DeXP/EbookTalker/releases/download/torch-2.9.1/'
     torchPath = str(Path(sys.executable).parent)
 
     var = {
@@ -186,35 +186,35 @@ def GetDefaultVar(cfg: dict) -> dict:
             ),
         },
         'torch' : {
-            'cuda129': DownloadItem(
+            'cuda130': DownloadItem(
                 group = "torch",
-                name = "CUDA 12.9 Runtime (PyTorch 2.8)",
-                url = torchUrl + "EbookTalker-Torch-2.8.0+cu129.7z",
-                size = 1968960562,
+                name = "CUDA 13.0 Runtime (PyTorch 2.9.1)",
+                url = torchUrl + "EbookTalker-Torch-2.9.1+cu130.7z",
+                size = 1582399944,
                 dest = torchPath,
                 needs_admin = True,
-                description = "RTX 20xx/30xx/40xx, A100, A40 (fastest)",
-                sha256 = "6a393dc49428304a73aa4cdd229dbd3f99144fe5ea15c456201b3af26196e2fd"
+                description = "RTX 40xx, A100, A40, L4, H100",
+                sha256 = "a874c71ce8b142a516c76cc2f73839cd3f263883b473474da41cf3bcf86ab545"
             ),
             'cuda126': DownloadItem(
                 group = "torch",
-                name = "CUDA 12.6 Runtime (PyTorch 2.8)",
+                name = "CUDA 12.6 Runtime (PyTorch 2.9.1)",
                 url = torchUrl + "EbookTalker-Torch-2.8.0+cu126.7z",
                 size = 1465104447,
                 dest = torchPath,
                 needs_admin = True,
-                description = "GTX 10xx, Quadro P series",
+                description = "RTX 20xx/30xx, GTX 10xx/16xx, Titan RTX, Quadro RTX, T4, A2, A10",
                 sha256 = "3fb1b4948c69794297358398aafaf7260c8f69dd4c3ac84437303275e5422825"
             ),
             'cpu': DownloadItem(
                 group = "torch",
-                name = "CPU-only PyTorch 2.8",
-                url = torchUrl + "EbookTalker-Torch-2.8.0+cpu.7z",
-                size = 57973929,
+                name = "CPU-only PyTorch 2.9.1",
+                url = torchUrl + "EbookTalker-Torch-2.9.1+cpu.7z",
+                size = 58444477,
                 dest = torchPath,
                 needs_admin = True,            
-                sha256 = "a67b91651fa9a46e3c5b1c7a76ba7219362db1d70fdc5c0e7af32f9da790e483",
-                description = "AMD/Intel GPUs or no NVIDIA (slower)"
+                sha256 = "610f657d5cb5d5a55bbc3fd5cf55f8898afd8a262ad6da1d2e3b011b03452524",
+                description = "AMD/Intel GPUs or no NVIDIA"
             )
         },
         'sample_rate': 24000,

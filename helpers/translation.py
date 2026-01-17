@@ -27,7 +27,7 @@ class T:
         cls.sizeFmtList = (tr["byte"], tr["KB"], tr["MB"], tr["GB"], tr["TB"], tr["PB"], "EiB", "ZiB")
 
     @classmethod
-    def T(cls, txt: str, cat = None, default: str = None) -> str:
+    def T(cls, txt: str, cat: str = None, default: str = None) -> str:
         return TT(cls.tr, txt, cat, default)
     
     @classmethod
@@ -37,6 +37,10 @@ class T:
     @classmethod
     def C(cls, txt: str, default: str = None) -> str:
         return TT(cls.tr, txt, cls.cat, default)
+    
+    @classmethod
+    def Error(cls, txt: str = 'Error', cat: str = 'error', default: str = None) -> str:
+        return TT(cls.tr, txt, cat, default)
     
     @classmethod
     def SizeFormat(cls, num) -> str:

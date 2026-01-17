@@ -86,6 +86,7 @@
         "empty-title": "Book file is not correct - title is empty",
         "charset-decoding": "Charset encoding cannot be figured out",
         "no-torch": "Torch module not found. Please restart EbookTalker. Reinstall if not helped.",
+        "torch-2.8-unsupported": "Torch 2.8 is not supported anymore. It can produce crashes or bugs. Please reinstall EbookTalker and download more modern version of PyTorch (CUDA). You don't need to wipe models or settings.",
         "unknown-error": "Unexpected unknown error"
     }
 }

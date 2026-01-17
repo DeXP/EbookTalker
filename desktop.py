@@ -3,6 +3,7 @@ from PIL import Image
 import customtkinter
 from pathlib import Path
 from tkinter.messagebox import askyesno
+from CTkMessagebox import CTkMessagebox
 import sys, json, time, shutil, locale, datetime, multiprocessing, threading, subprocess
 
 import defaults
@@ -271,7 +272,11 @@ class App(customtkinter.CTk):
         var['loading'] = T.C("Importing modules")
         try:
             import torch, converter
-            var['loading'] = 'Torch ' + str(torch.__version__)
+            strTorchVersion = str(torch.__version__)
+            var['loading'] = 'Torch ' + strTorchVersion
+            
+            if strTorchVersion.startswith("2.8") and (sys.platform == "win32"):
+                CTkMessagebox(master=self, title=T.Error(), message=T.Error("torch-2.8-unsupported"))
         except:
             haveTorch = False
      
