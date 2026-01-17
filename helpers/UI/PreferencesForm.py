@@ -139,9 +139,10 @@ class PreferencesForm(ctk.CTkToplevel):
         self.tts_multi_voice_language_labels = {}
         self.tts_multi_voice_language_combos = {}
         self.first_silero_lang = None
+        self.default_model_id = var['settings']['app']['default-model']
         for lang, language in var['languages'].items():
             if converter.IsModelFileExists(cfg, var, lang, 'silero', strict=True):
-                if not self.first_silero_lang:
+                if (not self.first_silero_lang) or (lang == self.default_model_id):
                     self.first_silero_lang = lang
     
                 lang_name = language.name
@@ -155,7 +156,7 @@ class PreferencesForm(ctk.CTkToplevel):
                     self.tts_multi_voice_language_labels[lang].grid(row=0, column=0, padx=10, pady=2, sticky="w")
 
                     sub_lang_names = [name_data['name'] for name_data in language.extra['langs'].values()]
-                    self.tts_multi_voice_language_combos[lang] = ctk.CTkComboBox(voice_parent, values=sub_lang_names, state="readonly", command=self.on_sub_lang_changed)
+                    self.tts_multi_voice_language_combos[lang] = ctk.CTkComboBox(voice_parent, values=sorted(sub_lang_names), state="readonly", command=self.on_sub_lang_changed)
                     self.tts_multi_voice_language_combos[lang].set(sub_lang_names[0])
                     self.tts_multi_voice_language_combos[lang].grid(row=0, column=1, padx=10, pady=2, sticky="w")
                     row_id = 1
@@ -219,6 +220,15 @@ class PreferencesForm(ctk.CTkToplevel):
         self.cancel_button.grid(row=12, column=1, padx=10, pady=7, columnspan=2, sticky="e")
 
         self.on_engine_changed(current_engine)
+
+        if self.default_model_id and self.default_model_id in var['languages']:
+            self.tts_tabview.set(var['languages'][self.default_model_id].name)
+
+            default_sublang = var['settings']['app']['default-sublang']
+            if default_sublang and default_sublang in var['languages'][self.default_model_id].extra['langs']:
+                sublang = var['languages'][self.default_model_id].extra['langs'][default_sublang]
+                self.tts_multi_voice_language_combos[self.default_model_id].set(sublang['name'])
+
         self.on_sub_lang_changed('')
 
 
@@ -230,12 +240,16 @@ class PreferencesForm(ctk.CTkToplevel):
         # Save preferences logic
         s = settings.LoadOrDefault(self.cfg, self.var)
         engine = self.get_selected_engine()
+        active_lang, sublang = self.get_active_sub_lang_code()
         s['app']['lang'] = self.get_code_by_lang(self.lang_combobox.get())
         s['app']['output'] = self.output_text.get()
         s['app']['codec'] = self.codec_combobox.get()
         s['app']['bitrate'] = int(self.bitrate_combobox.get())
         s['app']['dirs'] = self.get_dir_format_by_translated(self.dirs_combobox.get())
         s['app']['engine'] = engine
+        s['app']['default-model'] = active_lang
+        s['app']['default-sublang'] = sublang if sublang else ''
+        
 
         for lang, language in self.var['languages'].items():
             if lang in self.tts_voice_combos:
