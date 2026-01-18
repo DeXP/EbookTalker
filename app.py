@@ -232,7 +232,7 @@ def create_app(test_config=None):
             try:
                 # First message: ensure immediate feedback
                 q.put(("message", f"Starting: {item.name}..."))
-                downloader = DownloaderCore(item, cancel_event, q)
+                downloader = DownloaderCore(app.config, item, cancel_event, q)
                 success = downloader.run()
                 q.put(("done", success))
             except Exception as e:

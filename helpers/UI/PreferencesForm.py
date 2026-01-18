@@ -275,7 +275,7 @@ class PreferencesForm(ctk.CTkToplevel):
 
     def on_install(self):
         from helpers.UI.EbookTalkerInstallerUI import EbookTalkerInstallerUI
-        installer_form = EbookTalkerInstallerUI(self, self.var, focus_tab='silero')
+        installer_form = EbookTalkerInstallerUI(self, self.cfg, self.var, focus_tab='silero')
         installer_form.grab_set()
 
 

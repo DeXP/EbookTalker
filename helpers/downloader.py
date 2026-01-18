@@ -57,8 +57,9 @@ def elevate_robocopy(src: Path, dest: Path) -> bool:
 
 
 class DownloaderCore:
-    def __init__(self, item: DownloadItem, cancel_event: threading.Event, status_queue: queue.Queue):
+    def __init__(self, cfg: dict, item: DownloadItem, cancel_event: threading.Event, status_queue: queue.Queue):
         self.item = item
+        self.cfg = cfg
         self.cancel_event = cancel_event
         self.status_queue = status_queue
         self.temp_file = None
@@ -175,7 +176,7 @@ class DownloaderCore:
 
     def _copy_with_elevation_if_needed(self, src: Path, item: DownloadItem) -> bool:
         dest = item.dest 
-        if sys.platform == "win32" and not is_process_elevated():
+        if sys.platform == "win32" and self.cfg['NEED_ELEVATION'] and not is_process_elevated():
             prog_files = Path(os.environ.get("ProgramFiles", "C:\\Program Files"))
             needs_elev = item.needs_admin or (prog_files.resolve() in dest.resolve().parents)
         else:

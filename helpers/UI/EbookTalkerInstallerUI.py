@@ -12,11 +12,12 @@ from helpers.downloader import DownloaderCore
 from helpers.translation import T
 
 class EbookTalkerInstallerUI(ctk.CTkToplevel):
-    def __init__(self, parent: ctk.CTkToplevel, var: dict, focus_tab: str = None, preselect_key: str = None, automatic = False):
+    def __init__(self, parent: ctk.CTkToplevel, cfg: dict, var: dict, focus_tab: str = None, preselect_key: str = None, automatic = False):
         super().__init__(parent)
         T.Cat("install")
         self.parent = parent
         self.var = var
+        self.cfg = cfg
         self.automatic = automatic
         self.torchGroup = T.C(var['torch']['cpu'].group)
 
@@ -204,7 +205,7 @@ class EbookTalkerInstallerUI(ctk.CTkToplevel):
         self.worker_thread.start()
 
     def _install_worker(self, item: DownloadItem):
-        downloader = DownloaderCore(item, self.cancel_event, self.status_queue)
+        downloader = DownloaderCore(self.cfg, item, self.cancel_event, self.status_queue)
         success = downloader.run()
         self.status_queue.put(("done", success))
 
