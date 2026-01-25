@@ -62,6 +62,11 @@ def GetSileroModel(cfg: dict, var: dict, lang: str = 'ru', strict: bool = False)
     return model
 
 
+def GetAccentor(cfg: dict, var: dict, lang: str = 'ru'):
+    engine = var['settings']['app']['engine']
+    return GetSileroAccentor(cfg, var, lang) if 'silero' == engine else None
+
+
 def GetSileroAccentor(cfg: dict, var: dict, lang: str = 'ru'):
     model = GetSileroModel(cfg, var, lang)
     if model is None:
@@ -76,6 +81,8 @@ def GetSileroAccentor(cfg: dict, var: dict, lang: str = 'ru'):
         # Single language model
         if 'uk' == lang:
             lang = 'ukr'
+        if 'by' == lang:
+            lang = 'bel'
         if (not 'accentor' in model.extra) or (model.extra['accentor'] is None):
             model.extra['accentor'] = LoadSileroAccentor(var, lang)
         return model.extra['accentor']
@@ -83,7 +90,7 @@ def GetSileroAccentor(cfg: dict, var: dict, lang: str = 'ru'):
 
 
 def LoadSileroAccentor(var: dict, lang: str = 'ru'):
-    if lang in ['ru', 'ukr']:
+    if lang in ['ru', 'ukr', 'bel']:
         accentor = load_accentor(lang)
         accentor.to(device='cuda:0' if var['useCuda'] else 'cpu')
         if not var['useCuda']:
@@ -174,7 +181,7 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
             model.extra['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
             model.extra['model'].to(var['device'])
 
-        if lang in ['ru', 'uk']:
+        if lang in ['ru', 'uk', 'by']:
             GetSileroAccentor(cfg, var, lang)
     else:
         # Coqui TTS
@@ -345,7 +352,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
 
     proc['bookName'] = book.BookName(info, includeAuthor=True)
     lang = dxnormalizer.unify_lang(info['lang']) if ('lang' in info) else 'ru'
-    accentor = GetSileroAccentor(cfg, var, lang) if 'silero' == engine else None
+    accentor = GetAccentor(cfg, var, lang)
 
     if ('error' in info) and info['error']:
         error = info['error']

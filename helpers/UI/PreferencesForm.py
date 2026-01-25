@@ -194,9 +194,8 @@ class PreferencesForm(ctk.CTkToplevel):
                     self.tts_accentor_labels[lang] = ctk.CTkLabel(voice_parent, text=T.T("Accentor:"))
                     self.tts_accentor_labels[lang].grid(row=row_id, column=0, padx=10, pady=2, sticky="w")
 
-                    acc_list = [T.T("None")]
-                    for accent in accentors:
-                        acc_list.append(T.T(accent))
+                    acc_list = ["-"]
+                    acc_list.extend(accentors)
                     self.tts_accentor_combos[lang] = ctk.CTkComboBox(voice_parent, values=acc_list, state="readonly")
                     acc_val = def_acc if def_acc else acc_list[0]
                     self.tts_accentor_combos[lang].set(acc_val)
@@ -281,13 +280,13 @@ class PreferencesForm(ctk.CTkToplevel):
                 if not 'langs' in language.extra:
                     s['silero'][lang]['voice'] = self.tts_voice_combos[lang].get()
                     if 'accentors' in language.extra:
-                        s['silero'][lang]['accentor'] = self.get_accentor_by_translated(self.tts_accentor_combos[lang].get())
+                        s['silero'][lang]['accentor'] = self.tts_accentor_combos[lang].get()
                 else:
                     _, sublang = self.get_active_sub_lang_code()
                     if sublang and sublang in s['silero'][lang]:
                         s['silero'][lang][sublang]['voice'] = self.tts_voice_combos[lang].get()
                         if 'accentors' in language.extra['langs'][sublang]:
-                            s['silero'][lang][sublang]['accentor'] = self.get_accentor_by_translated(self.tts_accentor_combos[lang].get())
+                            s['silero'][lang][sublang]['accentor'] = self.tts_accentor_combos[lang].get()
 
         s[engine]['voice'] = self.coqui_voice_combo.get()
 
@@ -386,9 +385,8 @@ class PreferencesForm(ctk.CTkToplevel):
         lang, sublang = self.get_active_sub_lang_code()
         if sublang:
             native = self.var['languages'][lang].extra['langs'][sublang]['native']
-            accentors = [T.T("None")]
-            for acc in self.var['languages'][lang].extra['langs'][sublang]['accentors']:
-                accentors.append(T.T(acc))
+            accentors = ["-"]
+            accentors.extend(self.var['languages'][lang].extra['langs'][sublang]['accentors'])
             model_speakers = converter.GetModel(self.cfg, self.var, lang).speakers
             speakers = [x for x in model_speakers if x.startswith(native)]
             if (not speakers) or (len(speakers) < 1):
@@ -456,10 +454,6 @@ class PreferencesForm(ctk.CTkToplevel):
 
     def get_dir_format_by_translated(self, value: str) -> str:
         return self.get_key_by_value(self.dir_formats, value)
-    
-
-    def get_accentor_by_translated(self, value: str) -> str:
-        return T.FindKey(value, default=value)
     
 
     def get_sub_lang_code_by_name(self, lang_name: str, lang_dict: dict) -> str:
