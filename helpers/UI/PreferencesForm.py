@@ -138,6 +138,8 @@ class PreferencesForm(ctk.CTkToplevel):
         self.tts_voice_play_buttons = {}
         self.tts_multi_voice_language_labels = {}
         self.tts_multi_voice_language_combos = {}
+        self.tts_accentor_labels = {}
+        self.tts_accentor_combos = {}
         self.first_silero_lang = None
         self.default_model_id = var['settings']['app']['default-model']
         for lang, language in var['languages'].items():
@@ -151,6 +153,7 @@ class PreferencesForm(ctk.CTkToplevel):
                 voice_parent = self.tts_tabview.tab(lang_name)
                 
                 row_id = 0
+                first_sublang = None
                 if 'langs' in language.extra:
                     self.tts_multi_voice_language_labels[lang] = ctk.CTkLabel(voice_parent, text=T.T("Language:"))
                     self.tts_multi_voice_language_labels[lang].grid(row=0, column=0, padx=10, pady=2, sticky="w")
@@ -176,6 +179,28 @@ class PreferencesForm(ctk.CTkToplevel):
                     font=parent.icon_font, text=Icons.play
                 )
                 self.tts_voice_play_buttons[lang].grid(row=row_id, column=2, padx=10, pady=2, sticky="w")
+
+                row_id += 1
+                accentors = None
+                def_acc = ''
+                if 'accentors' in language.extra:
+                    accentors = language.extra['accentors']
+                    def_acc = var['settings']['silero'][lang]['accentor']
+                elif ('langs' in  language.extra):
+                    sublang_id = list(language.extra['langs'].keys())[0]
+                    if (sublang_id in language.extra['langs']) and ('accentors' in language.extra['langs'][sublang_id]):
+                        accentors = language.extra['langs'][sublang_id]['accentors']
+                if accentors:
+                    self.tts_accentor_labels[lang] = ctk.CTkLabel(voice_parent, text=T.T("Accentor:"))
+                    self.tts_accentor_labels[lang].grid(row=row_id, column=0, padx=10, pady=2, sticky="w")
+
+                    acc_list = [T.T("None")]
+                    for accent in accentors:
+                        acc_list.append(T.T(accent))
+                    self.tts_accentor_combos[lang] = ctk.CTkComboBox(voice_parent, values=acc_list, state="readonly")
+                    acc_val = def_acc if def_acc else acc_list[0]
+                    self.tts_accentor_combos[lang].set(acc_val)
+                    self.tts_accentor_combos[lang].grid(row=row_id, column=1, padx=10, pady=2, sticky="w")
 
         # Coqui
         language = next(iter(var['coqui-ai'].values())) # list(var['coqui-ai'].values())[0] # xtts
@@ -255,10 +280,14 @@ class PreferencesForm(ctk.CTkToplevel):
             if lang in self.tts_voice_combos:
                 if not 'langs' in language.extra:
                     s['silero'][lang]['voice'] = self.tts_voice_combos[lang].get()
+                    if 'accentors' in language.extra:
+                        s['silero'][lang]['accentor'] = self.get_accentor_by_translated(self.tts_accentor_combos[lang].get())
                 else:
                     _, sublang = self.get_active_sub_lang_code()
                     if sublang and sublang in s['silero'][lang]:
                         s['silero'][lang][sublang]['voice'] = self.tts_voice_combos[lang].get()
+                        if 'accentors' in language.extra['langs'][sublang]:
+                            s['silero'][lang][sublang]['accentor'] = self.get_accentor_by_translated(self.tts_accentor_combos[lang].get())
 
         s[engine]['voice'] = self.coqui_voice_combo.get()
 
@@ -357,6 +386,9 @@ class PreferencesForm(ctk.CTkToplevel):
         lang, sublang = self.get_active_sub_lang_code()
         if sublang:
             native = self.var['languages'][lang].extra['langs'][sublang]['native']
+            accentors = [T.T("None")]
+            for acc in self.var['languages'][lang].extra['langs'][sublang]['accentors']:
+                accentors.append(T.T(acc))
             model_speakers = converter.GetModel(self.cfg, self.var, lang).speakers
             speakers = [x for x in model_speakers if x.startswith(native)]
             if (not speakers) or (len(speakers) < 1):
@@ -364,6 +396,8 @@ class PreferencesForm(ctk.CTkToplevel):
             if lang in self.tts_voice_combos:
                 self.tts_voice_combos[lang].configure(values=speakers)
                 self.tts_voice_combos[lang].set(self.var['settings']['silero'][lang][sublang]['voice'])
+                self.tts_accentor_combos[lang].configure(values=accentors)
+                self.tts_accentor_combos[lang].set(self.var['settings']['silero'][lang][sublang]['accentor'])
 
 
     def on_coqui_lang_changed(self, choice):
@@ -422,6 +456,10 @@ class PreferencesForm(ctk.CTkToplevel):
 
     def get_dir_format_by_translated(self, value: str) -> str:
         return self.get_key_by_value(self.dir_formats, value)
+    
+
+    def get_accentor_by_translated(self, value: str) -> str:
+        return T.FindKey(value, default=value)
     
 
     def get_sub_lang_code_by_name(self, lang_name: str, lang_dict: dict) -> str:

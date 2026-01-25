@@ -88,8 +88,12 @@ def LoadOrDefault(cfg: dict, var: dict) -> dict:
             for sublang_key, sublang_info in language.extra['langs'].items():
                 check_sub_dict(s['silero'][lang_key], sublang_key)
                 set_if_none(s['silero'][lang_key], sublang_key, 'voice', sublang_info['voice'])
+                def_accentor = sublang_info['accentors'][0] if 'accentors' in sublang_info else ''
+                set_if_none(s['silero'][lang_key], sublang_key, 'accentor', def_accentor)
         else:
             set_if_cat_none(s, 'silero', lang_key, 'voice', language.extra['default'])
+            def_accentor = language.extra['accentors'][0] if 'accentors' in language.extra else ''
+            set_if_cat_none(s, 'silero', lang_key, 'accentor', def_accentor)
 
     for engine_key, tts_engine in var['coqui-ai'].items():
         tts_engine.dest = Path(ReplaceUserFolders(str(tts_engine.dest), cfg))

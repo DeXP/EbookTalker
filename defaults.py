@@ -29,6 +29,7 @@ def GetDefaultVar(cfg: dict) -> dict:
                     'female': 'xenia',
                     'male': 'aidar',
                     'default': 'xenia',
+                    'accentors': ['silero_stress', 'ruaccent'],
                     'phrase': 'В недрах тундры выдры в г+етрах т+ырят в вёдра +ядра к+едров.' 
                 }
             ),
@@ -61,6 +62,7 @@ def GetDefaultVar(cfg: dict) -> dict:
                     'female': None,
                     'male': 'mykyta',
                     'default': 'mykyta',
+                    'accentors': ['silero_stress'],
                     'phrase': 'О котрій годині ми зустрічаємося? Звучить непогано.' 
                 }
             ),
@@ -124,26 +126,26 @@ def GetDefaultVar(cfg: dict) -> dict:
                 extra = {
                     'model': None,
                     'langs': {
-                        'az':  {'native': 'aze', 'voice': 'aze_gamat',    'name': 'Azerbaijani' , 'phrase': 'Мән һәр сәһәр еркән галхыб тәзә һава ылә мәшг едырәм.' },
-                        'hy':  {'native': 'hye', 'voice': 'hye_zara',     'name': 'Armenian'    , 'phrase': 'Ես շաբաթ օրերին սիրում եմ երկար զբոսնել անտառով:' },
-                        'ba':  {'native': 'bak', 'voice': 'bak_aigul',    'name': 'Bashkir'     , 'phrase': 'Күп балалыларға былайҙа сертификат бирелә бит.' },
-                        'be':  {'native': 'bel', 'voice': 'bel_anatoliy', 'name': 'Belarus'     , 'phrase': 'В+ечарам +я любл+ю чыт+аць цік+авыя кн+ігі пры святл+е начнік+а.' },
-                        'ka':  {'native': 'kat', 'voice': 'kat_vika',     'name': 'Georgian'    , 'phrase': 'მე ძალიან მიყვარს ჩემი ოჯახის წევრებთან ერთად დროის გატარება.' },
-                        'kbd': {'native': 'kbd', 'voice': 'kbd_eduard',   'name': 'Kab.-Cherkes', 'phrase': 'Сэ уиӀуанэ уашъхъэри унагъуэхэри сэбэп хъущтыр сыту щӀэлъэӀу.' },
-                        'kz':  {'native': 'kaz', 'voice': 'kaz_zhadyra',  'name': 'Kazakh'      , 'phrase': 'Мен балалық шақта жаңа досдармен танысуды әбден ұнататынмын.' },
-                        'xal': {'native': 'xal', 'voice': 'xal_kejilgan', 'name': 'Kalmyk'      , 'phrase': 'Би эцкд сарин җилин дуулҗана хойр седклтә күрәм.' },
-                        'ky':  {'native': 'kir', 'voice': 'kir_nurgul',   'name': 'Kyrgyz'      , 'phrase': 'Мен мектепте окуп жүргөндө эң жакшы досум менен тааныштым.' },
-                        'mdf': {'native': 'mdf', 'voice': 'mdf_oksana',   'name': 'Moksha'      , 'phrase': 'Монь тяштеть эзда кизонь карьхть сельметь кштинь аф лац.' },
-                        'ru':  {'native': 'ru',  'voice': 'ru_oksana',    'name': 'Russian'     , 'phrase': 'В недрах тундры выдры в г+етрах т+ырят в вёдра +ядра к+едров.' },
-                        'tg':  {'native': 'tgk', 'voice': 'tgk_safarhuja','name': 'Tajik'       , 'phrase': 'Ман дар бораи хонаи нави худ дар канори дарё хондем.' },
-                        'tt':  {'native': 'tat', 'voice': 'tat_albina',   'name': 'Tatar'       , 'phrase': 'Мин ерак түгел урман эчендә чиста һавада йөргәне яратам.' },
-                        'udm': {'native': 'udm', 'voice': 'udm_bogdan',   'name': 'Udmurt'      , 'phrase': 'Мон ашалэ тӥлед нуналлы огы быдэсэ кошко учке.' },
-                        'uz':  {'native': 'uzb', 'voice': 'uzb_saida',    'name': 'Uzbek'       , 'phrase': 'Мен болалигимда кўпинча дўстларим билан ҳовлида футбол ўйнардим.' },
-                        'uk':  {'native': 'ukr', 'voice': 'ukr_igor',     'name': 'Ukrainian'   , 'phrase': '+Я з р+аннього дит+инства д+уже любл+ю сл+ухати цік+аві к+азки.' },
-                        'kjh': {'native': 'kjh', 'voice': 'kjh_karina',   'name': 'Khakas'      , 'phrase': 'Мин аал чоньчарға пастабахсынар хайдиғырам хынаңның хоный.' },
-                        'cv':  {'native': 'chv', 'voice': 'chv_ekaterina','name': 'Chuvash'     , 'phrase': 'Эпĕ ача чухнех пиччĕшсемпе юнашар кĕтӳльех вăйă вылянă.' },
-                        'erz': {'native': 'erz', 'voice': 'erz_alexandr', 'name': 'Erzya'       , 'phrase': 'Монь веленек шачемсёномань панжовксонть кис эрьва кизонь туема.' },
-                        'sah': {'native': 'sah', 'voice': 'sah_zinaida',  'name': 'Yakut'       , 'phrase': 'Мин бүгүн оройунан саһарҕа оонньуу сылдьан сымнаҕыстык утуйбутум.' }
+                        'az':  {'native': 'aze', 'voice': 'aze_gamat',    'name': 'Azerbaijani' , 'accentors': ['silero_simple'], 'phrase': 'Мән һәр сәһәр еркән галхыб тәзә һава ылә мәшг едырәм.' },
+                        'hy':  {'native': 'hye', 'voice': 'hye_zara',     'name': 'Armenian'    , 'accentors': ['silero_simple'], 'phrase': 'Ես շաբաթ օրերին սիրում եմ երկար զբոսնել անտառով:' },
+                        'ba':  {'native': 'bak', 'voice': 'bak_aigul',    'name': 'Bashkir'     , 'accentors': ['silero_simple'], 'phrase': 'Күп балалыларға былайҙа сертификат бирелә бит.' },
+                        'be':  {'native': 'bel', 'voice': 'bel_anatoliy', 'name': 'Belarus'     , 'accentors': ['silero_stress'], 'phrase': 'В+ечарам +я любл+ю чыт+аць цік+авыя кн+ігі пры святл+е начнік+а.' },
+                        'ka':  {'native': 'kat', 'voice': 'kat_vika',     'name': 'Georgian'    , 'accentors': ['silero_simple'], 'phrase': 'მე ძალიან მიყვარს ჩემი ოჯახის წევრებთან ერთად დროის გატარება.' },
+                        'kbd': {'native': 'kbd', 'voice': 'kbd_eduard',   'name': 'Kab.-Cherkes', 'accentors': ['silero_simple'], 'phrase': 'Сэ уиӀуанэ уашъхъэри унагъуэхэри сэбэп хъущтыр сыту щӀэлъэӀу.' },
+                        'kz':  {'native': 'kaz', 'voice': 'kaz_zhadyra',  'name': 'Kazakh'      , 'accentors': ['silero_simple'], 'phrase': 'Мен балалық шақта жаңа досдармен танысуды әбден ұнататынмын.' },
+                        'xal': {'native': 'xal', 'voice': 'xal_kejilgan', 'name': 'Kalmyk'      , 'accentors': ['silero_simple'], 'phrase': 'Би эцкд сарин җилин дуулҗана хойр седклтә күрәм.' },
+                        'ky':  {'native': 'kir', 'voice': 'kir_nurgul',   'name': 'Kyrgyz'      , 'accentors': ['silero_simple'], 'phrase': 'Мен мектепте окуп жүргөндө эң жакшы досум менен тааныштым.' },
+                        'mdf': {'native': 'mdf', 'voice': 'mdf_oksana',   'name': 'Moksha'      , 'accentors': ['silero_simple'], 'phrase': 'Монь тяштеть эзда кизонь карьхть сельметь кштинь аф лац.' },
+                        'ru':  {'native': 'ru',  'voice': 'ru_oksana',    'name': 'Russian'     , 'accentors': ['silero_stress', 'ruaccent'], 'phrase': 'В недрах тундры выдры в г+етрах т+ырят в вёдра +ядра к+едров.' },
+                        'tg':  {'native': 'tgk', 'voice': 'tgk_safarhuja','name': 'Tajik'       , 'accentors': ['silero_simple'], 'phrase': 'Ман дар бораи хонаи нави худ дар канори дарё хондем.' },
+                        'tt':  {'native': 'tat', 'voice': 'tat_albina',   'name': 'Tatar'       , 'accentors': ['silero_simple'], 'phrase': 'Мин ерак түгел урман эчендә чиста һавада йөргәне яратам.' },
+                        'udm': {'native': 'udm', 'voice': 'udm_bogdan',   'name': 'Udmurt'      , 'accentors': ['silero_simple'], 'phrase': 'Мон ашалэ тӥлед нуналлы огы быдэсэ кошко учке.' },
+                        'uz':  {'native': 'uzb', 'voice': 'uzb_saida',    'name': 'Uzbek'       , 'accentors': ['silero_simple'], 'phrase': 'Мен болалигимда кўпинча дўстларим билан ҳовлида футбол ўйнардим.' },
+                        'uk':  {'native': 'ukr', 'voice': 'ukr_igor',     'name': 'Ukrainian'   , 'accentors': ['silero_stress', 'ruaccent'], 'phrase': '+Я з р+аннього дит+инства д+уже любл+ю сл+ухати цік+аві к+азки.' },
+                        'kjh': {'native': 'kjh', 'voice': 'kjh_karina',   'name': 'Khakas'      , 'accentors': ['silero_simple'], 'phrase': 'Мин аал чоньчарға пастабахсынар хайдиғырам хынаңның хоный.' },
+                        'cv':  {'native': 'chv', 'voice': 'chv_ekaterina','name': 'Chuvash'     , 'accentors': ['silero_simple'], 'phrase': 'Эпĕ ача чухнех пиччĕшсемпе юнашар кĕтӳльех вăйă вылянă.' },
+                        'erz': {'native': 'erz', 'voice': 'erz_alexandr', 'name': 'Erzya'       , 'accentors': ['silero_simple'], 'phrase': 'Монь веленек шачемсёномань панжовксонть кис эрьва кизонь туема.' },
+                        'sah': {'native': 'sah', 'voice': 'sah_zinaida',  'name': 'Yakut'       , 'accentors': ['silero_simple'], 'phrase': 'Мин бүгүн оройунан саһарҕа оонньуу сылдьан сымнаҕыстык утуйбутум.' }
                     }
                 },
             ),

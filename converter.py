@@ -3,6 +3,7 @@ from pathlib import Path
 
 from helpers import book, dxfs, dxaudio, dxnormalizer
 from silero_stress import load_accentor, simple_accentor
+from ruaccent import RUAccent
 
 
 def InitModels(cfg: dict, var: dict):
@@ -73,8 +74,6 @@ def GetSileroAccentor(cfg: dict, var: dict, lang: str = 'ru'):
             return model.extra['langs'][lang]['accentor']
     else:
         # Single language model
-        if 'ru' == lang:
-            return None
         if 'uk' == lang:
             lang = 'ukr'
         if (not 'accentor' in model.extra) or (model.extra['accentor'] is None):
