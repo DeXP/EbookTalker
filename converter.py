@@ -64,7 +64,44 @@ def GetSileroModel(cfg: dict, var: dict, lang: str = 'ru', strict: bool = False)
 
 def GetAccentor(cfg: dict, var: dict, lang: str = 'ru'):
     engine = var['settings']['app']['engine']
-    return GetSileroAccentor(cfg, var, lang) if 'silero' == engine else None
+    if 'silero' == engine:
+        settings = GetSileroSettings(cfg, var, lang, allowUninstalled=False)
+        if 'accentor' in settings:
+            acc_id = str(settings['accentor'])
+            if '-' == acc_id:
+                return None
+            if acc_id.startswith('RUaccent'):
+                ruaccent_model = acc_id.split()[1]
+                return GetRuaccentAccentor(cfg, var, lang, ruaccent_model)
+        else:
+            return GetSileroAccentor(cfg, var, lang)
+    return None
+
+
+def GetRuaccentAccentor(cfg: dict, var: dict, lang: str = 'ru', model_size: str = 'turbo3.1'):
+    model = GetSileroModel(cfg, var, lang)
+    if model is None:
+        return None
+    if 'langs' in model.extra:
+        sub_lang = model.extra['langs'].get(lang, None)
+        if sub_lang:
+            if (not 'accentor' in model.extra['langs'][lang]) or (model.extra['langs'][lang]['accentor'] is None) or (not isinstance(model.extra['langs'][lang]['accentor'], RUAccent)):
+                model.extra['langs'][lang]['accentor'] = LoadRuaccentAccentor(cfg, var, sub_lang['native'], model_size)
+            return model.extra['langs'][lang]['accentor']
+    else:
+        # Single language model
+        if (not 'accentor' in model.extra) or (model.extra['accentor'] is None) or (not isinstance(model.extra['accentor'], RUAccent)):
+            model.extra['accentor'] = LoadRuaccentAccentor(cfg, var, lang, model_size)
+        return model.extra['accentor']
+    return None
+
+
+def LoadRuaccentAccentor(cfg: dict, var: dict, lang: str = 'ru', model_size: str = 'turbo3.1'):
+    dev = 'CUDA' if var['useCuda'] else 'CPU'
+    dir = str(Path(cfg['MODELS_FOLDER']) / 'ruaccent')
+    accentizer = RUAccent()
+    accentizer.load(omograph_model_size=model_size, use_dictionary=True, tiny_mode=False, device=dev, workdir=dir)
+    return accentizer
 
 
 def GetSileroAccentor(cfg: dict, var: dict, lang: str = 'ru'):
@@ -101,31 +138,36 @@ def LoadSileroAccentor(var: dict, lang: str = 'ru'):
     return None
 
 
-def GetSileroVoiceExt(cfg: dict, var: dict, lang: str = 'ru', allowUninstalled: bool = True):
+def GetSileroSettings(cfg: dict, var: dict, lang: str = 'ru', allowUninstalled: bool = True):
     if var['settings']['app']['default-model']:
         defaultModelID = var['settings']['app']['default-model']
         if defaultModelID:
             if lang == defaultModelID:
                 modelPath = GetModelPathByName(cfg, Path(var['languages'][lang].url).name)
                 if allowUninstalled or modelPath.exists():
-                    return var['settings']['silero'][lang]['voice']
+                    return var['settings']['silero'][lang]
                 
             language = var['languages'][defaultModelID]
             if ('langs' in language.extra) and (lang in language.extra['langs']):
                 modelPath = GetModelPathByName(cfg, Path(language.url).name)
                 if allowUninstalled or modelPath.exists():
-                    return var['settings']['silero'][defaultModelID][lang]['voice']
+                    return var['settings']['silero'][defaultModelID][lang]
                     
     if lang in var['settings']['silero']:
         modelPath = GetModelPathByName(cfg, Path(var['languages'][lang].url).name)
         if allowUninstalled or modelPath.exists():
-            return var['settings']['silero'][lang]['voice']
+            return var['settings']['silero'][lang]
     for lang_key, language in var['languages'].items():
         if ('langs' in language.extra) and (lang in language.extra['langs']):
             modelPath = GetModelPathByName(cfg, Path(language.url).name)
             if allowUninstalled or modelPath.exists():
-                return var['settings']['silero'][lang_key][lang]['voice']
+                return var['settings']['silero'][lang_key][lang]
     return None
+
+
+def GetSileroVoiceExt(cfg: dict, var: dict, lang: str = 'ru', allowUninstalled: bool = True):
+    settings = GetSileroSettings(cfg, var, lang, allowUninstalled)
+    return settings['voice'] if 'voice' in settings else None
 
 
 def GetSileroVoice(cfg: dict, var: dict, lang: str = 'ru'):
@@ -182,7 +224,7 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
             model.extra['model'].to(var['device'])
 
         if lang in ['ru', 'uk', 'by']:
-            GetSileroAccentor(cfg, var, lang)
+            GetAccentor(cfg, var, lang)
     else:
         # Coqui TTS
         configPath = modelPath / "config.json"
@@ -334,6 +376,14 @@ def SayText(wavFile: Path, lang: str, speaker: str, text: str, cfg: dict, var: d
     return wavFile.exists()
 
 
+def getAccentedText(accentor, text: str) -> str:
+    if isinstance(accentor, RUAccent):
+        return accentor.process_all(text)
+    elif accentor:
+        return accentor(text)
+    else:
+        return text
+
 
 def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat: str, proc: dict, cfg: dict, var: dict):
     dxfs.CreateDirectory(var['tmp'], var['gen'])
@@ -396,7 +446,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
         sectionWavs = []    
         rawSectionTitle = section['title']
         sectionTitle = dxnormalizer.normalize(rawSectionTitle, lang)
-        sectionTitle = accentor(sectionTitle) if accentor else sectionTitle
+        sectionTitle = getAccentedText(accentor, sectionTitle)
         # print(f"Section {sectionCount} ({len(section)}): {sectionTitle}")
         proc['rawSectionTitle'] = rawSectionTitle
         proc['sectionTitle'] = sectionTitle
@@ -420,7 +470,7 @@ def ConvertBook(file: Path, info: dict, coverBytes, outputDirStr: str, dirFormat
                 proc['lineSentenceNumber'] = lineSentence
                 proc['sentenceNumber'] = sentenceCount
                 proc['sentenceText'] = s
-                accentedText = accentor(s) if accentor else s
+                accentedText = getAccentedText(accentor, s)
                 if ProcessSentence(lang, sentenceCount, accentedText, cfg, var):
                     sectionWavs.append(f"{sentenceCount}.wav")
                     # last senctence in paragraph - long pause

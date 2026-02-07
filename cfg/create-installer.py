@@ -210,6 +210,7 @@ def create_exe(en: dict, ru: dict, version: str, full_version: str):
         # "--collect-data", "TTS",
         # "--collect-data", "coqui-tts",
         "--add-data", "silero_stress:silero_stress",
+        "--add-data", "ruaccent:ruaccent",
         "--version-file", str(RC_OUTPUT_PATH)
     ]
 
