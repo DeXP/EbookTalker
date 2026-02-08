@@ -190,32 +190,32 @@ def GetDefaultVar(cfg: dict) -> dict:
         'torch' : {
             'cuda130': DownloadItem(
                 group = "torch",
-                name = "CUDA 13.0 Runtime (PyTorch 2.9.1)",
-                url = torchUrl + "EbookTalker-Torch-2.9.1+cu130.7z",
-                size = 1582399944,
+                name = "CUDA 13.0 Runtime (PyTorch 2.10.0)",
+                url = torchUrl + "EbookTalker-Torch-2.10.0+cu130.7z",
+                size = 1586580546,
                 dest = torchPath,
                 needs_admin = True,
                 description = "RTX 40xx, A100, A40, L4, H100",
-                sha256 = "a874c71ce8b142a516c76cc2f73839cd3f263883b473474da41cf3bcf86ab545"
+                sha256 = "52cbb7d29234bb89190c55ef550f3562706b51e2f7ba12e94bacbcbc3b3bcd48"
             ),
             'cuda126': DownloadItem(
                 group = "torch",
-                name = "CUDA 12.6 Runtime (PyTorch 2.9.1)",
-                url = torchUrl + "EbookTalker-Torch-2.8.0+cu126.7z",
-                size = 1465104447,
+                name = "CUDA 12.6 Runtime (PyTorch 2.10.0)",
+                url = torchUrl + "EbookTalker-Torch-2.10.0+cu126.7z",
+                size = 1519956102,
                 dest = torchPath,
                 needs_admin = True,
                 description = "RTX 20xx/30xx, GTX 10xx/16xx, Titan RTX, Quadro RTX, T4, A2, A10",
-                sha256 = "3fb1b4948c69794297358398aafaf7260c8f69dd4c3ac84437303275e5422825"
+                sha256 = "0154d34c39700271b25316ecfce3aac4eeaf4164e335b3dc3081b40fba61371c"
             ),
             'cpu': DownloadItem(
                 group = "torch",
-                name = "CPU-only PyTorch 2.9.1",
-                url = torchUrl + "EbookTalker-Torch-2.9.1+cpu.7z",
-                size = 58444477,
+                name = "CPU-only PyTorch 2.10.0",
+                url = torchUrl + "EbookTalker-Torch-2.10.0+cpu.7z",
+                size = 59444934,
                 dest = torchPath,
                 needs_admin = True,            
-                sha256 = "610f657d5cb5d5a55bbc3fd5cf55f8898afd8a262ad6da1d2e3b011b03452524",
+                sha256 = "c3b60d38cc7819bfd693a107bd1018dc562db6bca4f109711b6735e25c5a0528",
                 description = "AMD/Intel GPUs or no NVIDIA"
             )
         },
