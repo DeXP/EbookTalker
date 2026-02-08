@@ -349,11 +349,11 @@ class PreferencesForm(ctk.CTkToplevel):
             self.coqui_frame.grid_forget()
             self.tts_tabview.grid(row=self.FlexibleRowIndex, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
             if self.first_silero_lang:
-                self.tts_voice_combos[self.first_silero_lang].configure(values=converter.GetModel(self.cfg, self.var, self.first_silero_lang, engine).speakers)
+                self.tts_voice_combos[self.first_silero_lang].configure(values=converter.GetModel(self.cfg, self.var, self.first_silero_lang, engine, strict=True).speakers)
         else:
             self.tts_tabview.grid_forget()
             self.coqui_frame.grid(row=self.FlexibleRowIndex, column=0, padx=10, pady=2, sticky="nsew", columnspan=3)
-            self.coqui_voice_combo.configure(values=sorted(converter.GetModel(self.cfg, self.var, 'en', engine).speakers))
+            self.coqui_voice_combo.configure(values=sorted(converter.GetModel(self.cfg, self.var, 'en', engine, strict=True).speakers))
 
 
     def GetNiceTestBookName(self, dir_format: str) -> str:
@@ -376,9 +376,12 @@ class PreferencesForm(ctk.CTkToplevel):
     def on_tab_change(self):
         selected_tab = self.tts_tabview.get()  # Get the currently selected tab name
         lang = self.get_code_by_lang(selected_tab)
-        self.tts_voice_combos[lang].configure(values=converter.GetModel(self.cfg, self.var, lang).speakers)
-        if 'langs' in self.var['languages'][lang].extra:
-            self.on_sub_lang_changed(None)
+        model = converter.GetModel(self.cfg, self.var, lang, strict=True)
+        if model:
+            voices = model.speakers
+            self.tts_voice_combos[lang].configure(values=voices)
+            if 'langs' in self.var['languages'][lang].extra:
+                self.on_sub_lang_changed(None)
 
 
     def on_sub_lang_changed(self, choice):
@@ -387,7 +390,7 @@ class PreferencesForm(ctk.CTkToplevel):
             native = self.var['languages'][lang].extra['langs'][sublang]['native']
             accentors = ["-"]
             accentors.extend(self.var['languages'][lang].extra['langs'][sublang]['accentors'])
-            model_speakers = converter.GetModel(self.cfg, self.var, lang).speakers
+            model_speakers = converter.GetModel(self.cfg, self.var, lang, strict=True).speakers
             speakers = [x for x in model_speakers if x.startswith(native)]
             if (not speakers) or (len(speakers) < 1):
                 speakers = model_speakers

@@ -27,7 +27,7 @@ def InitModels(cfg: dict, var: dict):
 
 
 def GetSileroModelExt(cfg: dict, var: dict, lang: str = 'ru', strict: bool = False, allowUninstalled: bool = True):
-    if var['settings']['app']['default-model']:
+    if not strict and var['settings']['app']['default-model']:
         defaultModelID = var['settings']['app']['default-model']
         if defaultModelID:
             if lang == defaultModelID:
@@ -70,9 +70,11 @@ def GetAccentor(cfg: dict, var: dict, lang: str = 'ru'):
             acc_id = str(settings['accentor'])
             if '-' == acc_id:
                 return None
-            if acc_id.startswith('RUaccent'):
+            elif acc_id.startswith('RUaccent'):
                 ruaccent_model = acc_id.split()[1]
                 return GetRuaccentAccentor(cfg, var, lang, ruaccent_model)
+            else:
+                return GetSileroAccentor(cfg, var, lang)
         else:
             return GetSileroAccentor(cfg, var, lang)
     return None
@@ -138,8 +140,8 @@ def LoadSileroAccentor(var: dict, lang: str = 'ru'):
     return None
 
 
-def GetSileroSettings(cfg: dict, var: dict, lang: str = 'ru', allowUninstalled: bool = True):
-    if var['settings']['app']['default-model']:
+def GetSileroSettings(cfg: dict, var: dict, lang: str = 'ru', allowUninstalled: bool = True, strict: bool = False):
+    if not strict and var['settings']['app']['default-model']:
         defaultModelID = var['settings']['app']['default-model']
         if defaultModelID:
             if lang == defaultModelID:
@@ -165,15 +167,15 @@ def GetSileroSettings(cfg: dict, var: dict, lang: str = 'ru', allowUninstalled: 
     return None
 
 
-def GetSileroVoiceExt(cfg: dict, var: dict, lang: str = 'ru', allowUninstalled: bool = True):
-    settings = GetSileroSettings(cfg, var, lang, allowUninstalled)
+def GetSileroVoiceExt(cfg: dict, var: dict, lang: str = 'ru', allowUninstalled: bool = True, strict: bool = False):
+    settings = GetSileroSettings(cfg, var, lang, allowUninstalled, strict)
     return settings['voice'] if 'voice' in settings else None
 
 
-def GetSileroVoice(cfg: dict, var: dict, lang: str = 'ru'):
-    voice = GetSileroVoiceExt(cfg, var, lang, allowUninstalled=False)
+def GetSileroVoice(cfg: dict, var: dict, lang: str = 'ru', strict: bool = False):
+    voice = GetSileroVoiceExt(cfg, var, lang, allowUninstalled=False, strict=strict)
     if voice is None:
-        voice = GetSileroVoiceExt(cfg, var, lang, allowUninstalled=True)
+        voice = GetSileroVoiceExt(cfg, var, lang, allowUninstalled=True, strict=strict)
     return voice
 
 
@@ -208,14 +210,14 @@ def IsModelFileExists(cfg: dict, var: dict, lang: str = 'ru', engine: str = '', 
     return GetModelPath(cfg, var, lang, engine, strict).exists()
 
 
-def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
+def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = '', strict: bool = False):
     if not engine:
         engine = var['settings']['app']['engine']
-    modelPath = GetModelPath(cfg, var, lang, engine)
+    modelPath = GetModelPath(cfg, var, lang, engine, strict)
     local_file = str(modelPath)
 
     if 'silero' == engine:
-        model = GetSileroModel(cfg, var, lang)
+        model = GetSileroModel(cfg, var, lang, strict)
         if not os.path.isfile(local_file):
             torch.hub.download_url_to_file(model.url, local_file)
 
@@ -223,8 +225,8 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
             model.extra['model'] = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
             model.extra['model'].to(var['device'])
 
-        if lang in ['ru', 'uk', 'by']:
-            GetAccentor(cfg, var, lang)
+        # if lang in ['ru', 'uk', 'by']:
+        #    GetAccentor(cfg, var, lang)
     else:
         # Coqui TTS
         configPath = modelPath / "config.json"
@@ -235,12 +237,12 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
 
 
 
-def GetModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = ''):
+def GetModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = '', strict: bool = False):
     if not engine:
         engine = var['settings']['app']['engine']
-    origin = GetSileroModel(cfg, var, lang) if 'silero' == engine else var['coqui-ai'][engine]
+    origin = GetSileroModel(cfg, var, lang, strict) if 'silero' == engine else var['coqui-ai'][engine]
     if ('model' in origin.extra) and (origin.extra['model'] is None):
-        PreloadModel(cfg, var, lang, engine)
+        PreloadModel(cfg, var, lang, engine, strict)
     return origin.extra['model']
 
 

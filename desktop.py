@@ -281,7 +281,8 @@ class App(customtkinter.CTk):
             haveTorch = False
 
         try:
-            import converter
+            if haveTorch:
+                import converter
         except Exception as e:
             CTkMessagebox(master=self, title=T.Error(), message=str(e))
             haveTorch = False

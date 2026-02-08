@@ -129,7 +129,7 @@ def GetDefaultVar(cfg: dict) -> dict:
                         'az':  {'native': 'aze', 'voice': 'aze_gamat',    'name': 'Azerbaijani' , 'accentors': ['Silero Simple'], 'phrase': 'Мән һәр сәһәр еркән галхыб тәзә һава ылә мәшг едырәм.' },
                         'hy':  {'native': 'hye', 'voice': 'hye_zara',     'name': 'Armenian'    , 'accentors': ['Silero Simple'], 'phrase': 'Ես շաբաթ օրերին սիրում եմ երկար զբոսնել անտառով:' },
                         'ba':  {'native': 'bak', 'voice': 'bak_aigul',    'name': 'Bashkir'     , 'accentors': ['Silero Simple'], 'phrase': 'Күп балалыларға былайҙа сертификат бирелә бит.' },
-                        'be':  {'native': 'bel', 'voice': 'bel_anatoliy', 'name': 'Belarus'     , 'accentors': ['silero_stress'], 'phrase': 'В+ечарам +я любл+ю чыт+аць цік+авыя кн+ігі пры святл+е начнік+а.' },
+                        'be':  {'native': 'bel', 'voice': 'bel_anatoliy', 'name': 'Belarus'     , 'accentors': ['Silero Stress'], 'phrase': 'В+ечарам +я любл+ю чыт+аць цік+авыя кн+ігі пры святл+е начнік+а.' },
                         'ka':  {'native': 'kat', 'voice': 'kat_vika',     'name': 'Georgian'    , 'accentors': ['Silero Simple'], 'phrase': 'მე ძალიან მიყვარს ჩემი ოჯახის წევრებთან ერთად დროის გატარება.' },
                         'kbd': {'native': 'kbd', 'voice': 'kbd_eduard',   'name': 'Kab.-Cherkes', 'accentors': ['Silero Simple'], 'phrase': 'Сэ уиӀуанэ уашъхъэри унагъуэхэри сэбэп хъущтыр сыту щӀэлъэӀу.' },
                         'kz':  {'native': 'kaz', 'voice': 'kaz_zhadyra',  'name': 'Kazakh'      , 'accentors': ['Silero Simple'], 'phrase': 'Мен балалық шақта жаңа досдармен танысуды әбден ұнататынмын.' },
