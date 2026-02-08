@@ -9,7 +9,7 @@ def GetDefaultVar(cfg: dict) -> dict:
 
     sileroUrl = 'https://github.com/DeXP/EbookTalker/releases/download/silero/'
     coquiUrl  = 'https://github.com/DeXP/EbookTalker/releases/download/coqui-ai-tts/'
-    torchUrl  = 'https://github.com/DeXP/EbookTalker/releases/download/torch-2.9.1/'
+    torchUrl  = 'https://github.com/DeXP/EbookTalker/releases/download/torch-2.10.0/'
     torchPath = str(Path(sys.executable).parent)
 
     var = {
