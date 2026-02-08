@@ -104,6 +104,10 @@ def ParseFB2(file: Path, full = False):
     match = re.search(' encoding="[^"]+"', first_line)
     if match:
         encoding = match.group(0)[11:-1]
+    else:
+        match = re.search(' encoding=\'[^\']+\'', first_line)
+        if match:
+            encoding = match.group(0)[11:-1]
 
     origxmlstring = ''
     try:
