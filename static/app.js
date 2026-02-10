@@ -9,7 +9,7 @@ function TT(txt, cat = '', def = '') {
   if (txt in tr) {
     return tr[txt];
   }
-  return def;
+  return def ? def : txt;
 }
 
 if (userLang.toLowerCase().startsWith('ru')) {

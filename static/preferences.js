@@ -94,7 +94,15 @@ function ShowPreferencesWindow() {
       {
         const voiceLinkBase = "?engine=" + language.type + "&lang=" + langCode;
         const langsLink = "/langs" + voiceLinkBase;
-        const voicesLink = "/voices" + voiceLinkBase;
+        const voicesLinkDefault = "/voices" + voiceLinkBase;
+        var voicesLink = voicesLinkDefault;
+        var sublangDefault = '';
+        var voiceValue = APP_SETTINGS['silero'][langCode]["voice"];
+        if (('langs' in language) && (langCode == APP_SETTINGS['app']['default-model'])) {
+          sublangDefault = APP_SETTINGS['app']['default-sublang']
+          voiceValue = APP_SETTINGS['silero'][langCode][sublangDefault]["voice"];
+          voicesLink = voicesLinkDefault + "&start=" + language['langs'][sublangDefault]['native'];
+        }
         langCells.push({
           header: language.name,
           body: {
@@ -104,14 +112,16 @@ function ShowPreferencesWindow() {
               {rows: [
                 ...('langs' in language ? [{
                     view: "select", label: tr["Language:"], 
-                    name: comboId + "-lang", id: comboId + "-lang", options: langsLink,
+                    name: comboId + "-lang", id: comboId + "-lang", 
+                    options: langsLink, value: sublangDefault, 
                     on: {
                       onChange: function(newv, oldv) {
                         const voiceCombo = $$(comboId);
                         if (voiceCombo)
                         {
-                          voiceCombo.define("options", voicesLink + "&start=" + language['langs'][newv]['native']);
+                          voiceCombo.define("options", voicesLinkDefault + "&start=" + language['langs'][newv]['native']);
                           voiceCombo.refresh();
+                          voiceCombo.setValue(APP_SETTINGS['silero'][langCode][newv]["voice"]);
                         }
                       }
                     }
@@ -119,7 +129,7 @@ function ShowPreferencesWindow() {
                 {cols:[
                     { view: "select", label: tr["Voice:"], 
                       name: comboId, id: comboId, options: voicesLink, 
-                      value: APP_SETTINGS['silero'][langCode]["voice"] },
+                      value: voiceValue },
                     { view: "icon", id: curId + "-play", icon: "mdi mdi-play", click: PlayClick }
                 ]}
               ]}
@@ -165,8 +175,8 @@ function ShowPreferencesWindow() {
           /*{ view: "text", label: tr["OutputFolder:"], name: "output", value: APP_SETTINGS['app']['output'] },*/
           { view: "select", label: tr["Codec:"], name: "codec", options: "/formats", value: APP_SETTINGS['app']['codec'] },
           { view: "select", label: tr["Bitrate:"], name: "bitrate", options: ['32', '64', '128', '192', '320'], value: APP_SETTINGS['app']['bitrate'] },
-          { view: "counter", label: tr["Sentence pause (ms):"], name:"pause-sentence", step: 50, value: APP_SETTINGS['app']['pause-sentence'], min: 0, max: 10000 },
-          { view: "counter", label: tr["Paragraph pause (ms):"], name:"pause-paragraph", step: 50, value: APP_SETTINGS['app']['pause-paragraph'], min: 0, max: 10000 },
+          { view: "counter", label: TT("Sentence pause (ms):"), name:"pause-sentence", step: 50, value: APP_SETTINGS['app']['pause-sentence'], min: 0, max: 10000 },
+          { view: "counter", label: TT("Paragraph pause (ms):"), name:"pause-paragraph", step: 50, value: APP_SETTINGS['app']['pause-paragraph'], min: 0, max: 10000 },
           {
             view: "select", label: tr["NamingFormat:"], name: "dirs", value: APP_SETTINGS['app']['dirs'],
             options: [
@@ -252,7 +262,33 @@ function ShowPreferencesWindow() {
                     }
                   });
 
-                  if ('silero' != values['app']['engine'])
+
+                  if ('silero' == values['app']['engine'])
+                  {
+                    // Silero
+                    const silero_prefix = "silero-";
+                    const selectedTab = $$("silero-tab-view").getTabbar().getValue();
+                    const sublangId = selectedTab + "-voice-lang"
+                    const sublangCombo = $$(sublangId);
+                    var selectedModel = selectedTab;
+                    var selectedSublang = '';
+                    if (selectedModel.startsWith(silero_prefix)) {
+                      selectedModel = selectedModel.slice(silero_prefix.length);
+                    }
+                    if (sublangCombo)
+                    {
+                      selectedSublang = sublangCombo.getValue();
+
+                      values['app']['default-model'] = selectedModel;
+                      values['app']['default-sublang'] = selectedSublang;
+
+                      APP_SETTINGS['app']['default-model'] = selectedModel;
+                      APP_SETTINGS['app']['default-sublang'] = selectedSublang;
+                    }
+
+                    // console.log("Selected tab: " + selectedTab + "; Language: " + selectedSublang);
+                  }
+                  else
                   {
                     // Save Coqui
                     const engine = values['app']['engine'];
@@ -297,6 +333,8 @@ function ShowPreferencesWindow() {
     });
   }
 
+  const defaultModel = APP_SETTINGS['app']['default-model'];
+  if (defaultModel) $$("silero-tab-view").getTabbar().setValue("silero-" + defaultModel);
   win.show(); // Show the existing or new window
   OnEngineChange(APP_SETTINGS['app']['engine']);
 }

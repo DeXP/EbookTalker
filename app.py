@@ -154,7 +154,7 @@ def create_app(test_config=None):
         engine = flask.request.args.get('engine', default = 'silero', type = str)
         start = flask.request.args.get('start', default = '', type = str)
         if ('silero' == engine) or (engine in var['coqui-ai']):
-            model = converter.GetModel(app.config, var, lang, engine)
+            model = converter.GetModel(app.config, var, lang, engine, strict=True)
             if model:
                 speakers = model.speakers
                 if start:
