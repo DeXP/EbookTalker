@@ -145,7 +145,7 @@ function ShowPreferencesWindow() {
       view: "window",
       id: "preferencesWindow",
       modal: true, close: true, move: true,
-      position: "center", width: 600, height: 550,
+      position: "center", width: 600, height: 950,
       head: tr['Preferences'],
       body: {
         view: "form",
@@ -165,6 +165,8 @@ function ShowPreferencesWindow() {
           /*{ view: "text", label: tr["OutputFolder:"], name: "output", value: APP_SETTINGS['app']['output'] },*/
           { view: "select", label: tr["Codec:"], name: "codec", options: "/formats", value: APP_SETTINGS['app']['codec'] },
           { view: "select", label: tr["Bitrate:"], name: "bitrate", options: ['32', '64', '128', '192', '320'], value: APP_SETTINGS['app']['bitrate'] },
+          { view: "counter", label: tr["Sentence pause (ms):"], name:"pause-sentence", step: 50, value: APP_SETTINGS['app']['pause-sentence'], min: 0, max: 10000 },
+          { view: "counter", label: tr["Paragraph pause (ms):"], name:"pause-paragraph", step: 50, value: APP_SETTINGS['app']['pause-paragraph'], min: 0, max: 10000 },
           {
             view: "select", label: tr["NamingFormat:"], name: "dirs", value: APP_SETTINGS['app']['dirs'],
             options: [

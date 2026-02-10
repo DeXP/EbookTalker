@@ -269,6 +269,8 @@ class PreferencesForm(ctk.CTkToplevel):
         s['app']['output'] = self.output_text.get()
         s['app']['codec'] = self.codec_combobox.get()
         s['app']['bitrate'] = int(self.bitrate_combobox.get())
+        s['app']['pause-sentence'] = self.short_pause_slider.get()
+        s['app']['pause-paragraph'] = self.long_pause_slider.get()
         s['app']['dirs'] = self.get_dir_format_by_translated(self.dirs_combobox.get())
         s['app']['engine'] = engine
         s['app']['default-model'] = active_lang
