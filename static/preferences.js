@@ -96,13 +96,29 @@ function ShowPreferencesWindow() {
         const langsLink = "/langs" + voiceLinkBase;
         const voicesLinkDefault = "/voices" + voiceLinkBase;
         var voicesLink = voicesLinkDefault;
+
+        var accentors = null;
+        var def_acc = '';
+        if ('accentors' in language) {
+          accentors = ['-', ...language['accentors']];
+          def_acc = APP_SETTINGS['silero'][langCode]['accentor'];
+        }
+
         var sublangDefault = '';
         var voiceValue = APP_SETTINGS['silero'][langCode]["voice"];
-        if (('langs' in language) && (langCode == APP_SETTINGS['app']['default-model'])) {
+        if ('langs' in language) {
           sublangDefault = APP_SETTINGS['app']['default-sublang']
+          if (langCode != APP_SETTINGS['app']['default-model']) 
+            sublangDefault = Object.keys(language['langs'])[0]
           voiceValue = APP_SETTINGS['silero'][langCode][sublangDefault]["voice"];
           voicesLink = voicesLinkDefault + "&start=" + language['langs'][sublangDefault]['native'];
+
+          if ('accentors' in language['langs'][sublangDefault]) {
+            accentors = ['-', ...language['langs'][sublangDefault]['accentors']];
+            def_acc = APP_SETTINGS['silero'][langCode][sublangDefault]['accentor'];
+          }
         }
+
         langCells.push({
           header: language.name,
           body: {
@@ -117,11 +133,17 @@ function ShowPreferencesWindow() {
                     on: {
                       onChange: function(newv, oldv) {
                         const voiceCombo = $$(comboId);
-                        if (voiceCombo)
-                        {
+                        if (voiceCombo) {
                           voiceCombo.define("options", voicesLinkDefault + "&start=" + language['langs'][newv]['native']);
                           voiceCombo.refresh();
                           voiceCombo.setValue(APP_SETTINGS['silero'][langCode][newv]["voice"]);
+                        }
+
+                        const accentorCombo = $$(comboId + "-accentor");
+                        if (accentorCombo) {
+                          accentorCombo.define("options", ['-', ...language['langs'][newv]['accentors']]);
+                          accentorCombo.refresh();
+                          accentorCombo.setValue(APP_SETTINGS['silero'][langCode][newv]["accentor"]);
                         }
                       }
                     }
@@ -131,7 +153,12 @@ function ShowPreferencesWindow() {
                       name: comboId, id: comboId, options: voicesLink, 
                       value: voiceValue },
                     { view: "icon", id: curId + "-play", icon: "mdi mdi-play", click: PlayClick }
-                ]}
+                ]},
+                ...(accentors ? [{
+                    view: "select", label: TT("Accentor:"), 
+                    name: comboId + "-accentor", id: comboId + "-accentor", 
+                    options: accentors, value: def_acc
+                }] : [])
               ]}
           ]
           }
@@ -242,6 +269,8 @@ function ShowPreferencesWindow() {
                     {
                       const comboId = language.type + "-" + langCode + "-voice";
                       const comboValue = $$(comboId).getValue();
+                      const accCombo = $$(comboId + "-accentor");
+                      const acc = accCombo ? accCombo.getValue() : null;
                       if (!(language.type in values)) {
                         values[language.type] = {};
                       }
@@ -254,10 +283,20 @@ function ShowPreferencesWindow() {
                           values[language.type][langCode][sublang] = {};
                           values[language.type][langCode][sublang]['voice'] = comboValue;
                           APP_SETTINGS[language.type][langCode][sublang]['voice'] = comboValue;
+
+                          if (acc) {
+                            values[language.type][langCode][sublang]['accentor'] = acc;
+                            APP_SETTINGS[language.type][langCode][sublang]['accentor'] = acc;
+                          }
                         }
                       } else {
                         values[language.type][langCode]['voice'] = comboValue;
                         APP_SETTINGS[language.type][langCode]['voice'] = comboValue;
+
+                        if (acc) {
+                          values[language.type][langCode]['accentor'] = acc;
+                          APP_SETTINGS[language.type][langCode]['accentor'] = acc;
+                        }
                       }
                     }
                   });
@@ -268,25 +307,15 @@ function ShowPreferencesWindow() {
                     // Silero
                     const silero_prefix = "silero-";
                     const selectedTab = $$("silero-tab-view").getTabbar().getValue();
-                    const sublangId = selectedTab + "-voice-lang"
-                    const sublangCombo = $$(sublangId);
-                    var selectedModel = selectedTab;
-                    var selectedSublang = '';
-                    if (selectedModel.startsWith(silero_prefix)) {
-                      selectedModel = selectedModel.slice(silero_prefix.length);
-                    }
-                    if (sublangCombo)
-                    {
-                      selectedSublang = sublangCombo.getValue();
+                    const sublangCombo = $$(selectedTab + "-voice-lang");
+                    const selectedModel = selectedTab.startsWith(silero_prefix) ? selectedTab.slice(silero_prefix.length) : selectedTab;
+                    const selectedSublang = sublangCombo ? sublangCombo.getValue() : '';
 
-                      values['app']['default-model'] = selectedModel;
-                      values['app']['default-sublang'] = selectedSublang;
+                    values['app']['default-model'] = selectedModel;
+                    values['app']['default-sublang'] = selectedSublang;
 
-                      APP_SETTINGS['app']['default-model'] = selectedModel;
-                      APP_SETTINGS['app']['default-sublang'] = selectedSublang;
-                    }
-
-                    // console.log("Selected tab: " + selectedTab + "; Language: " + selectedSublang);
+                    APP_SETTINGS['app']['default-model'] = selectedModel;                      
+                    APP_SETTINGS['app']['default-sublang'] = selectedSublang;
                   }
                   else
                   {

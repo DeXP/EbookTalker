@@ -93,6 +93,8 @@ def create_app(test_config=None):
             }
             if 'langs' in lang.extra:
                 l[key]['langs'] = lang.extra['langs']
+            if 'accentors' in lang.extra:
+                l[key]['accentors'] = lang.extra['accentors']
         return l
 
 
