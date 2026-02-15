@@ -436,6 +436,70 @@ ManifestVersion: 1.10.0
     print(f"\n📝 Generated winget manifest: {manifest_folder}")
 
 
+
+# === Docker ====
+def build_docker_image(variant: str) -> bool:
+    # Validate variant
+    valid_variants = {"cpu", "cuda"}
+    if variant not in valid_variants:
+        print(f"❌ Error: Invalid variant '{variant}'. Must be one of: {', '.join(valid_variants)}", file=sys.stderr)
+        return False
+    
+    # Construct image tag based on variant
+    image_tag = "dexperix/ebooktalker" if variant == "cpu" else "dexperix/ebooktalker:cuda"
+    
+    # Build command. Examples:
+    # 1. docker build -t dexperix/ebooktalker --build-arg VARIANT=cpu .
+    # 2. docker build -t dexperix/ebooktalker:cuda --build-arg VARIANT=cuda .
+    cmd = [
+        "docker", "build",
+        "-t", image_tag,
+        "--build-arg", f"VARIANT={variant}",
+        "."
+    ]
+    
+    print(f"\n📦 Building Docker image ({variant} variant): {image_tag}")
+    print(f"   Command: {' '.join(cmd)}\n")
+    
+    try:
+        # Stream output in real-time while capturing exit code
+        process = subprocess.Popen(
+            cmd,
+            cwd=ROOT_DIR,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,  # Merge stderr into stdout
+            text=True,                 # Decode output as text
+            bufsize=1                  # Line-buffered
+        )
+        
+        # Stream output line-by-line to console immediately
+        for line in process.stdout:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+        
+        process.wait()
+        
+        if process.returncode == 0:
+            print(f"\n✅ Docker image built successfully: {image_tag}")
+            return True
+        else:
+            print(f"\n❌ Docker build failed with exit code {process.returncode}", file=sys.stderr)
+            return False
+            
+    except FileNotFoundError:
+        print("❌ Error: 'docker' command not found. Please install Docker first.", file=sys.stderr)
+        return False
+    except KeyboardInterrupt:
+        print("\n\n⚠️ Build interrupted by user", file=sys.stderr)
+        if process.poll() is None:
+            process.terminate()
+            process.wait()
+        return False
+    except Exception as e:
+        print(f"❌ Unexpected error during Docker build: {e}", file=sys.stderr)
+        return False
+    
+
 # === Main build logic ===
 def main():
     print(f"📖 {APP_NAME} Installer creator script")
@@ -450,12 +514,15 @@ def main():
     OUTPUT_EXE = OUTPUT_DIR / f"{APP_NAME}-{version}-Win64-Installer.exe"
 
 
-    if (len(sys.argv) < 2) or ('all' == sys.argv[1]):
-        # Default - do all
+    if (len(sys.argv) < 2) or ('desktop' == sys.argv[1]):
+        # Default - do desktop
         create_exe(en, ru, version, full_version)
         create_zip(version)
         create_installer(OUTPUT_EXE, version, full_version, en, ru)
         generate_winget_manifest(version, OUTPUT_EXE, en, ru)
+    elif (len(sys.argv) >= 2) and ('docker' == sys.argv[1]):
+        build_docker_image('cpu')
+        build_docker_image('cuda')
     else:
         for i in range(1, len(sys.argv)):
             mode = str(sys.argv[i]).lower()
@@ -469,15 +536,23 @@ def main():
                 create_installer(OUTPUT_EXE, version, full_version, en, ru)
             elif ('manifest' == mode):
                 generate_winget_manifest(version, OUTPUT_EXE, en, ru)
+            elif ('docker-cpu' == mode):
+                build_docker_image('cpu')
+            elif ('docker-cuda' == mode):
+                build_docker_image('cuda')
             elif ('-h' == mode) or ('/?' == mode) or ('h' == mode) or ('help' == mode) or ('--help' == mode):
                 print(f"""
-Call the script without arguments, so all artifacts (except cuda) would be created. Or provide one or multiple of the following:
+Call the script without arguments, so 'desktop' artifacts (except cuda) would be created. Or provide one or multiple of the following:
   help - Show this help
-  exe - Pack python files to executable with PyInstaller
-  cuda - Extract CUDA DLLs from executable and pack it as a plugin
-  zip - Archive Portable-version of the app
-  installer - Make a Nullsoft installer
-  manifest - Generate manifest to submit to WinGet
+  desktop - builds all the following:                     
+    exe - Pack python files to executable with PyInstaller   
+    zip - Archive Portable-version of the app
+    installer - Make a Nullsoft installer
+    manifest - Generate manifest to submit to WinGet
+  cuda - Extract CUDA DLLs from executable and pack it as a plugin (Windows)
+  docker - builds all the following:
+    docker-cpu - CPU docker image
+    docker-cuda - CUDA docker image
 
 Example:
                       
