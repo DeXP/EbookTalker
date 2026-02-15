@@ -1,1 +1,1 @@
-docker build -t dexperix/ebooktalker:cpu  --build-arg VARIANT=cpu .
+docker build -t dexperix/ebooktalker --build-arg VARIANT=cpu .
