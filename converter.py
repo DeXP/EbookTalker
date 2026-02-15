@@ -231,6 +231,14 @@ def PreloadModel(cfg: dict, var: dict, lang: str = 'ru', engine: str = '', stric
         # Coqui TTS
         configPath = modelPath / "config.json"
         if configPath.exists():
+            # Patch to handle missing isin_mps_friendly
+            try:
+                from transformers.pytorch_utils import isin_mps_friendly as isin
+            except ImportError:
+                import torch
+                def isin(elements, test_elements):
+                    return torch.isin(elements, test_elements)
+                
             from TTS.api import TTS
             var['coqui-ai'][engine].extra['model'] = TTS(model_path=local_file, config_path=str(configPath), progress_bar=False)
             var['coqui-ai'][engine].extra['model'].to(var['device'])
