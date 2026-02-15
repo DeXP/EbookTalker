@@ -4,6 +4,7 @@ build
 models
 AudioBooks
 __pycache__/
+ruaccent/koziev/
 EbookTalker.spec
 settings.json
 debug.log
