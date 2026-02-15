@@ -1,25 +1,44 @@
 # syntax=docker/dockerfile:1
 FROM python:3.13-slim
 
-ARG TORCH_URL=""
-ENV TORCH_URL=$TORCH_URL
+# Build variant: 'cpu' (default) or 'cuda'
+ARG VARIANT=cpu
 
-# set work directory
-WORKDIR /usr/src/app/
+# Install system dependencies first
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
 
-# install dependencies
-COPY requirements.txt ./
-RUN pip3 install torch torchaudio --no-cache-dir ${TORCH_URL}
-RUN pip3 install --no-cache-dir -r requirements.txt
+WORKDIR /usr/src/app
 
-# install runtime depenencies
-RUN apt-get update \
-    && apt-get install -y ffmpeg --no-install-suggests --no-install-recommends \
-&& rm -rf /var/lib/apt/lists/*
+COPY requirements.txt .
 
-# copy project
+# Install PyTorch family: CPU uses explicit index, CUDA uses default/latest
+RUN TORCH_INDEX="" && \
+    if [ "${VARIANT}" = "cpu" ]; then \
+        TORCH_INDEX="--index-url https://download.pytorch.org/whl/cpu"; \
+        echo ">>> Installing CPU-optimized PyTorch"; \
+    else \
+        echo ">>> Installing default/latest CUDA PyTorch"; \
+    fi && \
+    pip install --no-cache-dir torch torchaudio ${TORCH_INDEX}
+
+# Install remaining dependencies + correct ONNX variant
+RUN ONNX_PKG="onnxruntime" && \
+    if [ "${VARIANT}" != "cpu" ]; then \
+        ONNX_PKG="onnxruntime-gpu"; \
+        echo ">>> Installing GPU-optimized ONNX Runtime"; \
+    else \
+        echo ">>> Installing CPU ONNX Runtime"; \
+    fi && \
+    pip install --no-cache-dir -r requirements.txt ${ONNX_PKG}
+
+# Copy application
 COPY . .
 COPY cfg/docker.cfg default.cfg
 
-# run app
-CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0" ]
+# Optional: runtime metadata for introspection
+ENV EBOOKTALKER_VARIANT=${VARIANT}
+LABEL org.ebooktalker.variant=${VARIANT}
+
+CMD ["python3", "-m", "flask", "run", "--host=0.0.0.0"]
