@@ -199,7 +199,7 @@ def convert_wav_to_compressed(encoder: str, cfg: dict, input_wav: Path, output_f
             meta += "metadata_block_picture=" + generate_ogg_metadata_block_picture(str(cover.absolute())) + "\n"
         meta += chapters
 
-        command = [get_ffmpeg_exe(cfg), "-y", "-i", str(input_wav.absolute())]
+        command = [get_ffmpeg_exe(cfg), "-y", "-hide_banner", "-loglevel", "error", "-i", str(input_wav.absolute())]
         inputmap = ["-map", str(0)]
         input_counter = 1
         if (not is_ogg) and cover:
