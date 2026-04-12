@@ -1,12 +1,38 @@
-data
-logs
-build
-models
-AudioBooks
+```
+# Dependencies
 __pycache__/
-ruaccent/koziev/
-EbookTalker.spec
-settings.json
-debug.log
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+.env.local
+.env.*
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Testing
+.coverage
+coverage/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Logs
+*.log
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+```
